@@ -136,7 +136,7 @@ free:
 __mm_prevent_fragmentation:
 	pusha
 	add 	di, 4
-	lodsw
+	mov 	ax, word [di]
 	add 	di, ax
 	.check_next_block:
 		cmp 	dword [di], __MM_MEM_FREE 	; is next block free
