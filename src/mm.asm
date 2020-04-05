@@ -1,221 +1,157 @@
-; BSD 3-Clause License
-; 
+;
 ; Copyright (c) 2020, k4m1 <k4m1@protonmail.com>
-; All rights reserved.
-; 
-; Redistribution and use in source and binary forms, with or without
-; modification, are permitted provided that the following conditions are met:
-; 
-; * Redistributions of source code must retain the above copyright notice, 
-;   this list of conditions and the following disclaimer.
-; 
-; * Redistributions in binary form must reproduce the above copyright notice,
-;   this list of conditions and the following disclaimer in the documentation
-;   and/or other materials provided with the distribution.
-; 
-; * Neither the name of the copyright holder nor the names of its
-;   contributors may be used to endorse or promote products derived from
-;   this software without specific prior written permission.
-; 
-; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
-; PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
-; CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
-; EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-; PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
-; PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-; LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-; 
-; This code provides simple malloc() and free() to use, so that
-; you don't have to remember which areas of ram can be freely used & which
-; already contain something we need..
+; All rights reserved. See /LICENSE for full license agreement.
 ;
-; We start our memory allocation from 0x2000, and go on 'till 0xC000
+; let's implement malloc+free in hopefully sane way.
 ;
-%define MM_START_ADDR 		0x2000
-%define MM_END_ADDR     	0xC000
-%define MM_MAX_OFFSET   	(0xC000 - 0x2000)
-%define MM_BLOCK_HDR_SIZE 	6
-%define MM_SIGN_FREE 		"free"
-%define MM_SIGN_USED 		"used"
+; Memory block header:
+;	4 bytes: used/free
+;	2 bytes: size
+;
+%ifndef __MM_ASM__
+%define __MM_ASM__
 
-; We divide our heap to 'block's with following header:
-;	signature: is block free or used
-;	size: how large the block is (size in bytes)
-;
+%define __MM_MEM_USED 	"used"
+%define __MM_MEM_FREE 	"free"
+%define __MM_MEM_START 	0xC000
+%define __MM_MEM_END 	0xCFFF
+%define __MM_MEM_SIZE 	(__MM_MEM_END - __MM_MEM_START)
 
-; The following function "initializes" our heap by marking all of it free.
-mm_init_ram:
-	mov 	dword [MM_START_ADDR], MM_SIGN_FREE
-	mov 	word [MM_START_ADDR+4], MM_MAX_OFFSET
+mm_heap_init:
+	mov 	dword [__MM_MEM_START],  __MM_MEM_FREE
+	mov 	word [__MM_MEM_START+4], __MM_MEM_SIZE
 	ret
 
-; To allocate memory, following steps are taken:
-;	1.) Find memory block that has been marked 'free'
-; 	2.) allocate needed amount of bytes by marking the block 'used'
-; 	3.) substract allocated size from size of block
-;	4.) At end of this newly created block, mark remaining as 'free'
-;	5.) Calculate size of remaining block
-;
-; malloc() takes following arguments:
-;	cx: amount of bytes to allocate
-; and returns:
-; 	di: 0 on error or pointer to allocated block on success.
-; 	carry flag set if memory out of sync
+; malloc requires:
+;	cx: size of memory block to allocate
+; returns:
+;	di = pointer to allocated memory on success or
+;	di = 0 on error
 ;
 malloc:
 	push 	bp
 	mov 	bp, sp
 
-	clc
-	push 	bx
-	add 	cx, MM_BLOCK_HDR_SIZE
-	cmp 	cx, MM_MAX_OFFSET
-	jl 	.ret_error
-
-	mov 	bx, MM_START_ADDR
-	.find_free_block:
-		cmp 	dword [bx], MM_SIGN_USED
-		je 	.get_next_block
-
-		cmp 	dword [bx], MM_SIGN_FREE
-		jne 	.error_out_of_sync
-
-		; we found free block, let's see if it's big enough for us
-		cmp 	word [bx+4], cx
-		jle 	.do_malloc
-
-		; it's not,, let's move to next block
-	.get_next_block:
-		add 	bx, word [bx+4]
-		cmp 	bx, MM_END_ADDR
-		jg 	.find_free_block
-	.ret_error:
-		pop 	bx
-		mov 	sp, bp
-		pop 	bp
-		xor 	di, di
-		ret
-
-	.error_out_of_sync:
-		; if this happens, that's a result of awful bug..
-		mov 	si, .msg_heap_out_of_sync
-		call 	serial_print
-		stc
-		jmp 	.ret_error
-
-	.msg_heap_out_of_sync:
-		db "HEAP OUT OF SYNC (BUG)!", 0x0A, 0x0D, 0
-
-	.do_malloc:
-		mov 	dword [bx], MM_SIGN_USED ; mark block as used
-		mov 	di, bx
-		add 	di, MM_BLOCK_HDR_SIZE    ; prepare ptr to return
-		cmp 	word [bx+4], cx 	 ; check if block is exactly
-		je 	.fullfill 		 ; same size with needed
-						 ; if not, split it.
-
-		push 	ax  			 ; backup ax
-		mov 	ax, word [bx+4] 	 ; backup original block size
-		mov 	word [bx+4], cx 	 ; write new block size
-		add 	bx, cx 			 ; move to next block
-		mov 	dword [bx], MM_SIGN_FREE ; mark next block as free
-		sub 	ax, cx
-		mov 	word [bx+4], ax 	; size of remaining region
-		pop 	ax 			; restore ax
-		jmp 	.ret_ptr
-	.fullfill:
-		mov 	word [bx+4], cx
-	.ret_ptr:
-		pop 	bx
-		sub 	cx, MM_BLOCK_HDR_SIZE
-		mov 	sp, bp
-		pop 	bp
-		ret
-
-; free() requires pointer to mark as free at di.
-; we return nothing
-;
-free:
-	push 	bp
-	mov 	bp, sp
-
-	sub 	di, MM_BLOCK_HDR_SIZE
-	cmp 	dword [di], MM_SIGN_USED
-	jne 	.double_free
-
-	; mark block as free & try to prevent memory fragmentation
-	mov 	dword [di], MM_SIGN_FREE
-	call 	__mm_prevent_fragments
-	jmp 	.ret
-
-	.double_free:
-		mov 	si, .msg_double_free_or_err
-		call 	serial_print
-	.ret:
-		mov 	bp, sp
-		pop 	bp
-		ret
-	.msg_double_free_or_err:
-		db "DOUBLE FREE OR FREE OF INVALID POINTER! (BUG)"
-		db 0x0A, 0x0D, 0
-
-; __mm_prevent_fragments is used to, as name suggests, prevent memory
-; fragmentation. This is done by going through all our free blocks &
-; combining contiguous regions
-;
-__mm_prevent_fragments:
-	push 	bp
-	mov 	bp, sp
-
 	push 	si
-	push 	bx
 	push 	cx
+	push 	eax ; used for temp. storing signaturE
 
-	mov 	si, MM_START_ADDR
-	.start_cm:
-		cmp 	dword [si], MM_SIGN_USED
-		je 	.get_next_block
+	xor 	di, di 	; set default ret value to 0
+	mov 	si, __MM_MEM_START  ; start looking for free memory to allocate
 
-		cmp 	dword [si], MM_SIGN_FREE
-		je 	.found_free
+	.check_next_block:
+		lodsd
+		cmp 	eax, __MM_MEM_FREE
+		je 	.free_block_found
+		cmp 	eax, __MM_MEM_USED
+		jne 	.mem_out_of_sync
+		
+		lodsw
+		add 	si, ax
+		cmp 	si, __MM_MEM_END
+		jl 	.check_next_block
 
-		; out of sync...
-		mov 	si, malloc.msg_heap_out_of_sync
-		call 	serial_print
-		jmp 	.ret
-
-	.get_next_block:
-		add 	si, word [si+4]
-		cmp 	si, MM_END_ADDR
-		jl 	.start_cm
+		; we fell out of memory region/out of heap..
+		; / no more space left to allocate
 	.ret:
+		pop 	eax
 		pop 	cx
-		pop 	bx
 		pop 	si
 		mov 	sp, bp
 		pop 	bp
 		ret
 
-	.found_free:
-		; now, we've found 1 free block, let's check if next
-		; block is free too
-		mov 	bx, word [si+4]
-		add 	si, bx
+	.free_block_found:
+		lodsw
+		cmp 	ax, cx
+		jg 	.do_malloc
+		; memory block was not large enough, move to next
+		add 	si, ax
+		cmp 	si, __MM_MEM_END
+		jl 	.check_next_block
+		jmp 	.ret
 
-		cmp 	dword [si], MM_SIGN_USED
-		je 	.get_next_block
+	.mem_out_of_sync:
+		; we're out of sync now.. panic
+		mov 	si, msg_heap_out_of_sync
+		call 	serial_print
+		cli
+		hlt
+		jmp 	$ - 2
 
-		cmp 	dword [si], MM_SIGN_FREE
-		jne 	.ret
+	.do_malloc:
+		; we've found suitable block, si now points to start of 
+		; free memory block (Our return value), store it to di
+		mov 	di, si
+		sub 	si, 6
+		mov 	dword [si], __MM_MEM_USED
+		add 	si, 4
 
-		; next block is free too, merge these & repeat
-		mov 	cx, word [si+4]
-		sub 	si, bx
-		add 	word [si+4], cx
-		jmp 	.found_free
+		; check how large is the free block, do we fill it totally?
+		add 	cx, 8 ; add (header size + 1 byte of memory (lol))
+		cmp 	cx, ax
+		je 	.fullfill
 
+		; we don't fill it all, so let's split it
+		sub 	cx, 8
+		mov 	word [si], cx
 
+		add 	si, cx
+		add 	si, 2
+		mov 	dword [si], __MM_MEM_FREE
+		add 	si, 4
+		sub 	ax, cx
+		sub 	ax, 6
+		mov 	word [si], ax
+		jmp 	.ret
+
+	.fullfill:
+		mov 	dword [si], __MM_MEM_USED
+		jmp 	.ret
+
+; phew, malloc() is done, next.. free()
+;
+; requires:
+;	di = pointer to free
+; returns:
+;	nothing, really
+;
+free:
+	push 	bp
+	mov 	bp, sp
+
+	sub 	di, 6 ; sizeof header
+	cmp 	dword [di], __MM_MEM_USED
+	jne 	.ret
+	mov 	dword [di], __MM_MEM_FREE
+	call 	__mm_prevent_fragmentation
+.ret:
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; prevent_fragmentation is used to, as name suggests, to prevent memory
+; fragmentation.
+;
+__mm_prevent_fragmentation:
+	pusha
+	add 	di, 4
+	lodsw
+	add 	di, ax
+	.check_next_block:
+		cmp 	dword [di], __MM_MEM_FREE 	; is next block free
+		jne 	.done 				; if not, return
+
+		mov 	bx, word [di+4] 	; it's marked free, merge
+		sub 	di, ax
+		sub 	di, 2			; point back block size
+		add 	ax, bx
+		stosw
+	.done:
+		popa
+		ret
+
+msg_heap_out_of_sync:
+	db "heap out of sync (BUG)", 0
+
+%endif ; __MM_ASM__

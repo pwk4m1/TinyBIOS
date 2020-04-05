@@ -81,6 +81,9 @@ main:
 	mov	esi, msg_boot_early
 	call	serial_print
 
+	; let's test malloc
+	call 	mm_heap_init
+
 	mov	esi, msg_configure_vga
 	call	serial_print
 
@@ -190,7 +193,9 @@ msg_vga_remap_failed:
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
 %include "src/drivers/vga.asm"
+%include "src/drivers/pci.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
+%include "src/mm.asm"
 
