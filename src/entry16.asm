@@ -39,14 +39,6 @@ bits	16
 %define VER_NUM "0.2"
 
 main:
-	; disable all interrupts, currently any exception and/or interrupt
-	; will shutdown the CPU. 
-	; (
-	;  Interrupt will modify CS register, which would mean that we cant
-	;  return back here.
-	; )
-	cli
-
 	; save BIST result
 	mov	ebp, eax
 
