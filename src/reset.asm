@@ -45,8 +45,16 @@ entry16:
 
 times	0x20000 - 0x10 - ($-$$) db 0xFF
 __reset:
+	; disable all interrupts, currently any exception and/or interrupt
+	; will shutdown the CPU. 
+	; (
+	;  Interrupt will modify CS register, which would mean that we cant
+	;  return back here.
+	; )
+
+	cli
 	db	0xe9
 	dd	entry16 - ($ + 2)
 
-	times	11 db 0xff
+	times	10 db 0xff
 
