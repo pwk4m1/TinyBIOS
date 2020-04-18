@@ -53,8 +53,9 @@ __reset:
 	; )
 
 	cli
-	db	0xe9
-	dd	entry16 - ($ + 2)
+;	db	0xe9
+;	dd	entry16 - ($ + 2)
+	jmp 	entry16 - ($ + 2)
 
-	times	10 db 0xff
+	times	12 db 0xff
 

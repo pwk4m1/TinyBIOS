@@ -30,7 +30,6 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-
 ; This is the first entry point of our BIOS code after reset vector.
 ; Offset from ROM beginning is 0x10000.
 ;
@@ -76,22 +75,9 @@ main:
 	; let's test malloc
 	call 	mm_heap_init
 
-	mov	esi, msg_configure_vga
-	call	serial_print
-
-	call 	__vga_remap_registers
-	jc 	.vga_remap_failed
-	mov 	esi, msg_vga_remap_ok
-	call 	serial_print
-	jmp 	.ata_start
-
-.vga_remap_failed:
-	mov 	esi, msg_vga_remap_failed
-	call 	serial_print
+	call 	pci_init
 
 .ata_start:
-	mov 	esi, msg_configure_vga_done
-	call 	serial_print
 
 	; check for ATA disks
 	call 	ata_check_disks
@@ -167,24 +153,8 @@ msg_bootsector_found:
 msg_jump_to_loader:
 	db "JUMP TO 0x0000:0x7C00", 0x0A, 0x0D, 0
 
-msg_configure_vga:
-	db "CONFIGURING VGA/CRT MONITOR...", 0x0A, 0x0D, 0
-
-msg_no_vga_conf:
-	DB "VGA/CRT MONITOR CONFIGURATION FAILED!", 0x0A, 0x0D, 0
-
-msg_configure_vga_done:
-	db "VGA/CRT MONITOR SHOULD NOW BE CONFIGURED.", 0x0A, 0x0D, 0
-
-msg_vga_remap_ok:
-	db "VGA IO REMAPPED TO 03DX.", 0x0A, 0x0D, 0
-
-msg_vga_remap_failed:
-	db "VGA IO REMAPPING FAILED!", 0x0A, 0x0D, 0
-
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
-%include "src/drivers/vga.asm"
 %include "src/drivers/pci.asm"
 
 %include "src/test_ram.asm"
