@@ -120,6 +120,13 @@ pci_add_device:
 	test 	di, di
 	jz 	.error_no_memory
 
+	mov 	al, byte [pci_dev_cnt]
+	mov 	bx, 2
+	mul 	bx
+	add 	ax, pci_dev_ptr_array
+	mov 	bx, ax
+	mov 	word [bx], di
+
 	movsd
 	movsd
 	xor 	cx, cx
