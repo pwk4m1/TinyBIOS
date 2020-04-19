@@ -50,7 +50,7 @@ __pci_config_build_addr:
 	mov 	ebx, dword [si+8]
 	mov 	edx, dword [si]
 	mov 	eax, ecx
-	and 	eax, 0xfc
+	;and 	eax, 0xfc
 	shl 	ebx, 8
 	shl 	edx, 0x10
 	or 	eax, 0x80000000
@@ -209,6 +209,7 @@ pci_init:
 		mov 	si, __pci_msg_no_memory
 		call 	serial_print
 		jmp 	.done
+
 
 __pci_msg_no_memory:
 	db "PCI INIT FAILED, NOT ENOUGH MEMORY", 0x0A, 0x0D, 0
