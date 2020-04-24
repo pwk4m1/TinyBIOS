@@ -52,9 +52,9 @@
 
 [ bits	16 ]
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; ata specific GPIO ports
-; =============================================================================== ;
+; ======================================================================== ;
 %define __ata_dr	0x170		; Data Register
 %define __ata_erfr	0x171		; Error/Feature Register
 %define __ata_scr	0x172		; Sector Count Register
@@ -68,9 +68,9 @@
 					; & Device Control Register
 %define __ata_dar	0x3F7		; Drive Address Register
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; ata error bit definitions
-; =============================================================================== ;
+; ======================================================================== ;
 %define __ata_err_amnf	00000001b	; Address Mark Not Found
 %define __ata_err_tkznf	00000010b	; Track Zero Not Fount
 %define __ata_err_abrt	00000100b	; Command Aborted
@@ -80,9 +80,9 @@
 %define __ata_unc	01000000b	; Uncorrectable Data Error
 %define __ata_bbd	10000000b	; Bad Block Detected
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; status register bit definitions
-; =============================================================================== ;
+; ======================================================================== ;
 %define __ata_stat_err	00000001b	; Error
 %define __ata_stat_ic	00000110b	; Index & correced data, always 0
 %define __ata_stat_rdy	00001000b	; Drive has data/is ready to recv
@@ -91,9 +91,9 @@
 %define __ata_stat_cde	01000000b	; Clear on error / drive spun down
 %define __ata_stat_wait	10000000b	; Drive is preparing for send/recv
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; device control register bit definitions
-; =============================================================================== ;
+; ======================================================================== ;
 %define __ata_dcr_zero	00000001b	; Always zero
 %define __ata_dcr_cli	00000010b	; Set to disable interrupts
 %define __ata_dcr_rst	00000100b	; Set to do reset on bus
@@ -101,9 +101,9 @@
 %define __ata_dcr_hob	10000000b	; Set this to read the High Order Byte
 					; of the last LBA48 value sent.
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; drive address register bit definitions
-; =============================================================================== ;
+; ======================================================================== ;
 %define __ata_dar_ds0	00000001b	; Drive Select 0
 %define __ata_dar_ds1	00000010b	; Drive Select 1
 %define __ata_dar_csh	00111100b	; Currently Selected Head
@@ -111,7 +111,7 @@
 %define __ata_dar_wg	01000000b	; Write Gate (0 when write active)
 %define __ata_dar_rsvd	10000000b	; Reserved
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; Helper functions for driver. Implement cache flushesh, delays etc..
 ; I do suggest you read the comments before making _any_ changes at all, or
 ; use the functions below.
@@ -120,9 +120,9 @@
 ;	- we do not support detecting controller IO ports, they should be
 ;	    according to specs. If not, enumerate PCI bus to find disks.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; ATA spec suggests to check bits 7 and 3 of status register before sending
 ; command. However, as _everything_ is slow 'n all, we're basicly having to
@@ -133,7 +133,7 @@
 ;	dx = GPI/O port to poll (the status register. IO base + 7)
 ; Returns:
 ;	al = status register value
-; =============================================================================== ;
+; ======================================================================== ;
 ata_delay_in:
 	push	cx
 	mov	cx, 5
@@ -141,7 +141,7 @@ ata_delay_in:
 	pop	cx
 	ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Do manual cache flush - as some drives require.
 ; In case the drive does not do this, temporary bad sectors may be created,
@@ -152,7 +152,7 @@ ata_delay_in:
 ; Returns:
 ;	Carry flag set on drive timeout.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_cache_flush:
 	push	ax
 	push	cx
@@ -174,14 +174,14 @@ ata_cache_flush:
 		pop	dx
 		ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Do software reset for ATA device.
 ;
 ; Requires:
 ;	dx = device to reset (gpio port)
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_sw_reset:
 	push	ax
 	in	al, dx
@@ -194,7 +194,7 @@ ata_sw_reset:
 	pop	ax
 	ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Check for 'floating bus'. Assuming we got booted from ATA disk, then
 ; the disk BIOS used to load us from should be selected. However, if this
@@ -210,7 +210,7 @@ ata_sw_reset:
 ;	dx = port to bus to check (status register)
 ; Returns:
 ;	Carry flag set if bus floats.
-; =============================================================================== ;
+; ======================================================================== ;
 ata_check_fbus:
 	push	ax
 	add	dx, 7
@@ -225,15 +225,15 @@ ata_check_fbus:
 		stc
 		ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Non standard ways of detecting ATA drives. Avoid using these if possible.
 ; Both have been tested and seem to work with Qemu, but no experiments have
 ; been conducted with real hardware with these non-standard functions.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Detect drive existense by selecting it, and checking if bit 7 of status
 ; register gets set. If it does, then we have a drive.
@@ -248,7 +248,7 @@ ata_check_fbus:
 ; Returns:
 ;	al = 1 if drive exists, 0 if not.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_nonstd_detect_disk_by_select:
 	push	bp
 	mov	bp, sp
@@ -274,7 +274,7 @@ ata_nonstd_detect_disk_by_select:
 		xor	al, al
 		jmp	.ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Detect drive existense by running Device Diagnostics command, and checking
 ; error register. Allegedly DD command on existing device sets bits in the
@@ -289,7 +289,7 @@ ata_nonstd_detect_disk_by_select:
 ;	al = 0 if no devices detected, or non-zero (error-register value)
 ;	     if device replies.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_nonstd_detect_disk_by_dd:
 	add	dx, 7
 	mov	al, 0x90
@@ -298,12 +298,12 @@ ata_nonstd_detect_disk_by_dd:
 	sub	dx, 7
 	ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; End of non-std detection functionality.
-; =============================================================================== ;
+; ======================================================================== ;
 
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Detect ATA disk with help of Identify command. This is apparently de-facto
 ; way of detecting disks by modern firmware.
@@ -320,7 +320,7 @@ ata_nonstd_detect_disk_by_dd:
 ;
 ;	Sets carry flag on disk timeout.
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_detect_disk_by_identify:
 	push	cx
 
@@ -432,7 +432,7 @@ ata_detect_disk_by_identify:
 		pop	cx
 		ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Following function may be used to read disk info, assuming
 ; that valid ATA disk has been found.
@@ -443,7 +443,7 @@ ata_detect_disk_by_identify:
 ; Returns:
 ;	carry flag set on error
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_disk_read_info:
 	push	cx
 	mov	cx, 256
@@ -451,13 +451,13 @@ ata_disk_read_info:
 	pop	cx
 	ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; List of ata disk addresses
-; =============================================================================== ;
+; ======================================================================== ;
 ata_disk_addr_list:
 	times	32 db 0
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; 
 ; Check if given ATA disk exists, update disk count, and show
 ; user info about found disk
@@ -468,7 +468,7 @@ ata_disk_addr_list:
 ;	clc set on bus float, or else
 ; 	none, updates ata_disk_addr_list values
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_check_disk_by_base:
 	pusha
 	clc
@@ -539,13 +539,13 @@ ata_check_disk_by_base:
 		mov	word [di], dx
 		jmp	.done
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Helper function to poll ata disk
 ;
 ; sets carry flag on disk timeout
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_poll:
 	pusha
 	mov	cl, 15
@@ -561,7 +561,7 @@ ata_poll:
 		popa
 		ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ;
 ; Read data from ATA disk in 28 bit PIO mode.
 ; This function should not be called directly, use
@@ -576,7 +576,7 @@ ata_poll:
 ; Returns:
 ;	Carry flag set on error
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_pio_b28_read:
 	pusha
 	clc
@@ -656,7 +656,7 @@ ata_pio_b28_read:
 		stc
 		jmp	.done
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; 
 ; Helper function to handle ATA PIO disk read
 ;
@@ -668,7 +668,7 @@ ata_pio_b28_read:
 ; Returns:
 ;	Carry flag set on error
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_disk_read:
 	pusha
 
@@ -715,14 +715,14 @@ ata_disk_read:
 		jmp 	.do_ret
 
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; 
 ; Function to use for ata disk detection
 ; Does not require, nor return anything.
 ;
 ; updates ata_disk_addr_list values
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_check_disks:
 	pusha
         ; get disk info, if bus floats, move to next one / end detection
@@ -747,10 +747,10 @@ ata_check_disks:
 	popa
 	ret
 
-; =============================================================================== ;
+; ======================================================================== ;
 ; Messages related to ata bus
 ;
-; =============================================================================== ;
+; ======================================================================== ;
 ata_msg_bus_unknown_bug:
 	db "ATA BUS UNKNOWN ERROR!", 0x0A, 0x0D, 0
 
