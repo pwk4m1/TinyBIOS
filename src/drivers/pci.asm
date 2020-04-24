@@ -32,15 +32,19 @@
 
 %define __PCIDC_HDR_SIZE 0x9a
 
+; =============================================================================== ;
 ; array used for storing pointers to pci device headers
+; =============================================================================== ;
 pci_dev_ptr_array:
 	times 32 db 2
 
 pci_dev_cnt:
 	db 0
 
+; =============================================================================== ;
 ; build address to read pci config word from. see pci_config_read_word
 ; to see how-to setup memory at [si]
+; =============================================================================== ;
 __pci_config_build_addr:
 	push 	ebx
 	push 	ecx
@@ -50,7 +54,6 @@ __pci_config_build_addr:
 	mov 	ebx, dword [si+8]
 	mov 	edx, dword [si]
 	mov 	eax, ecx
-	;and 	eax, 0xfc
 	shl 	ebx, 8
 	shl 	edx, 0x10
 	or 	eax, 0x80000000
@@ -65,8 +68,69 @@ __pci_config_build_addr:
 	pop 	ebx
 	ret
 
+
+; =============================================================================== ;
+; Helper functions, mainly use these for developing additional logic based on
+; PCI bus
+; 
+; =============================================================================== ;
+
+; =============================================================================== ;
+; read 1 byte from pci configuration space
+; requires:
+;	[si] 	= bus
+; 	[si+4]  = slot
+; 	[si+8]  = function
+; 	[si+12] = offset
+; returns:
+;	al = config byte
+; =============================================================================== ;
+pci_config_readb:
+	push 	bp
+	mov 	bp, sp
+	push 	dx
+	push 	eax
+
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	add 	dx, 4
+	in 	al, dx
+
+	pop 	dx
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; =============================================================================== ;
+; write pci configuration byte
+; requires:
+;	[si]    = bus
+; 	[si+4]  = slot
+; 	[si+8]  = function
+; 	[si+12] = offset 
+;	al      = config byte to write
+; =============================================================================== ;
+pci_config_writeb:
+	push 	bp
+	mov 	bp, sp
+	push 	dx
+	push 	eax
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	out 	dx, al
+	pop 	dx
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; =============================================================================== ;
 ; parse config word we red, see pci_config_read_word to see how to
 ; set up memory at [si]
+; =============================================================================== ;
 __pci_config_parse_reply:
 	push 	ecx
 	mov 	ecx, dword [si+12]
@@ -76,6 +140,7 @@ __pci_config_parse_reply:
 	pop 	ecx
 	ret
 
+; =============================================================================== ;
 ; read pci config word, requires:
 ;	[si] 	= bus
 ; 	[si+4] 	= slot
@@ -85,29 +150,66 @@ __pci_config_parse_reply:
 ;	ax = config word
 ; trashes:
 ;	high 16 bits of eax
+; =============================================================================== ;
 pci_config_read_word:
 	push 	bp
 	mov 	bp, sp
-	push 	dx
 
-	; read config word
-	call 	__pci_config_build_addr
-	mov 	dx,0xcf8
-	out 	dx, eax
-	add 	dx, 4
-	in 	eax, dx
-
-	; parse it
+	call 	pci_config_readb
+	mov 	ah, al
+	call 	pci_config_readb
 	call 	__pci_config_parse_reply
-	shr 	eax, 16
-	pop 	dx
+
 	mov 	bp, sp
 	pop 	bp
 	ret
 
+; =============================================================================== ;
+; Write pci command, return status
+; requires:
+;	[si] 	= bus
+; 	[si+4] 	= slot
+; 	[si+8]  = anything, but allocated
+; 	[si+12] = anything, but allocated
+;	ax = config word to write
+; returns:
+;	ax = config word
+; trashes:
+;	high 16 bits of eax
+; =============================================================================== ;
+pci_write_cmd:
+	push 	bp
+	mov 	bp, sp
+	push 	dx
+	push 	ax
+
+	mov 	dword [si+12], 0x04 ; offset to command word
+	mov 	dword [si+8],  0x00
+	call 	__pci_config_build_addr
+
+	mov 	dx, 0xCF8
+	out	dx, eax	 	; write out the address to use
+
+	pop 	ax
+	add 	dx, 4
+	out 	dx, ax 		; write out the command word
+
+	sub 	dx, 4 		; read the status
+	mov 	dword [si+12], 0x06
+	call 	__pci_config_build_addr
+	out 	dx, eax
+	add 	dx, 4
+	in 	ax, dx
+
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; =============================================================================== ;
 ; add found pci device header to our list of pci devices
 ; sets carry flag on error.
 ; assumes SI to point to bus/slot/fun/off struct
+; =============================================================================== ;
 pci_add_device:
 	clc
 	push 	bp
@@ -148,8 +250,10 @@ pci_add_device:
 		call 	serial_print
 		jmp 	.done
 
+; =============================================================================== ;
 ; enumerate all pci devices & store info of them to ram, add pointer to
 ; header to pci_dev_ptr_array
+; =============================================================================== ;
 pci_init:
 	push 	bp
 	mov 	bp, sp
@@ -166,6 +270,7 @@ pci_init:
 	stosd
 	stosd
 
+	mov 	dword [si+12], 0x00
 	.loop:
 		call 	pci_config_read_word
 		cmp 	ax, 0xFFFF
@@ -210,9 +315,10 @@ pci_init:
 		call 	serial_print
 		jmp 	.done
 
-
+; =============================================================================== ;
 __pci_msg_no_memory:
 	db "PCI INIT FAILED, NOT ENOUGH MEMORY", 0x0A, 0x0D, 0
 __pci_msg_found_dev_id:
-	db "PCI DEVICE FOUND, ID: ", 0
+	db "PCI DEVICE FOUND, VENDOR ID: ", 0
 
+; =============================================================================== ;
