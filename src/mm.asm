@@ -22,12 +22,14 @@ mm_heap_init:
 	mov 	word [__MM_MEM_START+4], __MM_MEM_SIZE
 	ret
 
+; =============================================================================== ;
 ; malloc requires:
 ;	cx: size of memory block to allocate
 ; returns:
 ;	di = pointer to allocated memory on success or
 ;	di = 0 on error
 ;
+; =============================================================================== ;
 malloc:
 	push 	bp
 	mov 	bp, sp
@@ -109,6 +111,7 @@ malloc:
 		mov 	dword [si], __MM_MEM_USED
 		jmp 	.ret
 
+; =============================================================================== ;
 ; phew, malloc() is done, next.. free()
 ;
 ; requires:
@@ -116,6 +119,7 @@ malloc:
 ; returns:
 ;	nothing, really
 ;
+; =============================================================================== ;
 free:
 	push 	bp
 	mov 	bp, sp
@@ -130,9 +134,11 @@ free:
 	pop 	bp
 	ret
 
+; =============================================================================== ;
 ; prevent_fragmentation is used to, as name suggests, to prevent memory
 ; fragmentation.
 ;
+; =============================================================================== ;
 __mm_prevent_fragmentation:
 	pusha
 	add 	di, 4

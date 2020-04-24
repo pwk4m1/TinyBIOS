@@ -30,9 +30,11 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+; =============================================================================== ;
 ; This is the first entry point of our BIOS code after reset vector.
 ; Offset from ROM beginning is 0x10000.
 ;
+; =============================================================================== ;
 bits	16
 
 %define VER_NUM "0.2"
