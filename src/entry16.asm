@@ -157,7 +157,7 @@ msg_jump_to_loader:
 
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
-%include "src/drivers/pci.asm"
+%include "src/drivers/pci/pci_core.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"

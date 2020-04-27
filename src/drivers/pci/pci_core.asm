@@ -29,6 +29,9 @@
 ; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
+; This file contains core functionality regarding PCI bus, only bus CAM opers,
+; address calculations, and input/output
+;
 
 %define __PCIDC_HDR_SIZE 0x9a
 
@@ -42,7 +45,7 @@ pci_dev_cnt:
 	db 0
 
 ; ======================================================================== ;
-; build address to read pci config word from. see pci_config_read_word
+; build address to read pci config word from. see pci_config_inw
 ; to see how-to setup memory at [si]
 ; ======================================================================== ;
 __pci_config_build_addr:
@@ -70,8 +73,8 @@ __pci_config_build_addr:
 
 
 ; ======================================================================== ;
-; Helper functions, mainly use these for developing additional logic based on
-; PCI bus
+; Helper functions, mainly use these for developing additional logic based 
+; on PCI bus
 ; 
 ; ======================================================================== ;
 
@@ -85,7 +88,7 @@ __pci_config_build_addr:
 ; returns:
 ;	al = config byte
 ; ======================================================================== ;
-pci_config_readb:
+pci_config_inb:
 	push 	bp
 	mov 	bp, sp
 	push 	dx
@@ -112,7 +115,7 @@ pci_config_readb:
 ; 	[si+12] = offset 
 ;	al      = config byte to write
 ; ======================================================================== ;
-pci_config_writeb:
+pci_config_outb:
 	push 	bp
 	mov 	bp, sp
 	push 	dx
@@ -127,18 +130,38 @@ pci_config_writeb:
 	pop 	bp
 	ret
 
-; ======================================================================== ;
-; parse config word we red, see pci_config_read_word to see how to
-; set up memory at [si]
-; ======================================================================== ;
-__pci_config_parse_reply:
-	push 	ecx
-	mov 	ecx, dword [si+12]
-	and 	ecx, 2
-	shl 	ecx, 3
-	shr 	eax, cl
-	pop 	ecx
+; as outb, word to write needs to be at ax.
+pci_config_outw:
+	push 	bp
+	mov 	bp, sp
+	push 	dx
+	push 	eax
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	out 	dx, ax
+	pop 	dx
+	mov 	sp, bp
+	pop 	bp
 	ret
+
+lci_config_outl:
+	push 	bp
+	mov 	bp, sp
+	push 	dx
+	push 	eax
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	out 	dx, eax
+	pop 	dx
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+
 
 ; ======================================================================== ;
 ; read pci config word, requires:
@@ -151,16 +174,48 @@ __pci_config_parse_reply:
 ; trashes:
 ;	high 16 bits of eax
 ; ======================================================================== ;
-pci_config_read_word:
+pci_config_inw:
 	push 	bp
 	mov 	bp, sp
+	push 	dx
+	push 	eax
 
-	call 	pci_config_readb
-	mov 	ah, al
-	call 	pci_config_readb
-	call 	__pci_config_parse_reply
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	add 	dx, 4
+	in 	ax, dx
 
+	pop 	dx
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; ======================================================================== ;
+; read pci config dword, requires:
+;	[si] 	= bus
+; 	[si+4] 	= slot
+; 	[si+8] 	= function
+; 	[si+12] = offset
+; returns:
+;	eax = config dword
+; ======================================================================== ;
+pci_config_inl:
+	push 	bp
 	mov 	bp, sp
+	push 	dx
+	push 	eax
+
+	call 	__pci_config_build_addr
+	mov 	dx, 0xCF8
+	out 	dx, eax
+	pop 	eax
+	add 	dx, 4
+	in 	eax, dx
+
+	pop 	dx
+	mov 	sp, bp
 	pop 	bp
 	ret
 
@@ -233,7 +288,7 @@ pci_add_device:
 	movsd
 	xor 	cx, cx
 	.loop:
-		call 	pci_config_read_word
+		call 	pci_config_inw
 		stosw
 		add 	cx, 2
 		cmp 	cx, (__PCIDC_HDR_SIZE - 8)
@@ -272,7 +327,7 @@ pci_init:
 
 	mov 	dword [si+12], 0x00
 	.loop:
-		call 	pci_config_read_word
+		call 	pci_config_inw
 		cmp 	ax, 0xFFFF
 		je 	.get_next_slot
 
@@ -306,6 +361,8 @@ pci_init:
 		cmp 	eax, 256 ; theoretical max of 256 buses
 		jne 	.loop
 	.done:
+		mov 	di, si
+		call 	free
 		popa
 		mov 	sp, bp
 		pop 	bp
