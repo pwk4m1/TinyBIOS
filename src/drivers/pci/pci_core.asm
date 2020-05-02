@@ -32,8 +32,21 @@
 ; This file contains core functionality regarding PCI bus, only bus CAM opers,
 ; address calculations, and input/output
 ;
+%ifndef PCI_CORE
+%define PCI_CORE
 
 %define __PCIDC_HDR_SIZE 0x9a
+
+%define PCI_CMD_IOS 		0x0001 ; io space
+%define PCI_CMD_MS 		0x0002 ; memory space
+%define PCI_CMD_BM 		0x0004 ; busmaster 
+%define PCI_CMD_SCS 		0x0008 ; special cycles
+%define PCI_CMD_MWIE 		0x0010 ; memory write and invalidate enable
+%define PCI_CMD_VGAPS 		0x0020 ; vga palette snoop
+%define PCI_CMD_PER 		0x0040 ; parity error response
+%define PCI_CMD_SERRE 		0x0100 ; serr# enable
+%define PCI_CMD_FBTBE 		0x0200 ; fast back to back enable
+%define PCI_CMD_INT 		0x0400 ; interrupt disable
 
 ; ======================================================================== ;
 ; array used for storing pointers to pci device headers
@@ -379,3 +392,4 @@ __pci_msg_found_dev_id:
 	db "PCI DEVICE FOUND, VENDOR ID: ", 0
 
 ; ======================================================================== ;
+%endif

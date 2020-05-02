@@ -44,25 +44,50 @@
 ; [si+4]   = slot
 ; [si+8]   = function
 ; [si+12]  = offset
+; 
+; cx       = command bit
+; bl 	   = 0 for disable, 1 for enable
 ; ======================================================================== ;
-
-; Disable interrupts of pci device
-pci_cli:
+pci_cmd_write:
 	push 	bp
 	mov 	bp, sp
-	; backup eax original value, and original offset from struct
+
 	push 	eax
 	mov 	eax, dword [si+12]
 	push 	eax
 	mov 	dword [si+12], 4 ; status & command are at offset 4
 	call 	pci_config_inl
-	; eax now has status:command, bit 10 is interrupt disable bit
-	and 	eax, 0xfbff
+	test 	bl, bl
+	jz 	.disable
+	or 	ax, cx
 	call 	pci_config_outl
-	; restore original offset value & original eax
+.done:
 	pop 	eax
 	mov 	dword [si+12], eax
 	pop 	eax
+	mov 	sp, bp
+	pop 	bp
+	ret
+.disable:
+	xor 	cx, 0xffff ; flip the value around, each 0 to 1 and 1 to 0.
+	and 	ax, cx
+	call 	pci_config_outl
+	jmp 	.done	
+	
+
+; Disable interrupts of pci device
+pci_cli:
+	push 	bp
+	mov 	bp, sp
+	push 	cx
+	push 	bx
+
+	mov 	cx, PCI_CMD_INT
+	mov 	bl, 0
+	call 	pci_cmd_write
+
+	pop 	bx
+	pop 	cx
 	mov 	sp, bp
 	pop 	bp
 	ret
@@ -71,19 +96,17 @@ pci_cli:
 pci_sti:
 	push 	bp
 	mov 	bp, sp
-	push 	eax
-	mov 	eax, dword [si+12]
-	push 	eax
-	mov 	dword [si+12], 4
-	call 	pci_config_inl
-	or 	eax, 0x400
-	call 	pci_config_outl
-	pop 	eax
-	mov 	dword [si+12], eax
-	pop 	eax
+	push 	cx
+	push 	bx
+
+	mov 	cx, PCI_CMD_INT
+	mov 	bl, 1
+	call 	pci_cmd_write
+
+	pop 	bx
+	pop 	cx
 	mov 	bp, sp
 	pop 	bp
 	ret
-
 
 %endif ; PCI_HELPER
