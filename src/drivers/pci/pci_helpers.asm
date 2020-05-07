@@ -36,10 +36,13 @@
 %ifndef PCI_HELPER
 %define PCI_HELPER
 
+%define ENABLE 	0x0000
+%define DISABLE 0x0001
+
 ; ======================================================================== ;
 ; helper functions regarding pci configuration command register
 ; 
-; all these require si to poit to bus/slot/function/offset structure.
+; all these require si to point to bus/slot/function/offset structure.
 ; [si]     = bus
 ; [si+4]   = slot
 ; [si+8]   = function
@@ -73,40 +76,24 @@ pci_cmd_write:
 	and 	ax, cx
 	call 	pci_config_outl
 	jmp 	.done	
-	
 
-; Disable interrupts of pci device
-pci_cli:
-	push 	bp
-	mov 	bp, sp
+; The macro below are used to help/ease developing pci driver code.
+; All of the macros require [si] to be set up as pci_cmd_write needs it to be.
+;	PCI_CMD(PCI_CMD_XX, ENABLE/DISABLE)
+;
+; Refer to pci_core.asm to see PCI_CMD_ definitions.
+;
+%macro PCI_CMD 2
 	push 	cx
 	push 	bx
-
-	mov 	cx, PCI_CMD_INT
-	mov 	bl, 0
+	mov 	cx, %0
+	mov 	bx, %1
 	call 	pci_cmd_write
-
 	pop 	bx
 	pop 	cx
-	mov 	sp, bp
-	pop 	bp
-	ret
+%endmacro
 
-; Enable interrupts of pci device
-pci_sti:
-	push 	bp
-	mov 	bp, sp
-	push 	cx
-	push 	bx
 
-	mov 	cx, PCI_CMD_INT
-	mov 	bl, 1
-	call 	pci_cmd_write
 
-	pop 	bx
-	pop 	cx
-	mov 	bp, sp
-	pop 	bp
-	ret
 
 %endif ; PCI_HELPER
