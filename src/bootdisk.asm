@@ -46,12 +46,12 @@
 sector_is_multiboot:
 	xor	ax, ax
 	add	si, 510
-	mov	ax, word [si] ; get signature bytes
+	lodsw
 	cmp	ax, 0xAA55
 	jne	.not_bootdisk
 	mov	ax, 1
 .done:
-	sub	si, 510
+	sub	si, 512
 	ret
 .not_bootdisk:
 	xor	ax, ax

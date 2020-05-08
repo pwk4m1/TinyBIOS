@@ -23,3 +23,6 @@ logtest:
 	-hda /dev/null | \
 	tee qemu_run_log.txt
 
+test-end:
+	kill -9 `ps aux | grep qemu | grep -v grep | awk '{print $$2}'`
+

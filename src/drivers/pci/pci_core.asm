@@ -171,7 +171,7 @@ pci_config_outw:
 	pop 	bp
 	ret
 
-lci_config_outl:
+pci_config_outl:
 	push 	bp
 	mov 	bp, sp
 	push 	dx
