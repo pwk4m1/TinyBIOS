@@ -302,12 +302,22 @@ pci_add_device:
 	test 	di, di
 	jz 	.error_no_memory
 
-	mov 	al, byte [pci_dev_cnt]
+	; We first calculate offset to our device array, as N * 2 is
+	; same as doing `shl N, 1`. As our addresses returned by malloc
+	; are 16-bits (2 bytes) wide, we can do offset calculation by
+	; shl addr-size, device-count.
+	;
+	mov 	cl, byte [pci_dev_cnt]
 	mov 	bx, 2
-	mul 	bx
-	add 	ax, pci_dev_ptr_array
-	mov 	bx, ax
-	mov 	word [bx], di
+	shl 	bx, cl
+	push 	di
+	mov 	di, pci_dev_ptr_array
+	add 	di, bx
+	pop 	ax
+	stosw
+	mov 	di, ax
+	inc 	cl
+	mov 	byte [pci_dev_cnt], cl
 
 	movsd
 	movsd
@@ -318,7 +328,6 @@ pci_add_device:
 		add 	cx, 2
 		cmp 	cx, (__PCIDC_HDR_SIZE - 8)
 		jne 	.loop
-		
 	.done:
 		popa
 		mov 	bp, sp
@@ -349,8 +358,9 @@ pci_init:
 	mov 	si, di
 	stosd
 	stosd
+	stosd
+	stosd
 
-	mov 	dword [si+12], 0x00
 	.loop:
 		call 	pci_config_inw
 		cmp 	ax, 0xFFFF

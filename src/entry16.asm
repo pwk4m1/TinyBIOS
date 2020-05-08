@@ -78,6 +78,7 @@ main:
 	call 	mm_heap_init
 
 	call 	pci_init
+	call 	pci_ide_test
 
 .ata_start:
 
@@ -157,8 +158,10 @@ msg_jump_to_loader:
 
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
+
 %include "src/drivers/pci/pci_core.asm"
 %include "src/drivers/pci/pci_helpers.asm"
+%include "src/drivers/pci/pci_ide.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
