@@ -77,6 +77,34 @@ pci_cmd_write:
 	call 	pci_config_outl
 	jmp 	.done	
 
+; ======================================================================== ;
+; helper functions regarding pci configuration status register
+; 
+; all these require si to point to bus/slot/function/offset structure.
+; [si]     = bus
+; [si+4]   = slot
+; [si+8]   = function
+; [si+12]  = offset
+; 
+; sets ax  = status register content
+; trashes  = high 16 bits of eax
+; ======================================================================== ;
+pci_stat_read:
+	push 	bp
+	mov 	bp, sp
+	push 	ebx
+	mov 	eax, dword [si+12]
+	push 	eax
+	mov 	dword [si+12], 4
+	call 	pci_config_inl
+	shr 	eax, 16
+	pop 	ebx
+	mov 	dword [si+12], ebx
+	pop 	ebx
+	mov 	sp, bp
+	pop 	bp
+	ret
+
 ; The macro below are used to help/ease developing pci driver code.
 ; All of the macros require [si] to be set up as pci_cmd_write needs it to be.
 ;	PCI_CMD(PCI_CMD_XX, ENABLE/DISABLE)
@@ -93,7 +121,18 @@ pci_cmd_write:
 	pop 	cx
 %endmacro
 
-
-
+; Macro to get pci status, sets carry flag if bit is *NOT* set.
+; Usage:
+;	PCI_STAT(PCI_STAT_XXX)
+;
+%macro PCI_STAT 1
+	push 	eax
+	clc
+	call 	pci_stat_read
+	test 	ax, %1
+	jnz 	$ + 2
+	stc
+	pop 	eax
+%endmacro
 
 %endif ; PCI_HELPER

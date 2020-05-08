@@ -48,6 +48,18 @@
 %define PCI_CMD_FBTBE 		0x0200 ; fast back to back enable
 %define PCI_CMD_INT 		0x0400 ; interrupt disable
 
+%define PCI_STAT_INT 		0x0004 ; interrupt status
+%define PCI_STAT_CAPLIST 	0x0008 ; capabilities list 
+%define PCI_STAT_66MHZ_CAP 	0x0010 ; 66MHz capable
+%define PCI_STAT_FBTBE_CAP 	0x0040 ; fast back to back enable capable
+%define PCI_STAT_MDPE 		0x0100 ; master data parity error
+%define PCI_STAT_DEVSEL_TIMING 	0x0200
+%define PCI_STAT_STABRT 	0x0400 ; signaled target abort
+%define PCI_STAT_RTABRT 	0x0800 ; received target abort
+%define PCI_STAT_RMABRT 	0x1000 ; received master abort
+%define PCI_STAT_SIG_SYS_ERR 	0x2000 ; signaled system error
+%define PCI_STAT_DPERR 		0x4000 ; detected parity error_
+
 ; ======================================================================== ;
 ; array used for storing pointers to pci device headers
 ; ======================================================================== ;
