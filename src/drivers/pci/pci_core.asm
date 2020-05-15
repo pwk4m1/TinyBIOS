@@ -35,7 +35,14 @@
 %ifndef PCI_CORE
 %define PCI_CORE
 
-%define __PCIDC_HDR_SIZE 0x9a
+%macro DORET 0
+	popa
+	mov 	sp, bp
+	pop 	bp
+	ret
+%endmacro
+
+%define __PCIDC_HDR_SIZE 32
 
 %define PCI_CMD_IOS 		0x0001 ; io space
 %define PCI_CMD_MS 		0x0002 ; memory space
@@ -323,16 +330,21 @@ pci_add_device:
 	movsd
 	sub 	si, 8
 	xor 	cx, cx
+	; backup original offset
+	mov 	eax, dword [si+12]
+	push 	eax
 	.loop:
 		call 	pci_config_inw
 		stosw
-		add 	word [si+12], 4
+		add 	dword [si+12], 4
 		add 	cx, 2
 		cmp 	cx, (__PCIDC_HDR_SIZE - 8)
 		jne 	.loop
 	.done:
+		pop 	eax
+		mov 	dword [si+12], eax
 		popa
-		mov 	bp, sp
+		mov	sp, bp
 		pop 	bp
 		ret
 	.error_no_memory:
