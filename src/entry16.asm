@@ -74,33 +74,23 @@ main:
 	mov	esi, msg_boot_early
 	call	serial_print
 
-	; let's test malloc
 	call 	mm_heap_init
-
 	call 	pci_init
-	call 	pci_ide_test
 
 .ata_start:
-
 	; check for ATA disks
 	call 	ata_check_disks
+	mov 	si, ata_disk_addr_list
 
-	; read disk info
-	mov	dx, 0x1f0
-	mov	di, 0x2000
-	call	ata_disk_read_info
-
-	mov	dx, 0x1f0
-	mov	di, 0x3000
-	mov	cl, 1
-	mov	bx, LBAPTR
-	call	ata_disk_read
-	jc	.disk_read_fail
-
-	mov	si, 0x3000
-	call	sector_is_multiboot
-	cmp	ax, 1
-	jne	.not_boot_sector
+.find_boot_sector:
+	lodsw
+	test 	ax, ax
+	jz 	.boot_failed_no_bootsector
+	mov 	dx, ax
+	push 	si
+	call 	find_boot_sector
+	pop 	si
+	jc 	.find_boot_sector
 
 	mov	si, msg_bootsector_found
 	call	serial_print
@@ -116,26 +106,21 @@ main:
 .hang:
 	cli
 	hlt
+	jmp 	.hang
 
-.disk_read_fail:
-	mov	si, msg_disk_read_failed
-	call	serial_print
-	mov	ax, dx
-	call	serial_printh
-	jmp	.hang
-
-.not_boot_sector:
-	mov	si, msg_not_boot_sector
-	call	serial_print
-	mov	ax, word [0x3000+510]
-	call	serial_printh
-	jmp	.hang
+.boot_failed_no_bootsector:
+	mov 	si, msg_no_bootsector
+	call 	serial_print
+	jmp 	.hang
 
 LBAPTR:
 	db	0	; bits 32 - 24 
 	db	0	; bits 24 - 16
 	db	0	; bits 16 - 8
 	db	0x01	; bits 8 - 0 
+
+msg_no_bootsector:
+	db "FAILED TO FIND BOOTABLE DISK!", 0x0A, 0x0D, 0
 
 msg_boot_early:
 	db 0x0A, 0x0D, "TinyBIOS "

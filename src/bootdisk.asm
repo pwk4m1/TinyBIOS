@@ -33,6 +33,7 @@
 ; boot disk from MBR (first 512 bytes, ending with AA 55)
 ;
 
+; ======================================================================== ;
 ;
 ; Check if loaded sector contains a MBR signature AA 55.
 ; If so, return:
@@ -43,7 +44,8 @@
 ; Requires:
 ;	si = pointer to loaded sector
 ;
-sector_is_multiboot:
+; ======================================================================== ;
+sector_is_mbr:
 	xor	ax, ax
 	add	si, 510
 	lodsw
@@ -58,22 +60,81 @@ sector_is_multiboot:
 	jmp	.done
 
 
+; ======================================================================== ;
 ;
 ; Load first boot sector from disk to ram
 ;
 ; Requires: SI = pointer to sector in ram
 ; Returns: No.
 ;
+; ======================================================================== ;
 bootsector_to_ram:
-	pusha
+	push 	si
+	push 	di
+	push 	cx
+
 	mov	di, 0x7c00
 	mov	cx, 0x100
-	xor	ax, ax
-	.loop:
-		lodsw
-		stosw
-		loop	.loop
-	popa
+	rep 	movsw
+
+	pop 	cx
+	pop 	di
+	pop 	si
 	ret
 
+; ======================================================================== ;
+; find boot sector from device. 
+; Requires:
+;	dx = disk to check for boot sector
+; Returns:
+;	al = 1 if bootsector was found
+; 	al = 0 if bootsector was not found
+;
+; ======================================================================== ;
+find_boot_sector:
+	push 	bp
+	mov 	bp, sp
+
+	push 	si
+	push 	di
+	push 	dx
+
+	mov	di, 0x2000
+	call	ata_disk_read_info
+
+	pop 	dx
+	mov	di, 0x3000
+	mov	cl, 1
+	mov	bx, LBAPTR
+	call	ata_disk_read
+	jc	.disk_read_fail
+
+	mov	si, 0x3000
+	call	sector_is_mbr
+	cmp	ax, 1
+	jne	.not_boot_sector
+
+.done:
+	pop 	si
+	pop 	di
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+.not_boot_sector:
+	mov	si, msg_not_boot_sector
+	call	serial_print
+	mov	ax, word [0x3000+510]
+	call	serial_printh
+	xor 	ax, ax
+	stc
+	jmp 	.done
+
+.disk_read_fail:
+	mov 	si, msg_disk_read_fail
+	call 	serial_print
+	jmp 	.done
+
+msg_disk_read_fail:
+	db "FAILED TO READ DISK", 0x0A, 0x0D, 0
 

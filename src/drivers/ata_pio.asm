@@ -455,7 +455,7 @@ ata_disk_read_info:
 ; List of ata disk addresses
 ; ======================================================================== ;
 ata_disk_addr_list:
-	times	32 db 0
+	times	16 dw 0
 
 ; ======================================================================== ;
 ; 
@@ -522,22 +522,29 @@ ata_check_disk_by_base:
 		mov	si, ata_msg_disk_found
 		call	serial_print
 		mov	di, ata_disk_addr_list
+		cmp 	word [di], 0
+		je 	.do_store
 
-	; store found disk address to list of disks.
-	.store_addr:
-		cmp	word [di], 0
-		je	.do_store
-		add	di, 2
-		cmp	di, 32 
-		jg	.store_addr
-		mov	si, ata_msg_disk_add_err
-		call	serial_print
-		mov	di, ata_disk_addr_list 
+	.get_free_slot:
+		add 	di, 2
+		cmp 	word [di], 0
+		je 	.do_store
+		sub 	di, ata_disk_addr_list
+		cmp 	si, 8
+		jl 	.disk_add_failed
+		add 	di, ata_disk_addr_list
+		jmp 	.get_free_slot
 
 	; actual storage process after finding slot
 	.do_store:
+		sub 	dx, 7 		; dx is currently base + 7
 		mov	word [di], dx
 		jmp	.done
+	
+	.disk_add_failed:
+		mov 	si, ata_msg_disk_add_err
+		call 	serial_print
+		jmp 	.done
 
 ; ======================================================================== ;
 ;

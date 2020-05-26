@@ -30,5 +30,68 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+%ifndef PCI_IDE
+%define PCI_IDE
 
+; requires:
+; 	si = pointer to current device configuration data
+;
+; returns:
+;	al = 1 if device is ide controller, or
+; 	al = 0 if device is not ide controller
+;
+__pci_device_is_ide:
+	push 	si
+	; get subclass byte
+	add 	si, 11
+	lodsb
+	cmp 	al, 1
+	je 	.ret
+	xor 	al, al
+	.ret:
+		pop 	si
+		ret
 
+pci_ide_test:
+	push 	bp
+	mov 	bp, sp
+	pusha
+
+	mov 	cx, 16
+	mov 	si, pci_dev_ptr_array
+	.loop:
+		lodsw
+		test 	ax, ax
+		jz 	.done
+		push 	si
+		mov 	si, ax
+		add 	si, 8
+		; call 	__pci_dump_header
+		call 	__pci_device_is_ide
+		test 	al, al
+		xor 	ah, ah
+		pop 	si
+		jnz 	.found_pci_ide_controller
+		loop 	.loop
+		jmp 	.done
+	.found_pci_ide_controller:
+		push 	si
+		mov 	si, msg_found_pci_controller
+		call 	serial_print
+		pop 	si
+		loop 	.loop
+	.done:
+		popa
+		mov 	sp, bp
+		pop 	bp
+		ret
+
+	popa
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+msg_found_pci_controller:
+	db "FOUND PCI IDE CONTROLLER", 0x0A, 0x0D, 0
+
+%endif

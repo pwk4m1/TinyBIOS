@@ -336,7 +336,7 @@ pci_add_device:
 	.loop:
 		call 	pci_config_inw
 		stosw
-		add 	dword [si+12], 4
+		add 	dword [si+12], 2
 		add 	cx, 2
 		cmp 	cx, (__PCIDC_HDR_SIZE - 8)
 		jne 	.loop
@@ -380,6 +380,7 @@ pci_init:
 		cmp 	ax, 0xFFFF
 		je 	.get_next_slot
 
+		; print device ID
 		push 	ax
 		push 	si
 		mov 	si, __pci_msg_found_dev_id
@@ -387,6 +388,7 @@ pci_init:
 		call 	serial_printh
 		pop 	si
 		pop 	ax
+
 		call 	pci_add_device
 		jc 	.done
 		mov 	al, byte [pci_dev_cnt]
