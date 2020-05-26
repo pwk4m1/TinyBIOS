@@ -92,9 +92,6 @@ main:
 	pop 	si
 	jc 	.find_boot_sector
 
-	mov	si, msg_bootsector_found
-	call	serial_print
-
 	mov	si, 0x3000
 	call	bootsector_to_ram
 
