@@ -76,6 +76,7 @@ main:
 
 	call 	mm_heap_init
 	call 	pci_init
+	call 	pci_ide_test
 
 .ata_start:
 	; check for ATA disks

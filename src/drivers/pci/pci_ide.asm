@@ -42,12 +42,12 @@
 ;
 __pci_device_is_ide:
 	push 	si
-	; get subclass byte
-	add 	si, 11
-	lodsb
-	cmp 	al, 1
+	; get class/subclass word
+	add 	si, 10
+	lodsw
+	cmp 	ax, 0x0101
 	je 	.ret
-	xor 	al, al
+	xor 	ax, ax
 	.ret:
 		pop 	si
 		ret
