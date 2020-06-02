@@ -762,10 +762,10 @@ ata_msg_bus_unknown_bug:
 	db "ATA BUS UNKNOWN ERROR!", 0x0A, 0x0D, 0
 
 ata_msg_bus_float_bug:
-	db "ATA BUS FAILED, FLOAT AFTER RESET (CONSTANT +5V)!", 0x0A, 0x0D, 0
+	db "ATA BUS FAIL, FLOAT AFTER RESET (CONSTANT +5V)!", 0x0A, 0x0D, 0
 
 ata_msg_bus_floats:
-	db "ATA BUS FLOATS (CONSTANT +5V) !", 0x0A, 0x0D, 0
+	db "ATA BUS FLOATS, NO DISKS CONNECTED TO THIS BUS", 0x0A, 0x0D, 0
 
 ata_msg_disk_timeout:
 	db "ATA DISK IS NOT RESPONDING!", 0x0A, 0x0D, 0
