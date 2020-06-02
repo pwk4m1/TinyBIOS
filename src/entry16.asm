@@ -77,6 +77,7 @@ main:
 	call 	mm_heap_init
 	call 	pci_init
 	call 	pci_ide_test
+	call 	pci_find_vga_dev
 
 .ata_start:
 	; check for ATA disks
@@ -145,6 +146,7 @@ msg_jump_to_loader:
 %include "src/drivers/pci/pci_core.asm"
 %include "src/drivers/pci/pci_helpers.asm"
 %include "src/drivers/pci/pci_ide.asm"
+%include "src/drivers/pci/pci_vga.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
