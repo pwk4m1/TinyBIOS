@@ -71,7 +71,7 @@ main:
 	mov	bp, sp
 
 	; Show a simple bootsplash over serial port
-	mov	esi, msg_boot_early
+	mov	si, msg_boot_early
 	call	serial_print
 
 	call 	mm_heap_init
