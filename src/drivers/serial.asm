@@ -40,22 +40,27 @@
 ;
 ; ======================================================================== ;
 serial_print:
-	push	esi
+	push 	si
 	push	ax
 	push	dx
+	mov 	ax, ds
+	push 	ax
+
+	mov 	ax, 0xf000
+	mov 	ds, ax
 	mov	dx, 0x3F8
 	.print_loop:
-		; can't use lodsb here yet
-		mov	al, byte [esi]
-		inc	esi
+		lodsb
 		test	al, al
 		jz	.done
 		out	dx, al
 		jmp	.print_loop
 	.done:
+		pop 	ax
+		mov 	ds, ax
 		pop	dx
 		pop	ax
-		pop	esi
+		pop 	si
 		ret
 
 ; ======================================================================== ;
