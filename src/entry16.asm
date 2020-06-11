@@ -70,6 +70,7 @@ main:
 	mov	sp, 0x7c00
 	mov	bp, sp
 
+	call 	entry32
 	; Show a simple bootsplash over serial port
 	mov	esi, msg_boot_early
 	call	serial_print
@@ -151,4 +152,5 @@ msg_jump_to_loader:
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
+%include "src/entry32.asm"
 
