@@ -295,6 +295,7 @@ __vga_attrib_out:
 ; 	my sanity.
 ; ======================================================================== ;
 __vga_colo_out:
+	pushf
 	push 	si 		; must not be lost, or we can't free() it
 	push 	cx
 	push 	bx
@@ -353,7 +354,7 @@ __vga_colo_out:
 	pop 	bx
 	pop 	cx
 	pop 	si
-	sti
+	popf
 	ret
 
 .dac_state_error:
@@ -378,6 +379,7 @@ __vga_colo_out:
 ;  	each read.. cl += 1 means di size += 3
 ;
 __vga_colo_in:
+	pushf
 	push 	di
 	push 	bx
 	push 	cx
@@ -422,12 +424,12 @@ __vga_colo_in:
 	mov 	dx, 0x03C7
 	out 	dx, al
 .ret:
-	sti
 	pop 	ax
 	pop 	dx
 	pop 	cx
 	pop 	bx
 	pop 	di
+	popf
 	ret
 .dac_state_error:
 	mov 	si, msg_dac_state_error
