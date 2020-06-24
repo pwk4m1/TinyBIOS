@@ -251,9 +251,9 @@ __vga_attrib_out:
 ; 	2.) Read PEL Address write mode reg for use in step 8 too
 ; 	3.) Output the value of 1st color entry to be read to PEL
 ; 	    address read mode register
-; 	4.) Read PEL Data reg for Red
-; 	5.) Read PEL Data reg for Green
-; 	6.) Read ...          for Blue
+; 	4.) Read PEL Data reg for Red 		( or write )
+; 	5.) Read PEL Data reg for Green 	( or write )
+; 	6.) Read ...          for Blue 		( or write )
 ; 	7.) If more colors are to be read, repeat from step 4
 ; 	8.) Based upon the DAC state from step 1:
 ; 		- Write the value saved in step 2 to either PEL 
@@ -264,9 +264,20 @@ __vga_attrib_out:
 ;
 ; There apparently is no way to guarantee that state is preserved,
 ; and some implementations guarantee that the state is never preserved
+;
+; notes:
+;	To write to valette, output palette entry to PEL Addr write mode reg,
+; 	then otuput all to PEL data register in RGB order
+;
+; 	registers;
+;		* PEL Address Write Mode Register 0x03C8
+; 		* PEL Data register 0x03C9
+; 		* PEL Address Read Mode Register 0x03C7
+; 		* DAC state register 0x03C7
 ; 
 ; Requires:
-; 	al = First color entry for PEL addr read mode register
+; 	al = first color entry to be read
+; 	si = pointer where from to read RGB values
 ; 	cl = amount of RGB iterations to read
 ; Returns:
 ; 	al = value saved in step 2, which has now been written to PEL 
@@ -275,22 +286,28 @@ __vga_attrib_out:
 ; 	my sanity.
 ; ======================================================================== ;
 __vga_colo_out:
-	push 	dx
-	push 	bx
-	push 	ax
+	push 	si 		; must not be lost, or we can't free() it
 	push 	cx
+	push 	bx
+	push 	dx
+	push 	ax
 
 	; step 1
-	mov 	dx, 0x03C7 	; dac state
-	in 	al, dx
-	mov 	bl, al
+	mov 	dx, 0x03C7
+	in 	al, dx 		; DAC state
+	mov 	bl, al 		; store it to bl to use later
 
 	; step 2
-	mov 	dx, 0x03C8 	; PEL addr write mode
-	in 	al, dx
-	mov 	bh, al
+	inc 	dx
+	in 	al, dx 		; PEL Addr write mode reg
+	mov 	bh, al 		; store it to bh to use later
 
 	; step 3
+	pop 	ax
+	dec 	dx
+	out 	dx, al
+
+	; 
 
 
 
