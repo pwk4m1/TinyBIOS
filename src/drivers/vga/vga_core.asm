@@ -280,8 +280,7 @@ __vga_attrib_out:
 ; 	si = pointer where from to read RGB values
 ; 	cl = amount of RGB iterations to read
 ; Returns:
-; 	al = value saved in step 2, which has now been written to PEL 
-; 		read or write register
+; 	nothing.
 ; Trashes:
 ; 	my sanity.
 ; ======================================================================== ;
@@ -290,6 +289,7 @@ __vga_colo_out:
 	push 	cx
 	push 	bx
 	push 	dx
+	push 	ax
 	push 	ax
 
 	; afaik DAC read/write operations should be performed with
@@ -319,7 +319,7 @@ __vga_colo_out:
 	out 	dx, al
 
 	; step 4 - 7
-	mov 	dx, 0x03C9
+	add 	dx, 2
 	rep 	outsb 		; output from si to dx, cl times
 
 	; step 8
@@ -338,6 +338,7 @@ __vga_colo_out:
 	mov 	dx, 0x03C9
 	out 	dx, al
 .ret:
+	pop 	ax
 	pop 	dx
 	pop 	bx
 	pop 	cx
@@ -347,6 +348,77 @@ __vga_colo_out:
 
 .dac_state_error:
 	; State failed, gee,
+	mov 	si, msg_dac_state_error
+	call 	serial_print
+	jmp 	.ret
+
+; Implement vga color register read instead of reading, this works pretty
+; much as writes, which is nice :) 
+; 
+; In the end this wasn't as bad as I thought, it was pretty nice actually.
+;
+; Arguments:
+; 	al = first color entry to read
+; 	di = pointer to memory where to write data read from PEL
+; 	cl = amount of RGB values to read
+; Returns:
+; 	nothing
+; Warnings:
+; 	Remember to allocate enough space for RGB data, you need 3 bytes for
+;  	each read.. cl += 1 means di size += 3
+;
+__vga_colo_in:
+	push 	di
+	push 	bx
+	push 	cx
+	push 	dx
+	push 	ax
+	push 	ax
+
+	cli
+	
+	; step 1
+	mov 	dx, 0x03C7
+	in 	al, dx
+	mov 	bl, al
+
+	; step 2
+	inc 	dx
+	in 	al, dx
+	mov 	bh, al
+
+	; step 3
+	pop 	ax
+	dec 	dx
+	out 	dx, al
+
+	; step 4 - 7
+	add 	dx, 2
+	rep 	insb
+
+	; step 8
+	mov 	al, bh
+	test 	bl, bl
+	jz 	.dac_read_mode
+
+	cmp 	bl, 3
+	jne 	.dac_state_error
+	
+	mov 	dx, 0x03C8
+	out 	dx, al
+	jmp 	.ret
+
+.dac_read_mode:
+	mov 	dx, 0x03C7
+	out 	dx, al
+.ret:
+	pop 	ax
+	pop 	dx
+	pop 	cx
+	pop 	bx
+	pop 	di
+	ret
+.dac_state_error:
 	mov 	si, msg_dac_state_error
 	call 	serial_print
 	jmp 	.ret
