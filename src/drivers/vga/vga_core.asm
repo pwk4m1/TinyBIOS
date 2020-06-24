@@ -76,7 +76,9 @@ __vgac_sgcr_in:
 
 	; step 2
 	pop 	ax
-	out 	dx, ah
+	rol 	ax, 8
+	out 	dx, al
+	rol 	ax, 8
 
 	; step 3
 	inc 	dx
@@ -85,7 +87,9 @@ __vgac_sgcr_in:
 	; step 6
 	dec 	dx
 	mov 	ah, bl
-	out 	dx, ah
+	rol 	ax, 8
+	out 	dx, al
+	rol 	ax, 8
 	pop 	bx
 	pop 	dx
 	ret
@@ -103,7 +107,9 @@ __vgac_sgcr_out:
 
 	; step 2
 	pop 	ax
-	out 	dx, ah
+	rol 	ax, 8
+	out 	dx, al
+	rol 	ax, 8
 
 	; step 3
 	inc 	dx
@@ -176,7 +182,9 @@ __vga_attrib_in:
 
 	; step 3
 	pop 	ax
-	out 	dx, ah
+	rol 	ax, 8
+	out 	dx, al
+	rol 	ax, 8
 
 	; step 4
 	inc 	dx
@@ -213,7 +221,9 @@ __vga_attrib_out:
 
 	; step 3
 	pop 	ax
-	out 	dx, ah
+	rol 	ax, 8
+	out 	dx, al
+	rol 	ax, 8
 
 	; step 4
 	inc 	dx 	; almost forgot this lol
