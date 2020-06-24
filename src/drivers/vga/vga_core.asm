@@ -292,6 +292,14 @@ __vga_colo_out:
 	push 	dx
 	push 	ax
 
+	; afaik DAC read/write operations should be performed with
+	; interrupts disabled
+	cli
+
+	; Now, this is slightly confusing, according to FreeVGA/vga/vgadac.htm
+	; the DAC State filed is totally useless, but still I should save the
+	; state field, and based on that I have to perform final write oper..
+	; I don't really get how should this work, really? What?
 	; step 1
 	mov 	dx, 0x03C7
 	in 	al, dx 		; DAC state
@@ -307,7 +315,11 @@ __vga_colo_out:
 	dec 	dx
 	out 	dx, al
 
-	; 
+	; step 4 - 7
+	mov 	dx, 0x03C9
+	rep 	outsb 		; output from si to dx, cl times
+
+	; step 8
 
 
 
