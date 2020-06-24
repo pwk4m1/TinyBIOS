@@ -33,76 +33,265 @@
 %ifndef VGA_CORE
 %define VGA_CORE
 
-%define VGA_CR_INDEX 		0x03B4 ; crtc controller address
-%define VGA_CR_DATA		0x03B5 ; crtc controller data
+; http://www.osdever.net/FreeVGA/vga/vgareg.htm#general
+; http://www.osdever.net/FreeVGA/vga/graphreg.htm#06
+; http://www.osdever.net/FreeVGA/vga/extreg.htm#3CCR3C2W
+; http://www.osdever.net/FreeVGA/vga/graphreg.htm#05
+; http://www.osdever.net/FreeVGA/vga/vgamem.htm
+; http://www.osdever.net/FreeVGA/vga/vga.htm#general
 
-%define VGA_IN_STATUS_1_R	0x03BA ; input status #1
-%define VGA_FEATURE_CTL_W 	0x03BA ; feature control
-
-%define VGA_ATTRIB_INDEX 	0x03C0
-%define VGA_ATTRIB_DATA 	0x03C1
-
-%define VGA_IN_STATUS_0_R 	0x03C2 ; input status #0
-%define VGA_MISC_OUT_W 		0x03C2 ; miscellaneous output
-
-%define VGA_ENABLE 		0x03C3
-
-%define VGA_SEQ_INDEX 		0x03C4 ; sequencer index & data
-%define VGA_SEQ_DATA 		0x03C5
-
-%define VGA_DAC_STATE_R		0x03C7
-%define VGA_DAC_INDEX_RMODE_W	0x03C7
-
-%define VGA_GC_INDEX 		0x03CE ; graphics controller address
-%define VGA_GC_DATA 		0x03CF ; graphics controller data
-
-%define VGA_CR_INDEX_HI 	0x03D4 ; CRTC Controller address
-%define VGA_CR_DATA_HI 		0x03D5 ; CRTC Controller data
-
-%define VGA_INPUT_STATUS_HI_R 	0x03DA
-%define VGA_FEATURE_CTL_HI_W 	0x03DA
-
-; read vga enable register content to al
-__vga_enable_read:
-	push 	dx
-	mov 	dx, VGA_ENABLE
-	in 	al, dx
-	pop 	dx
-	ret
-
-; write vga enable register value from al
-__vga_enable_write:
-	push 	dx
-	mov 	dx, VGA_ENABLE
-	out 	dx, al
-	pop 	dx
-	ret
-
-; enable vga mask, requires:
-;	mask at bh
-;	value at bl
+; ======================================================================== ;
+; Following function implements access to sequencer, graphics and crtc
 ;
-__vga_enable_mask:
-	push 	bp
-	mov 	bp, sp
-
+; All registers are 8 bits wide, reads return byte to al, writes require
+; byte to write in al.
+;
+; Both reads and writes require index at ah
+;
+; Accessing works as follows:
+;	1.) Input the value of address register and save it
+; 	2.) Output the index to the address regsiter
+; 	3.) Read original value from data register
+;	4.) If writing, modify original data
+;	5.) If writing, output the modified data
+; 	6.) Output original address register value back to addr register
+;
+; Requires:
+; 	al = data to write
+; 	ah = index to use
+; Returns:
+; 	al = data read
+; Trashes:
+; 	ah
+; ======================================================================== ;
+__vgac_sgcr_in:
+	push 	dx
+	push 	bx
 	push 	ax
-	push 	bx
-	push 	bx
-	call 	__vga_enable_read
-	not 	bh
-	and 	al, bh
-	pop 	bx
-	and 	bl, bh
-	or 	al, bl
-	call 	__vga_enable_write
-	pop 	bx
-	pop 	ax
 
-	mov 	sp, bp
-	pop 	bp
+	; step 1
+	mov 	dx, 0x03CE
+	in 	al, dx
+	mov 	bl, al
+
+	; step 2
+	pop 	ax
+	out 	dx, ah
+
+	; step 3
+	inc 	dx
+	in 	al, dx
+
+	; step 6
+	dec 	dx
+	mov 	ah, bl
+	out 	dx, ah
+	pop 	bx
+	pop 	dx
 	ret
-	
+
+__vgac_sgcr_out:
+	push 	dx
+	push 	bx
+	push 	ax
+	push 	ax
+
+	; step 1
+	mov 	dx, 0x03CE
+	in 	al, dx
+	mov 	bl, al
+
+	; step 2
+	pop 	ax
+	out 	dx, ah
+
+	; step 3
+	inc 	dx
+	mov 	ah, al
+	in 	al, dx
+
+	; step 4
+	or 	al, ah
+	mov 	al, ah
+
+	; step 5
+	out 	dx, al
+
+	; step 6
+	mov 	al, bl
+	dec 	dx
+	out 	dx, al
+	pop 	ax
+	pop 	bx
+	pop 	dx
+	ret
+
+; ======================================================================== ;
+; Following function implements access to vga attribute registers.
+; All of the documentation regarding accessing seq, graph & crtc regs
+; holds pretty much true here too. 
+;
+; However, these functions, even if they have exactly same argument & 
+; return value usages, are different. Both work in indexed manner yes, but
+; well, just see for yourself:
+;
+; 	- Address register is R/W 0x3C0
+; 	- Data register is: Read at 0x3C1, write to 0x3C0 (weird..)
+; 	- Every 2nd write is address, every 2nd is data... internal
+; 	  flipflop keeps track of this on vga end, we have to do tricks to
+; 	  do the same here..
+; Steps:
+; 	1.) Input a value from the Input Status #1 register (0x3DA), and 
+; 	    discard it.
+; 	2.) Input the value of Address/Data register 0x3C0, and save it.
+; 	3.) Output the index
+; 	4.) Input the value of data register
+; 	5.) If writing, modify data from step 4
+; 	6.) If writing, output data
+; 	7.) Write the value of address register saved in step 1
+; 	8.) Input value from Input Status #1 to leave vga end to
+; 	    index state
+;
+; Arguments:
+; 	ah = index
+; 	al = output data
+; Return value:
+; 	al = data read
+; Trashes:
+; 	ah
+; ======================================================================== ;
+__vga_attrib_in:
+	push 	dx
+	push 	bx
+	push 	ax
+
+	; step 1
+	mov 	dx, 0x03DA
+	in 	al, dx
+
+	; step 2
+	mov 	dx, 0x03C0
+	in 	al, dx
+	mov 	bl, al
+
+	; step 3
+	pop 	ax
+	out 	dx, ah
+
+	; step 4
+	inc 	dx
+	in 	al, dx
+
+	; step 7
+	mov 	ah, al
+	mov 	al, bl
+	dec 	dx
+	out 	dx, al
+
+	; step 8
+	mov 	dx, 0x03DA
+	in 	al, dx
+	mov 	al, bl
+	pop 	bx
+	pop 	dx
+	ret
+
+__vga_attrib_out:
+	push 	dx
+	push 	bx
+	push 	ax
+	push 	ax
+
+	; step 1
+	mov 	dx, 0x03DA
+	in 	al, dx
+
+	; step 2
+	mov 	dx, 0x03C0
+	in 	al, dx
+	mov 	bl, al
+
+	; step 3
+	pop 	ax
+	out 	dx, ah
+
+	; step 4
+	inc 	dx 	; almost forgot this lol
+	mov 	ah, al
+	in 	al, dx
+
+	; step 5 & 6
+	dec 	dx
+	or 	al, ah
+	out 	dx, al
+
+	; step 7
+	mov 	al, bl
+	out 	dx, al
+
+	; step 8
+	mov 	dx, 0x03DA
+	in 	al, dx
+
+	pop 	ax
+	pop 	bx
+	pop 	dx
+	ret
+
+; ======================================================================== ;
+; These functions implement access to vga color registers. 
+; Sadly, this is totally different technique, but oh well, that's why I'm
+; writing these abstractions... So there would be no need to ever think
+; about how this works again :D
+;
+; Jk jk I'm having fun.
+;
+; Anyway, steps:
+; 	1.) Read DAC State reg and save the value, to be used in step 8
+; 	2.) Read PEL Address write mode reg for use in step 8 too
+; 	3.) Output the value of 1st color entry to be read to PEL
+; 	    address read mode register
+; 	4.) Read PEL Data reg for Red
+; 	5.) Read PEL Data reg for Green
+; 	6.) Read ...          for Blue
+; 	7.) If more colors are to be read, repeat from step 4
+; 	8.) Based upon the DAC state from step 1:
+; 		- Write the value saved in step 2 to either PEL 
+; 		  address write mode register or
+; 		- Write to PEL Address read mode reg
+; Note copied from FreeVGA aswell:
+; 	Steps 1, 2, and 8 are hopelessly optimistic,, oh boy....
+;
+; There apparently is no way to guarantee that state is preserved,
+; and some implementations guarantee that the state is never preserved
+; 
+; Requires:
+; 	al = First color entry for PEL addr read mode register
+; 	cl = amount of RGB iterations to read
+; Returns:
+; 	al = value saved in step 2, which has now been written to PEL 
+; 		read or write register
+; Trashes:
+; 	my sanity.
+; ======================================================================== ;
+__vga_colo_out:
+	push 	dx
+	push 	bx
+	push 	ax
+	push 	cx
+
+	; step 1
+	mov 	dx, 0x03C7 	; dac state
+	in 	al, dx
+	mov 	bl, al
+
+	; step 2
+	mov 	dx, 0x03C8 	; PEL addr write mode
+	in 	al, dx
+	mov 	bh, al
+
+	; step 3
+
 
 
 %endif
