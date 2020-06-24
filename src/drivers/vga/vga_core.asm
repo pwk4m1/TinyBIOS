@@ -422,6 +422,7 @@ __vga_colo_in:
 	mov 	dx, 0x03C7
 	out 	dx, al
 .ret:
+	sti
 	pop 	ax
 	pop 	dx
 	pop 	cx
