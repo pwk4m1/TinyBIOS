@@ -300,6 +300,9 @@ __vga_colo_out:
 	; the DAC State filed is totally useless, but still I should save the
 	; state field, and based on that I have to perform final write oper..
 	; I don't really get how should this work, really? What?
+	; 
+	; Anyway, *IF* DAC state work, then 00 = read, 11 = write
+
 	; step 1
 	mov 	dx, 0x03C7
 	in 	al, dx 		; DAC state
@@ -320,7 +323,37 @@ __vga_colo_out:
 	rep 	outsb 		; output from si to dx, cl times
 
 	; step 8
+	mov 	al, bh
+	test 	bl, bl
+	jz 	.dac_read_mode
+
+	cmp 	bl, 3 	; binary 11
+	jne 	.dac_state_error
+
+	mov 	dx, 0x03C8
+	out 	dx, al
+
+	jmp 	.ret
+.dac_read_mode:
+	mov 	dx, 0x03C9
+	out 	dx, al
+.ret:
+	pop 	dx
+	pop 	bx
+	pop 	cx
+	pop 	si
+	sti
+	ret
+
+.dac_state_error:
+	; State failed, gee,
+	mov 	si, msg_dac_state_error
+	call 	serial_print
+	jmp 	.ret
 
 
+
+msg_dac_state_error:
+	db "UNEXPECTED DAC STATE VALUE (NOT 00 OR 11) !", 0x0A, 0x0D, 0
 
 %endif
