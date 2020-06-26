@@ -56,12 +56,11 @@ pci_find_vga_dev:
 	jz 	.not_found
 	push 	si
 	mov 	si, ax
-	add 	si, 10 	; point to class/subclass
+	add 	si, 18 	; point to class/subclass
 	lodsw
 	pop 	si
 	cmp 	ah, 0x03 ; video/graphics device
 	jne 	.loop_start
-
 	sub 	si, 2
 	mov 	si, word [si]
 .done:
