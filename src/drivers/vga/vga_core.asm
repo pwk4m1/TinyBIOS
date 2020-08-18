@@ -76,20 +76,20 @@ __vgac_sgcr_in:
 
 	; step 2
 	pop 	ax
-	rol 	ax, 8
+	xchg 	al, ah
 	out 	dx, al
-	rol 	ax, 8
+	xchg 	al, ah
 
 	; step 3
 	inc 	dx
+	xchg 	al, ah
 	in 	al, dx
+	xchg 	al, ah
 
 	; step 6
 	dec 	dx
 	mov 	ah, bl
-	rol 	ax, 8
 	out 	dx, al
-	rol 	ax, 8
 	pop 	bx
 	pop 	dx
 	ret
@@ -107,9 +107,8 @@ __vgac_sgcr_out:
 
 	; step 2
 	pop 	ax
-	rol 	ax, 8
+	push 	ax
 	out 	dx, al
-	rol 	ax, 8
 
 	; step 3
 	inc 	dx
@@ -127,6 +126,7 @@ __vgac_sgcr_out:
 	mov 	al, bl
 	dec 	dx
 	out 	dx, al
+	pop 	ax
 	pop 	ax
 	pop 	bx
 	pop 	dx
@@ -182,9 +182,9 @@ __vga_attrib_in:
 
 	; step 3
 	pop 	ax
-	rol 	ax, 8
+	xchg 	al, ah
 	out 	dx, al
-	rol 	ax, 8
+	xchg 	al, ah
 
 	; step 4
 	inc 	dx
@@ -221,9 +221,8 @@ __vga_attrib_out:
 
 	; step 3
 	pop 	ax
-	rol 	ax, 8
+	push 	ax
 	out 	dx, al
-	rol 	ax, 8
 
 	; step 4
 	inc 	dx 	; almost forgot this lol
@@ -243,6 +242,7 @@ __vga_attrib_out:
 	mov 	dx, 0x03DA
 	in 	al, dx
 
+	pop 	ax
 	pop 	ax
 	pop 	bx
 	pop 	dx
@@ -416,7 +416,7 @@ __vga_colo_in:
 	cmp 	bl, 3
 	jne 	.dac_state_error
 	
-	mov 	dx, 0x03C8
+	dec 	dx
 	out 	dx, al
 	jmp 	.ret
 
@@ -435,8 +435,6 @@ __vga_colo_in:
 	mov 	si, msg_dac_state_error
 	call 	serial_print
 	jmp 	.ret
-
-
 
 msg_dac_state_error:
 	db "UNEXPECTED DAC STATE VALUE (NOT 00 OR 11) !", 0x0A, 0x0D, 0
