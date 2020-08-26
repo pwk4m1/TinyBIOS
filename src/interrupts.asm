@@ -99,6 +99,75 @@ remap_pic:
 	mov 	dx, PIC2_DATA
 	call 	__pic_out
 
+; ========================================================================== ;
+; Functions to set and clear IRQ masks. 
+; If a request line is masked, interrupt request from line is  ignored.
+; If IRQ2 is masked, secondary PIC stops raising IRQs.
+;
+; Both functions require al to be IRQLine to mask.
+;
+
+; helper function to check if line is for primary or secondary PIC
+; sets dx = PIC1 if primary, or PIC2 if secondary.
+; if secondary PIC is used, line -= 8.
+__pic_set_regs_by_line:
+	mov 	dx, PIC1_DATA
+	cmp 	al, 8
+	jl 	.done
+	sub 	al, 8
+	mov 	dx, PIC2_DATA
+.done:
+	ret
+
+; Mask IRQ Line from al
+set_irq_mask:
+	push 	bp
+	mov 	bp, sp
+
+	push 	dx
+	push 	ax
+
+	call 	__pic_set_regs_by_line
+
+	; we first read Interrupt Mask register, then we set
+	; our IRQ line to 1 from result, and finally write new mask back.
+	mov 	ah, al
+	in 	al, dx
+	shl 	ah, 1
+	or 	al, ah
+	out 	dx, al
+	
+	pop 	ax
+	pop 	dx
+
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+; remove/unmask IRQ Line from al
+clear_irq_mask:
+	push 	bp
+	mov 	bp, sp
+
+	push 	dx
+	push 	ax
+
+	call 	__pic_set_regs_by_line
+
+	; as above, read IMR, then clear IRQ line, and write mask back
+	mov 	ah, al
+	in 	al, dx
+	shl 	ah, 1
+	not 	ah
+	and 	al, ah
+	out 	dx, al
+	
+	pop 	ax
+	pop 	dx
+
+	mov 	sp, bp
+	pop 	bp
+	ret
 
 ; ========================================================================== ;
 ; Functionality related to generic interrupt handling / management.
@@ -121,4 +190,6 @@ EOI_secondary:
 	out 	0x20, al
 	pop 	ax
 	ret
+
+
 
