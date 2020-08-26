@@ -42,6 +42,12 @@
 ; 	  "proper" handlers. Rest willl get generic EOI.
 
 ; ========================================================================== ;
+; Reserved space for our IDT
+;
+IDT:
+	times 	(256 * 8) db 0
+
+; ========================================================================== ;
 ; Simple output function for sending data for PIC.
 ;
 ; Requires:
@@ -53,51 +59,10 @@ __pic_out:
 	times 	5 db 0x90 	; 5 nops of delay
 	ret
 
-; ========================================================================== ;
-; Following code remaps 8259 Programmable Interrupt Controller.
-;
 %define PIC1_CMD 	0x20
 %define PIC1_DATA 	0x21
 %define PIC2_COMMAND 	0xA0
 %define PIC2_DATA 	0xA1
-
-remap_pic:
-	mov 	dx, PIC1_COMMAND
-	mov 	al, 0x11 		; ICW1 Initializion + icw4
-	call 	__pic_out
-
-	mov 	dx, PIC2_COMMAND
-	call 	__pic_out
-
-	mov 	al, 0x20 		; primary offset
-	mov 	dx, PIC1_DATA
-	call 	__pic_out
-	
-	add 	al, 0x08 		; secondary offset
-	mov 	dx, PIC2_DATA
-	call 	__pic_out
-
-	mov 	al, 0x04 		; secondary pic at irq2 (0000 0100)
-	mov 	dx, PIC1_DATA
-	call 	__pic_out
-
-	mov  	al, 2 			; secondary pic cascade identity
-	mov 	dx, PIC2_DATA
-	call 	__pic_out
-
-	mov 	al, 0x01 		; 8086/88 mode
-	mov 	dx, PIC1_DATA
-	call 	__pic_out
-
-	mov 	dx, PIC2_DATA
-	call 	__pic_out
-
-	xor 	al, al 			; set mask to 0
-	mov 	dx, PIC1_DATA
-	call 	__pic_out
-
-	mov 	dx, PIC2_DATA
-	call 	__pic_out
 
 ; ========================================================================== ;
 ; Functions to set and clear IRQ masks. 
@@ -191,5 +156,36 @@ EOI_secondary:
 	pop 	ax
 	ret
 
+; Fill IDT with EOI function pointers, even though *all* unused ints should be
+; masked away, I want to be sure to not get random crashes due INT# jumping to
+; addr 0.
+__fill_idt_with_eoi:
+	pusha
+	; there are 8 interrupt lines on both primary and secondary 
+	; PICs. As long as I set EOI 'handlers' for all those, we should
+	; be all good.
+	mov 	cl, 8 ; set primary handlers
+	mov 	di, IDT
+	mov 	bx, EOI_primary
+	.loop_setup:
+		mov 	ax, cs 			; get code segment
+		mov 	word [di], bx 		; handler address low bits
+		add 	di, 2
+		stosw 	 			; code segment
+		xor 	ax, ax
+		stosb 				; zero
+		mov 	byte [di], 0x8e 	; interrupt gate
+		inc 	di
+		stosw 				; addr high bits
+		loop 	.loop_pri
+	
+	cmp 	bx, EOI_secondary
+	je 	.done
+	mov 	bx, EOI_secondary
+	mov 	cl, 8
+	jmp 	.loop_setup
+.done:
+	popa
+	ret
 
-
+	
