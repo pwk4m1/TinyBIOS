@@ -61,7 +61,7 @@ __pic_out:
 
 %define PIC1_CMD 	0x20
 %define PIC1_DATA 	0x21
-%define PIC2_COMMAND 	0xA0
+%define PIC2_CMD 	0xA0
 %define PIC2_DATA 	0xA1
 
 ; ========================================================================== ;
@@ -132,6 +132,25 @@ clear_irq_mask:
 
 	mov 	sp, bp
 	pop 	bp
+	ret
+
+; ========================================================================== ;
+; Functions to get ISR/IRR data
+;
+; Return ISR value in ax
+pic_get_isr:
+	push 	dx
+
+	mov 	dx, PIC1_CMD
+	mov 	al, 0x0b 	; read ISR command
+	out 	dx, al
+	mov 	dx, PIC2_CMD
+	out 	dx, al
+	in 	al, PIC2_CMD
+	shl 	ax, 8
+	in 	al, PIC1_CMD
+
+	pop 	dx
 	ret
 
 ; ========================================================================== ;
