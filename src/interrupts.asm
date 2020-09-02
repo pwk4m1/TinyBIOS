@@ -137,12 +137,15 @@ clear_irq_mask:
 ; ========================================================================== ;
 ; Functions to get ISR/IRR data
 ;
+; Requires command to be in al
+; Accepted commands:
+; 	al = 0x0A, get IRR
+; 	al = 0x0B, get ISR
 ; Return ISR value in ax
-pic_get_isr:
+pic_get_irq_reg:
 	push 	dx
 
 	mov 	dx, PIC1_CMD
-	mov 	al, 0x0b 	; read ISR command
 	out 	dx, al
 	mov 	dx, PIC2_CMD
 	out 	dx, al
@@ -152,6 +155,7 @@ pic_get_isr:
 
 	pop 	dx
 	ret
+
 
 ; ========================================================================== ;
 ; Functionality related to generic interrupt handling / management.
