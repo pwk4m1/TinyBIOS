@@ -179,6 +179,36 @@ EOI_secondary:
 	pop 	ax
 	ret
 
+
+; Function to handle IRQ#7, as that might be 'spurious'. Basicly this means
+; that for any reason what so ever, after PIC notified CPU about interrupt, 
+; the interrupt was cleared (Simple race condition, kinda..). So now we're in
+; a situation where CPU asks for int from pic, pic replies w/ int#7, but 
+; doesn't set register values.
+; 
+; NOTE: We *must* not send EOI on spurious int
+;
+; sets carry flag if int was 'spurious'
+;
+check_int7:
+	push 	bp
+	mov 	bp, sp
+
+	clc
+	push 	ax
+	mov 	al, 0x0B 	; read ISR
+	call 	pic_get_irq_reg
+	test 	ax, 7 		; check if IRQ#7 is set
+	jnz 	.done
+	stc 			; if it is, set carry flag
+.done:
+	pop 	ax
+	mov 	sp, bp
+	ret
+
+
+
+
 ; Fill IDT with EOI function pointers, even though *all* unused ints should be
 ; masked away, I want to be sure to not get random crashes due INT# jumping to
 ; addr 0.
