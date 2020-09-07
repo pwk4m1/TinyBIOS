@@ -79,6 +79,9 @@ main:
 	call 	pci_ide_test
 	call 	pci_find_vga_dev
 
+	; test for ES
+	call 	__fill_idt_with_eoi
+
 .ata_start:
 	; check for ATA disks
 	call 	ata_check_disks
@@ -153,4 +156,5 @@ msg_jump_to_loader:
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
+%include "src/interrupts.asm"
 

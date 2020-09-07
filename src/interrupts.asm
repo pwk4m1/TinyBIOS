@@ -214,6 +214,14 @@ check_int7:
 ; addr 0.
 __fill_idt_with_eoi:
 	pusha
+
+	; first, we need to setup ES to point to ROM 
+	; or di doesn't work for us.
+	mov 	ax, es
+	push 	ax
+	mov 	ax, cs 	; cs points here :)
+	mov 	es, ax
+
 	; there are 8 interrupt lines on both primary and secondary 
 	; PICs. As long as I set EOI 'handlers' for all those, we should
 	; be all good.
@@ -230,7 +238,7 @@ __fill_idt_with_eoi:
 		mov 	byte [di], 0x8e 	; interrupt gate
 		inc 	di
 		stosw 				; addr high bits
-		loop 	.loop_pri
+		loop 	.loop_setup
 	
 	cmp 	bx, EOI_secondary
 	je 	.done
@@ -238,7 +246,8 @@ __fill_idt_with_eoi:
 	mov 	cl, 8
 	jmp 	.loop_setup
 .done:
+	pop 	ax
+	mov 	es, ax
 	popa
 	ret
 
-	
