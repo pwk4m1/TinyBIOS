@@ -11,7 +11,7 @@ install:
 	$(as) $(asflags) -o bin/bios src/reset.asm
 
 test:
-	qemu-system-x86_64 -serial stdio -bios bin/bios \
+	qemu-system-x86_64 -bios bin/bios \
 	    -hda test_disk 
 
 test-tty:

@@ -74,13 +74,15 @@ main:
 	mov	si, msg_boot_early
 	call	serial_print
 
+	; we first init our 'heap', and then use malloc() to 
+	; allocate space for gdt & idt
 	call 	mm_heap_init
+	call 	setup_gdt
+	call 	load_idt
+
 	call 	pci_init
 	call 	pci_ide_test
 	call 	pci_find_vga_dev
-
-	; test for ES
-	call 	__fill_idt_with_eoi
 
 .ata_start:
 	; check for ATA disks
@@ -157,4 +159,5 @@ msg_jump_to_loader:
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
 %include "src/interrupts.asm"
+%include "src/gdt.asm"
 

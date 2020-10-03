@@ -41,213 +41,83 @@
 ; 	- Only those devices that we're actually using are granted
 ; 	  "proper" handlers. Rest willl get generic EOI.
 
-; ========================================================================== ;
-; Reserved space for our IDT
-;
-IDT:
-	times 	(256 * 8) db 0
+; pointer for idt, I store it here so I don't need to get it from idtr
+; all the time..
+IDT_PTR:
+	dw 	0
 
-; ========================================================================== ;
-; Simple output function for sending data for PIC.
+; **************************************************************************** 
+; First, here are some helper functions used for allocating stuff, 
+; talking w/ chips, etc..
 ;
+alloc_idt_ptr:
+	push 	cx
+	push 	di
+
+	mov 	cx, (256 * 8)
+	call 	malloc
+	mov 	word [IDT_PTR], di
+
+	pop 	di
+	pop 	cx
+	ret
+
+; set handler entry to idt. 
 ; Requires:
-;	dx = port
-; 	al = data
+; 	cx = current offset in idt
+; 	ax = offset to irq handler.
 ;
-__pic_out:
-	out 	dx, al
-	times 	5 db 0x90 	; 5 nops of delay
-	ret
-
-%define PIC1_CMD 	0x20
-%define PIC1_DATA 	0x21
-%define PIC2_CMD 	0xA0
-%define PIC2_DATA 	0xA1
-
-; ========================================================================== ;
-; Functions to set and clear IRQ masks. 
-; If a request line is masked, interrupt request from line is  ignored.
-; If IRQ2 is masked, secondary PIC stops raising IRQs.
+; Do note, that ax needs to be _offset_. All handlers are to be located
+; within ROM region, (segment being F, so handlers are in F:0000-F:FFFF)
 ;
-; Both functions require al to be IRQLine to mask.
-;
-
-; helper function to check if line is for primary or secondary PIC
-; sets dx = PIC1 if primary, or PIC2 if secondary.
-; if secondary PIC is used, line -= 8.
-__pic_set_regs_by_line:
-	mov 	dx, PIC1_DATA
-	cmp 	al, 8
-	jl 	.done
-	sub 	al, 8
-	mov 	dx, PIC2_DATA
-.done:
-	ret
-
-; Mask IRQ Line from al
-set_irq_mask:
-	push 	bp
-	mov 	bp, sp
-
-	push 	dx
+set_irq_handler_entry:
+	push 	di
 	push 	ax
 
-	call 	__pic_set_regs_by_line
+	mov 	di, word [IDT_PTR]
+	add 	di, cx
 
-	; we first read Interrupt Mask register, then we set
-	; our IRQ line to 1 from result, and finally write new mask back.
-	mov 	ah, al
-	in 	al, dx
-	shl 	ah, 1
-	or 	al, ah
-	out 	dx, al
+	stosw 			; handler low 16 bits (ax)
+	mov 	ax, cs
+	stosw 			; handler code segment
+	xor 	ax, ax
+	stosb 			; zero
+	add 	al, 0x8e
+	stosb 			; selector attrib, set to 0 if non-present
+	xor 	al, al
+	stosw 			; handler high 16 bits (ax set to 0)
 	
 	pop 	ax
-	pop 	dx
-
-	mov 	sp, bp
-	pop 	bp
-	ret
-
-; remove/unmask IRQ Line from al
-clear_irq_mask:
-	push 	bp
-	mov 	bp, sp
-
-	push 	dx
-	push 	ax
-
-	call 	__pic_set_regs_by_line
-
-	; as above, read IMR, then clear IRQ line, and write mask back
-	mov 	ah, al
-	in 	al, dx
-	shl 	ah, 1
-	not 	ah
-	and 	al, ah
-	out 	dx, al
-	
-	pop 	ax
-	pop 	dx
-
-	mov 	sp, bp
-	pop 	bp
-	ret
-
-; ========================================================================== ;
-; Functions to get ISR/IRR data
-;
-; Requires command to be in al
-; Accepted commands:
-; 	al = 0x0A, get IRR
-; 	al = 0x0B, get ISR
-; Return ISR value in ax
-pic_get_irq_reg:
-	push 	dx
-
-	mov 	dx, PIC1_CMD
-	out 	dx, al
-	mov 	dx, PIC2_CMD
-	out 	dx, al
-	in 	al, PIC2_CMD
-	shl 	ax, 8
-	in 	al, PIC1_CMD
-
-	pop 	dx
+	pop 	di
 	ret
 
 
-; ========================================================================== ;
-; Functionality related to generic interrupt handling / management.
-; Here is both helper functions (EOI_xx, not to be used elsewhere), as well
-; as handler code.
-
-; After we're done with interrupt, we can use following functions to 
-; let PIC to know we're done
-EOI_primary:
-	push 	ax
-	mov 	al, 0x20
-	out 	0x20, al
-	pop 	ax
-	ret
-
-EOI_secondary:
-	push 	ax
-	mov 	al, 0x20
-	out 	0xA0, al
-	out 	0x20, al
-	pop 	ax
-	ret
-
-
-; Function to handle IRQ#7, as that might be 'spurious'. Basicly this means
-; that for any reason what so ever, after PIC notified CPU about interrupt, 
-; the interrupt was cleared (Simple race condition, kinda..). So now we're in
-; a situation where CPU asks for int from pic, pic replies w/ int#7, but 
-; doesn't set register values.
-; 
-; NOTE: We *must* not send EOI on spurious int
-;
-; sets carry flag if int was 'spurious'
-;
-check_int7:
-	push 	bp
-	mov 	bp, sp
-
-	clc
-	push 	ax
-	mov 	al, 0x0B 	; read ISR
-	call 	pic_get_irq_reg
-	test 	ax, 7 		; check if IRQ#7 is set
-	jnz 	.done
-	stc 			; if it is, set carry flag
-.done:
-	pop 	ax
-	mov 	sp, bp
-	ret
-
-
-
-
-; Fill IDT with EOI function pointers, even though *all* unused ints should be
-; masked away, I want to be sure to not get random crashes due INT# jumping to
-; addr 0.
-__fill_idt_with_eoi:
+; **************************************************************************** 
+; Following function does manages IDT setup & loading.
+load_idt:
 	pusha
 
-	; first, we need to setup ES to point to ROM 
-	; or di doesn't work for us.
-	mov 	ax, es
-	push 	ax
-	mov 	ax, cs 	; cs points here :)
-	mov 	es, ax
+	; allocate space for idt
+	call 	alloc_idt_ptr
+	mov 	ax, word [IDT_PTR]
+	test 	ax, ax
+	jz 	.malloc_error
+	mov 	si, .msg_idt_at
+	call 	serial_print
+	call 	serial_printh
 
-	; there are 8 interrupt lines on both primary and secondary 
-	; PICs. As long as I set EOI 'handlers' for all those, we should
-	; be all good.
-	mov 	cl, 8 ; set primary handlers
-	mov 	di, IDT
-	mov 	bx, EOI_primary
-	.loop_setup:
-		mov 	ax, cs 			; get code segment
-		mov 	word [di], bx 		; handler address low bits
-		add 	di, 2
-		stosw 	 			; code segment
-		xor 	ax, ax
-		stosb 				; zero
-		mov 	byte [di], 0x8e 	; interrupt gate
-		inc 	di
-		stosw 				; addr high bits
-		loop 	.loop_setup
-	
-	cmp 	bx, EOI_secondary
-	je 	.done
-	mov 	bx, EOI_secondary
-	mov 	cl, 8
-	jmp 	.loop_setup
 .done:
-	pop 	ax
-	mov 	es, ax
 	popa
 	ret
+
+.malloc_error:
+	mov 	si, .msg_malloc_errored
+	call 	serial_print
+	jmp 	.done
+
+.msg_malloc_errored:
+	db "FAILED TO ALLOCATE SPACE FOR IDT!", 0x0A, 0x0D, 0
+
+.msg_idt_at:
+	db "IDT SET UP AT: 0x", 0
 
