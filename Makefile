@@ -1,6 +1,6 @@
 
 as=nasm
-aflags=-fbin -Wall -O0
+aflags=-fbin -Wall -O0 
 
 all: clean install
 
