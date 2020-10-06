@@ -59,7 +59,6 @@ sector_is_mbr:
 	xor	ax, ax
 	jmp	.done
 
-
 ; ======================================================================== ;
 ;
 ; Load first boot sector from disk to ram
