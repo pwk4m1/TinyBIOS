@@ -79,7 +79,8 @@ set_irq_handler_entry:
 	push 	di
 	push 	ax
 
-	mov 	di, word [cs:di]
+	mov 	edi, IDT_PTR
+	mov 	di, word [edi]
 	add 	di, cx
 
 	stosw 			; handler low 16 bits (ax)
