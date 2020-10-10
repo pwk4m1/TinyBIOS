@@ -34,7 +34,8 @@
 ; ======================================================================== ;
 ;
 ; Requires:
-;	esi = pointer to null-terminated string
+;	si = offset to null-terminated string
+; 		assuming segment f000
 ; Notes:
 ;	do check esi address, be careful with segmentation. :P
 ;
