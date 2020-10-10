@@ -70,11 +70,8 @@
 ; ======================================================================== ;
 ; array used for storing pointers to pci device headers
 ; ======================================================================== ;
-pci_dev_ptr_array:
-	times 32 db 2
-
-pci_dev_cnt:
-	db 0
+pci_dev_ptr_array 	equ 0x5002
+pci_dev_cnt 		equ 0x5000
 
 ; ======================================================================== ;
 ; build address to read pci config word from. see pci_config_inw

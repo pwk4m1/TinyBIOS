@@ -68,6 +68,9 @@ main:
 	xor 	ax, ax
 	mov 	ss, ax
 	mov	sp, 0x7c00
+
+	push 	ebp 		; store ebp/BIST to stack
+
 	mov	bp, sp
 
 	; Show a simple bootsplash over serial port
@@ -85,6 +88,12 @@ main:
 	call 	pci_find_vga_dev
 
 .ata_start:
+	; setup ATA disk addr list to 0's
+	mov 	cx, 16
+	mov 	di, ata_disk_addr_list
+	xor 	ax, ax
+	rep 	movsw
+
 	; check for ATA disks
 	call 	ata_check_disks
 	mov 	si, ata_disk_addr_list
