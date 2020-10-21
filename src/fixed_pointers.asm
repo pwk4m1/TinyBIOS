@@ -45,6 +45,7 @@
 %define pci_dev_cnt             0x5000
 	
 ; interrupts.asm
-%define IDT_PTR 		0x3200
+%define IDT_INFO 		0x3200
+%define IDT_PTR 		0x3202
 
 %endif

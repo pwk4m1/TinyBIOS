@@ -47,15 +47,16 @@
 ;
 alloc_idt_ptr:
 	push 	cx
-	push 	di
+	push 	edi
 	push 	ax
 
 	mov 	cx, (256 * 8)
 	call 	malloc
-	mov 	word [IDT_PTR], di
+	and 	edi, 0x0000ffff
+	mov 	dword [IDT_PTR], edi
 
 	pop 	ax
-	pop 	di
+	pop 	edi
 	pop 	cx
 	ret
 
@@ -103,6 +104,20 @@ load_idt:
 	mov 	si, .msg_idt_at
 	call 	serial_print
 	call 	serial_printh
+
+	; clear it out
+	mov 	cx, 1024
+	mov 	di, ax
+	xor 	ax, ax
+	rep 	stosw
+
+	mov 	ax, word [IDT_PTR]
+	sub 	di, ax
+	dec 	di
+	mov 	word [IDT_INFO], di
+	mov 	di, IDT_INFO
+	lidt 	[di]
+	sti
 
 .done:
 	popa
