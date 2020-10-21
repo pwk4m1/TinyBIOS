@@ -41,11 +41,6 @@
 ; 	- Only those devices that we're actually using are granted
 ; 	  "proper" handlers. Rest willl get generic EOI.
 
-; pointer for idt, I store it here so I don't need to get it from idtr
-; all the time..
-IDT_PTR:
-	dw 	0
-
 ; **************************************************************************** 
 ; First, here are some helper functions used for allocating stuff, 
 ; talking w/ chips, etc..
