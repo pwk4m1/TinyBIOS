@@ -52,10 +52,7 @@ alloc_idt_ptr:
 
 	mov 	cx, (256 * 8)
 	call 	malloc
-
-	mov 	ax, di
-	mov 	edi, IDT_PTR
-	stosw
+	mov 	word [IDT_PTR], di
 
 	pop 	ax
 	pop 	di

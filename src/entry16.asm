@@ -30,6 +30,8 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+%include "src/fixed_pointers.asm"
+
 ; ======================================================================== ;
 ; This is the first entry point of our BIOS code after reset vector.
 ; Offset from ROM beginning is 0x10000.
@@ -157,6 +159,7 @@ msg_bootsector_found:
 msg_jump_to_loader:
 	db "JUMP TO 0x0000:0x7C00", 0x0A, 0x0D, 0
 
+
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
 
@@ -172,4 +175,5 @@ msg_jump_to_loader:
 %include "src/mm.asm"
 %include "src/interrupts.asm"
 %include "src/gdt.asm"
+
 

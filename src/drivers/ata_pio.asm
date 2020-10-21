@@ -99,11 +99,6 @@
 %define __ata_dcr_rst	00000100b	; Set to do reset on bus
 %define __ata_dcr_rsvd	01111000b	; Reserved
 %define __ata_dcr_hob	10000000b	; Set this to read the High Order Byte
-
-; ======================================================================== ;
-; List of ata disk addresses
-; ======================================================================== ;
-ata_disk_addr_list equ 	0x3000 
 					; of the last LBA48 value sent.
 
 ; ======================================================================== ;

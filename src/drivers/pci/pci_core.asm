@@ -68,12 +68,6 @@
 %define PCI_STAT_DPERR 		0x4000 ; detected parity error_
 
 ; ======================================================================== ;
-; array used for storing pointers to pci device headers
-; ======================================================================== ;
-pci_dev_ptr_array 	equ 0x5002
-pci_dev_cnt 		equ 0x5000
-
-; ======================================================================== ;
 ; build address to read pci config word from. see pci_config_inw
 ; to see how-to setup memory at [si]
 ; ======================================================================== ;

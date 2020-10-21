@@ -13,8 +13,6 @@
 
 %define __MM_MEM_USED 	"used"
 %define __MM_MEM_FREE 	"free"
-%define __MM_MEM_START 	0xC000
-%define __MM_MEM_END 	0xCFFF
 %define __MM_MEM_SIZE 	(__MM_MEM_END - __MM_MEM_START)
 
 mm_heap_init:
