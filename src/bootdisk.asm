@@ -121,7 +121,6 @@ find_boot_sector:
 	ret
 
 .not_boot_sector:
-	
 	mov	si, msg_not_boot_sector
 	call	serial_print
 	mov	ax, word [0x3000+510]
