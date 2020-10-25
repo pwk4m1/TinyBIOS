@@ -20,7 +20,7 @@ test-tty:
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \
-	-hda /dev/null | \
+	-hda /dev/null 2>&1 | \
 	tee qemu_run_log.txt
 
 test-end:

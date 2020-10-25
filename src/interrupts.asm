@@ -30,107 +30,42 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-; Implementing interrupt handling in this file. Stuff to note:
-; 	- I greatly dislike the way IVT stuff works. I wont make
-; 	  use of such.
-; 	
-; 	- Only minimal amount of stuff is supported here, This is 
-; 	  machine firmware, not operating system (Looking at you
-; 	  engineers at intel)
+; In the end, I do use ivt anyway. soz :P :P
 ;
-; 	- Only those devices that we're actually using are granted
-; 	  "proper" handlers. Rest willl get generic EOI.
-
-; **************************************************************************** 
-; First, here are some helper functions used for allocating stuff, 
-; talking w/ chips, etc..
+; following function can be used to set interrupt handlers.
+; Arguments:
+;	ax 	= handler segment
+;	bx 	= handler offset
+; 	di 	= ivt offset
 ;
-alloc_idt_ptr:
-	push 	cx
-	push 	edi
-	push 	ax
-
-	mov 	cx, (256 * 8)
-	call 	malloc
-	and 	edi, 0x0000ffff
-	mov 	dword [IDT_PTR], edi
-
-	pop 	ax
-	pop 	edi
-	pop 	cx
-	ret
-
-; set handler entry to idt. 
-; Requires:
-; 	cx = current offset in idt
-; 	ax = offset to irq handler.
-;
-; Do note, that ax needs to be _offset_. All handlers are to be located
-; within ROM region, (segment being F, so handlers are in F:0000-F:FFFF)
-;
-set_irq_handler_entry:
+set_ivt_entry:
 	push 	di
-	push 	ax
-
-	mov 	ax, word [IDT_PTR]
-	mov 	di, ax
-	add 	di, cx
-
-	stosw 			; handler low 16 bits (ax)
-	mov 	ax, cs
-	stosw 			; handler code segment
-	xor 	ax, ax
-	stosb 			; zero
-	add 	al, 0x8e
-	stosb 			; selector attrib, set to 0 if non-present
-	xor 	al, al
-	stosw 			; handler high 16 bits (ax set to 0)
-	
-	pop 	ax
+	stosw
+	mov 	word [di], bx
 	pop 	di
 	ret
 
-
-; **************************************************************************** 
-; Following function does manages IDT setup & loading.
-load_idt:
+; Clear memory reserved for interrupt vector table, so that
+; in case of random interrupts we don't die. 
+; All handlers are set to be generic dummy one.
+;
+clear_ivt:
 	pusha
-
-	; allocate space for idt
-	call 	alloc_idt_ptr
-	mov 	ax, word [IDT_PTR]
-	test 	ax, ax
-	jz 	.malloc_error
-	mov 	si, .msg_idt_at
-	call 	serial_print
-	call 	serial_printh
-
-	; clear it out
-	mov 	cx, 1024
-	mov 	di, ax
-	xor 	ax, ax
-	rep 	stosw
-
-	mov 	ax, word [IDT_PTR]
-	sub 	di, ax
-	dec 	di
-	mov 	word [IDT_INFO], di
-	mov 	di, IDT_INFO
-	lidt 	[di]
-	sti
-
-.done:
+	xor 	di, di
+	mov 	eax, dummy_irq_handler
+	and 	eax, 0x0000ffff
+	mov 	bx, cs
+	mov 	cx, 100 	; IVT is 400 bytes large, 1 entry is 4 bytes
+	.loop:
+		stosw
+		mov 	word [di], bx
+		add 	di, 2
+		loop 	.loop
 	popa
 	ret
 
-.malloc_error:
-	mov 	si, .msg_malloc_errored
-	call 	serial_print
-	jmp 	.done
+dummy_irq_handler:
+	iret
 
-.msg_malloc_errored:
-	db "FAILED TO ALLOCATE SPACE FOR IDT!", 0x0A, 0x0D, 0
 
-.msg_idt_at:
-	db "IDT SET UP AT: 0x", 0
 
