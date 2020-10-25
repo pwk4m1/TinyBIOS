@@ -447,7 +447,11 @@ ata_detect_disk_by_identify:
 ata_disk_read_info:
 	push	cx
 	mov	cx, 256
-	rep	insw
+	.loop:
+		in 	ax, dx
+		mov 	word [di], ax
+		add 	di, 2
+		loop 	.loop
 	pop	cx
 	ret
 
@@ -466,6 +470,7 @@ ata_disk_read_info:
 ; ======================================================================== ;
 ata_check_disk_by_base:
 	pusha
+	push 	dx
 	clc
 
 	mov	si, ata_msg_checking_disk_dev
@@ -496,6 +501,7 @@ ata_check_disk_by_base:
 	call	serial_print
 
 	.done:
+		pop 	dx
 		popa
 		ret
 
@@ -532,7 +538,8 @@ ata_check_disk_by_base:
 
 	; actual storage process after finding slot
 	.do_store:
-		sub 	dx, 7 		; dx is currently base + 7
+		pop 	dx
+		push 	dx
 		mov	word [di], dx
 		jmp	.done
 	
@@ -640,7 +647,11 @@ ata_pio_b28_read:
 		sub	dl, 7
 
 		; read 256 words (1 sector)
-		rep 	insw
+		.read_loop:
+			in 	ax, dx
+			mov 	word [di], ax
+			add 	di, 2
+			loop 	.read_loop
 
 		add	dl, 7
 		call	ata_poll

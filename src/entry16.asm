@@ -80,10 +80,6 @@ main:
 	call	serial_print
 
 	call 	mm_heap_init
-	call 	clear_ivt
-	cli
-
-	int 	0x80
 
 	call 	pci_init
 	call 	pci_ide_test
@@ -94,7 +90,7 @@ main:
 	mov 	cx, 16
 	mov 	di, ata_disk_addr_list
 	xor 	ax, ax
-	rep 	movsw
+	rep 	stosw
 
 	; check for ATA disks
 	call 	ata_check_disks
@@ -110,11 +106,16 @@ main:
 	pop 	si
 	jc 	.find_boot_sector
 
-	mov	si, 0x3000
+	mov 	si, 0x3000
 	call	bootsector_to_ram
 
 	mov 	si, msg_bootsector_found
 	call 	serial_print
+
+	mov 	si, msg_init_interrupts
+	call 	serial_print
+
+	call 	init_interrupts
 
 	mov	si, msg_jump_to_loader
 	call	serial_print
@@ -155,6 +156,9 @@ msg_disk_read_failed:
 
 msg_bootsector_found:
 	db "FOUND BOOT SECTOR SIGNATURE (55AA) FROM DISK", 0x0A, 0x0D, 0
+
+msg_init_interrupts:
+	db "SETTING UP IVT & INTERRUPT HANDLERS", 0x0A, 0x0D, 0
 
 msg_jump_to_loader:
 	db "JUMP TO 0x0000:0x7C00", 0x0A, 0x0D, 0

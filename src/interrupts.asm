@@ -30,6 +30,33 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+%define PIC_CMD_PRI 	0x20
+%define PIC_CMD_SEC 	0xA0
+%define PIC_DATA_PRI 	0x21
+%define PIC_DATA_SEC 	0xA1
+
+%define ICW1_ICW4 	0x01
+%define ICW1_SINGLE 	0x02
+%define ICW1_INTERVAL4 	0x04 	; call address interval 4
+%define ICW1_LEVEL 	0x08 	; level trigger (edge) mode
+%define ICW1_INIT 	0x10
+
+%define ICW4_8086 	0x01 	; 8086/88 mode
+%define ICW4_AUTO 	0x02 	; Auto EOI
+%define ICW4_BUF_SEC 	0x08 	; buffered mode / secondary
+%define ICW4_BUF_PRI 	0x0C 	; buffered mode / primary
+%define ICW4_SFNM 	0x10 	; Special fully nested 	
+
+; helper function for writing values for 8259 PIC
+; no delay needed w/ qemu & modern stuff, but real old hw might be slow
+pic_write:
+	out 	dx, ax
+	nop
+	nop
+	nop
+	nop
+	ret
+
 ; In the end, I do use ivt anyway. soz :P :P
 ;
 ; following function can be used to set interrupt handlers.
@@ -45,9 +72,58 @@ set_ivt_entry:
 	pop 	di
 	ret
 
+; Even if I do use ivt + stick to 16 bit realmode, there are overlapping
+; interrupts, I need to remap those.
+;
+remap_pic:
+	push 	dx
+	push 	ax
+	
+	; init sequence in cascade mode
+	mov 	dx, PIC_CMD_PRI
+	mov 	ax, (ICW1_INIT | ICW1_ICW4)
+	call 	pic_write
+
+	mov 	dx, PIC_CMD_SEC
+	call 	pic_write
+
+	; primary pic vector offset
+	mov 	dx, PIC_DATA_PRI
+	mov 	ax, 0x20
+	call 	pic_write
+
+	; secondary pic vector offset
+	mov 	dx, PIC_DATA_SEC
+	mov 	ax, 0x28
+	call 	pic_write
+
+	; tell primary pic that there is secondary pic at IRQ2
+	mov 	dx, PIC_DATA_PRI
+	mov 	ax, 4
+	call 	pic_write
+
+	; tell secondary pic it's cascade identity
+	mov 	dx, PIC_DATA_SEC
+	mov 	ax, 2
+	call 	pic_write
+
+	pop 	ax
+	pop 	dx
+	ret
+
+; helper function to handle setting up interrupts.
+; Call this first, ivt can be updated on the go by device inits
+;
+init_interrupts:
+	call 	clear_ivt
+	call 	remap_pic
+	sti
+	ret
+
 ; Clear memory reserved for interrupt vector table, so that
 ; in case of random interrupts we don't die. 
 ; All handlers are set to be generic dummy one.
+; 
 ;
 clear_ivt:
 	pusha
@@ -67,5 +143,36 @@ clear_ivt:
 dummy_irq_handler:
 	iret
 
+; get ISR and IRR values. 
+; Requires:
+;	ax = ocw3 value
+; Returns:
+; 	ax = register content
+;
+__pic_get_irq_reg_helper:
+	push 	dx
 
+	; ocw3 to pic cmd to get register values, pic2 is chained and
+	; represents irqs 8-15, pic1 is irqs 0-7, 2 being the chain
+	mov 	dx, PIC_CMD_PRI
+	call 	pic_write
+	mov 	dx, PIC_CMD_SEC
+	call 	pic_write
 
+	in 	al, dx
+	shr 	ax, 4
+	mov 	dx, PIC_CMD_PRI
+	in 	al, dx
+
+	pop 	dx
+	ret
+
+pic_get_isr:
+	mov 	ax, 0x0b
+	call 	__pic_get_irq_reg_helper
+	ret
+
+pic_get_irr:
+	mov 	ax, 0x0a
+	call 	__pic_get_irq_reg_helper
+	ret

@@ -38,10 +38,10 @@
 %define __MM_MEM_END    	0xCFFF
 
 ; ata.asm
-%define ata_disk_addr_list 	0x3000
+%define ata_disk_addr_list 	0x3200
 
 ; pci.asm
 %define pci_dev_ptr_array       0x5002
 %define pci_dev_cnt             0x5000
-	
+
 %endif
