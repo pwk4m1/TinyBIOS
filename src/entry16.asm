@@ -200,10 +200,10 @@ main:
 .setup_runtime:
 	call 	init_interrupts
 
-	mov 	di, 0x13
-	mov 	ax, cs
-	mov 	bx, disk_read_handler
-	call 	set_ivt_entry
+;	mov 	di, 0x13
+;	mov 	ax, cs
+;	mov 	bx, disk_read_handler
+;	call 	set_ivt_entry
 
 	mov	si, msg_jump_to_loader
 	call	serial_print
