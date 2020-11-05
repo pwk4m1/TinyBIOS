@@ -263,7 +263,7 @@ msg_jump_to_loader:
 
 %include "src/drivers/vga/vga_core.asm"
 
-%include "src/interrupt_handlers/disk.asm"
+; %include "src/interrupt_handlers/disk.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
