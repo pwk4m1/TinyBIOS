@@ -7,6 +7,9 @@ all: clean install
 clean:
 	rm -rf bin/bios
 
+car:
+	$(as) $(asflags) -DUSE_CAR -o bin/bios src/reset.asm
+
 install:
 	$(as) $(asflags) -o bin/bios src/reset.asm
 

@@ -33,6 +33,9 @@
 %ifndef FIXED_PTRS
 %define FIXED_PTRS
 
+; entry.asm
+%define TMP_BOOTSECTOR_ADDR 	0x3000
+
 ; mm.asm
 %define __MM_MEM_START  	0xC000
 %define __MM_MEM_END    	0xCFFF

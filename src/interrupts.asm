@@ -62,7 +62,7 @@ init_interrupts:
 clear_ivt:
 	pusha
 	xor 	di, di
-	mov 	eax, dummy_irq_handler
+	mov 	eax, irq_handler
 	and 	eax, 0x0000ffff
 	mov 	bx, cs
 	mov 	cx, 100 	; IVT is 400 bytes large, 1 entry is 4 bytes
@@ -74,6 +74,21 @@ clear_ivt:
 	popa
 	ret
 
-dummy_irq_handler:
+irq_handler:
+	cli 		; we don't want extra interrupts
+
+	; Even if this is never-to-be-used hobby program, I 
+	; don't want to trust on user-provided stack pointer, so
+	xor 	ax, ax
+	mov 	ss, ax
+	mov 	sp, 0x150
+
+	pusha 		; back up registers
+
+
+
+	popa
 	iret
+
+
 

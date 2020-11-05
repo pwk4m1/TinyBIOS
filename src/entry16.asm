@@ -31,6 +31,7 @@
 ; 
 
 %include "src/fixed_pointers.asm"
+%include "src/drivers/qemu/superio.asm"
 
 ; ======================================================================== ;
 ; This is the first entry point of our BIOS code after reset vector.
@@ -42,6 +43,9 @@ bits	16
 %define VER_NUM "0.2"
 
 main:
+	cli
+	cld
+
 	; save BIST result
 	mov	ebp, eax
 
@@ -49,24 +53,93 @@ main:
 	xor	eax, eax
 	mov	cr3, eax
 
-	; first things first, let's initialize super-I/O
-	mov	dx, 0x3f8
-	xor	al, al
-	out	dx, al
-	out	dx, al
+	; this macro is provided by drivers/dev/<DEVICE>/superio.asm
+	SUPERIO_INIT_MACRO
 
-	; The init above is ridiculous, I know.. But that's how it's done
-	; on Qemu :)
-	;
-	; Regarding Qemu by the way.. RAM has been initialized for us,
-	; which is kind of nice. So is most of hardware.
-	;
+; ======================================================================== ;
+; Set up cache as ram, this is left undone only if we run in qemu
+; ======================================================================== ;
 
-	; Just in case, check RAM & Stack
-	call	check_ram_stack
+%define CACHE_AS_RAM_BASE 	0x08000000
+%define CACHE_AS_RAM_SIZE 	0x2000
+%define MEMORY_TYPE_WRITEBACK 	0x06
+%define MTRR_PAIR_VALID 	0x800
+
+; base
+%define MTRR_PHYB_LO 		(CACHE_AS_RAM_BASE | MEMORY_TYPE_WRITEBACK)
+%define MTRR_PHYB_REG0 		0x200
+%define MTRR_PHYB_HI 		0x00
+
+; mask
+%define MTRR_PHYM_LO 		((~((CACHE_AS_RAM_SIZE) - 1)) | \
+					MTRR_PAIR_VALID)
+
+%define MTRR_PHYM_HI 		0xF
+%define MTRR_PHYM_REG0 		0x201
+
+%define MTRR_DEFTYPE_REG0 	0x2FF
+%define MTRR_ENABLE 		0x800
+
+%ifdef USE_CAR
+	; setup MTRR base 
+	mov 	eax, MTRR_PHYB_LO	; mtrr phybase low
+	mov 	ecx, MTRR_PHYB_REG0	; ia32 mtrr phybase reg0
+	xor 	edx, edx
+	wrmsr
+
+	; setup MTRR mask
+	mov 	eax, MTRR_PHYM_LO
+	mov 	ecx, MTRR_PHYM_REG0
+	mov 	edx, MTRR_PHYM_HI
+	wrmsr
+
+	; enable MTRR subsystem
+	mov 	ecx, MTRR_DEFTYPE_REG0
+	rdmsr
+	or 	eax, MTRR_ENABLE
+	wrmsr
+
+	; enter normal cache mode
+	mov 	eax, cr0
+	and 	eax, 0x9FFFFFFF
+	invd
+	mov 	cr0, eax
+
+	; establish tags for cache-as-ram region in cache
+	mov 	esi, CACHE_AS_RAM_BASE
+	mov 	ecx, (CACHE_AS_RAM_SIZE / 2)
+	rep 	lodsw
+
+	; clear cache memory region
+	mov 	edi, CACHE_AS_RAM_BASE
+	mov 	ecx, (CACHE_AS_RAM_SIZE / 2)
+	rep 	stosw
+
+	xor 	ax, ax
+	mov 	ss, ax
+	mov 	esp, (CACHE_AS_RAM_BASE + CACHE_AS_RAM_SIZE)
+
+	call	check_ram
 	cmp	al, 0
-	jne	.hang
+	jne 	.hang
 
+	; ram seems to be enabled & working, disable cache as ram
+	; / mtrr subsystem.
+	mov 	eax, cr0
+	or 	eax, 0x30000000
+	mov 	cr0, eax
+
+	mov 	ecx, MTRR_DEFTYPE_REG0
+	rdmsr
+	xor 	eax, MTRR_ENABLE
+	wrmsr
+
+%endif
+
+; ======================================================================== ;
+; At this point, ram init is completed, we can go on with our boot process
+;
+; ======================================================================== ;
 	xor 	ax, ax
 	mov 	ss, ax
 	mov	sp, 0x7c00
@@ -106,7 +179,7 @@ main:
 	pop 	si
 	jc 	.find_boot_sector
 
-	mov 	si, 0x3000
+	mov 	si, TMP_BOOTSECTOR_ADDR
 	call	bootsector_to_ram
 
 	mov 	si, msg_bootsector_found
@@ -115,7 +188,22 @@ main:
 	mov 	si, msg_init_interrupts
 	call 	serial_print
 
+; ======================================================================== ;
+; We now have bootloader set up at 0x0000:0x7c00, do not overwrite it
+; accidentally.
+; 
+; Now, to do:
+;	- setup interrupt controller + clear all IVT entries
+; 	- set device specific interrupt handlers
+; ======================================================================== ;
+
+.setup_runtime:
 	call 	init_interrupts
+
+	mov 	di, 0x13
+	mov 	ax, cs
+	mov 	bx, disk_read_handler
+	call 	set_ivt_entry
 
 	mov	si, msg_jump_to_loader
 	call	serial_print
@@ -164,6 +252,7 @@ msg_jump_to_loader:
 	db "JUMP TO 0x0000:0x7C00", 0x0A, 0x0D, 0
 
 
+%include "src/drivers/8259_pic.asm"
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
 
@@ -173,6 +262,8 @@ msg_jump_to_loader:
 %include "src/drivers/pci/pci_vga.asm"
 
 %include "src/drivers/vga/vga_core.asm"
+
+%include "src/interrupt_handlers/disk.asm"
 
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"

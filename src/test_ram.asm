@@ -32,25 +32,18 @@
 
 
 ; ======================================================================== ;
-; Check RAM + Stack, return 0 on success or 1 on error with R/W
-; & push/pop operations
+; Check RAM, return 0 on success or 1 on error with R/W
 ; ======================================================================== ;
-check_ram_stack:
-	mov	sp, 0x7c00
-	mov	ax, 0x4141
-	push	ax
-	pop	bx
+check_ram:
+	mov 	ax, 0x1234
+	mov 	word [0x7c00], ax
+	mov	bx, word [0x7c00]
 	cmp	ax, bx
-	jne	.no_stack_or_ram
-
-	mov 	word [0x7e00], ax
-	mov	bx, word [0x7e00]
-	cmp	ax, bx
-	jne	.no_stack_or_ram
+	jne	.no_ram
 
 	xor	al, al
 	ret
-.no_stack_or_ram:
+.no_ram:
 	mov	al, 1
 	ret
 

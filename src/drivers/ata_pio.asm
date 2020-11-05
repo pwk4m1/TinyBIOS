@@ -135,10 +135,11 @@
 ;	al = status register value
 ; ======================================================================== ;
 ata_delay_in:
-	push	cx
-	mov	cx, 5
-	rep 	insb
-	pop	cx
+	in 	al, dx
+	in 	al, dx
+	in 	al, dx
+	in 	al, dx
+	in 	al, dx
 	ret
 
 ; ======================================================================== ;
@@ -641,17 +642,18 @@ ata_pio_b28_read:
 
 	.read_start:
 		push	cx
-		mov	cx, 256
+		mov	cx, 512
 
 		; point dx to BASE
 		sub	dl, 7
 
 		; read 256 words (1 sector)
-		.read_loop:
+		mov 	word [di], 0x1234
+		.loop:
 			in 	ax, dx
 			mov 	word [di], ax
 			add 	di, 2
-			loop 	.read_loop
+			loop 	.loop
 
 		add	dl, 7
 		call	ata_poll
@@ -794,3 +796,8 @@ ata_msg_reading_disk:
 	db "ATTEMPTING ATA DISK READ. DEV: 0x", 0
 
 
+bad:
+	mov 	bx, 0xdead
+	cli
+	hlt
+	jmp 	bad
