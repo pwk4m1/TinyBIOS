@@ -201,6 +201,8 @@ main:
 
 .setup_runtime:
 	call 	init_interrupts
+	sti
+	int 	0x60
 
 ;	mov 	di, 0x13
 ;	mov 	ax, cs

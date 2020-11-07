@@ -75,13 +75,39 @@ clear_ivt:
 	ret
 
 irq_handler:
-	cli 		; we don't want extra interrupts
-	pusha 		; back up registers
+	cli
+	pusha
 
+	mov 	si, .msg_bug_unhandled_irq
+	call 	serial_print
 
+	call 	pic_get_isr
+	call 	serial_printh
+
+	; check if this was spurious irq
+	cmp 	ax, 0
+	je 	.end 
+
+	; check if primary or secondary irq
+	cmp 	al, 8
+	jl 	.pri
+
+	; send secondary pic EOI
+	mov 	dx, PIC_CMD_SEC
+	mov 	al, 0
+	out 	dx, al
+
+	; send primary pic EOI
+.pri:
+	mov 	dx, PIC_CMD_PRI
+	out 	dx, al
+
+.end:
 	popa
-	sti
 	iret
+
+.msg_bug_unhandled_irq:
+	db "BUG: UNHANDLED INTERRUPT, IRQ#: ", 0
 
 
 
