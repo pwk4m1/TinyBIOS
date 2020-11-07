@@ -76,18 +76,11 @@ clear_ivt:
 
 irq_handler:
 	cli 		; we don't want extra interrupts
-
-	; Even if this is never-to-be-used hobby program, I 
-	; don't want to trust on user-provided stack pointer, so
-	xor 	ax, ax
-	mov 	ss, ax
-	mov 	sp, 0x150
-
 	pusha 		; back up registers
 
 
-
 	popa
+	sti
 	iret
 
 

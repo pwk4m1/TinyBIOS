@@ -648,7 +648,6 @@ ata_pio_b28_read:
 		sub	dl, 7
 
 		; read 256 words (1 sector)
-		mov 	word [di], 0x1234
 		.loop:
 			in 	ax, dx
 			mov 	word [di], ax
