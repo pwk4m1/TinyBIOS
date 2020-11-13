@@ -169,10 +169,6 @@ serial_service_putchar:
 	; write char to put to serial line
 	out 	dx, al
 
-	cli
-	hlt
-	jmp 	$ - 2
-
 	; get port status to ah
 	call 	serial_get_line_status
 

@@ -133,6 +133,10 @@ disk_service_read:
 	xor 	ch, ch 	; bits  16 - 8
 	push 	cx 	; bits 	8 - 0   ( sector )
 
+	cli
+	hlt
+	jmp 	$ - 2
+
 	call 	ata_disk_read
 
 	pop 	si
