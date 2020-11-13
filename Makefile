@@ -17,13 +17,18 @@ test:
 	qemu-system-x86_64 -bios bin/bios \
 	    -hda test_disk 
 
+test-s:
+	qemu-system-x86_64 -bios bin/bios \
+	    -hda test_disk -serial stdio
+
+
 test-tty:
 	qemu-system-x86_64 -nographic -serial mon:stdio \
 	    -bios bin/bios -hda test_disk &
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \
-	-hda /dev/null 2>&1 | \
+	-hda test_disk 2>&1 | \
 	tee qemu_run_log.txt
 
 test-end:

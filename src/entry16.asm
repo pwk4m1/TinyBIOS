@@ -201,13 +201,11 @@ main:
 
 .setup_runtime:
 	call 	init_interrupts
-	sti
-	int 	0x60
+	call 	set_serial_ivt_entry
 
-;	mov 	di, 0x13
-;	mov 	ax, cs
-;	mov 	bx, disk_read_handler
-;	call 	set_ivt_entry
+	; testing 
+	sti
+	int 	0
 
 	mov	si, msg_jump_to_loader
 	call	serial_print
@@ -267,10 +265,10 @@ msg_jump_to_loader:
 
 %include "src/drivers/vga/vga_core.asm"
 
-; %include "src/interrupt_handlers/disk.asm"
-
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
 %include "src/interrupts.asm"
 
+; Interrupt handlers
+%include "src/int_handlers/serial.asm"

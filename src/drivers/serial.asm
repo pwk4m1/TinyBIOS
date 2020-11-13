@@ -30,6 +30,46 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+; ======================================================================== ;
+; Initialize serial port, this is used by int 14h
+;
+;	DX = Device to initialize, should be figured out by irq handler
+; 	AX = Baud rate divisor
+; 	BL = Line Control Register value
+;
+; ======================================================================== ;
+serial_init:
+	push 	dx
+
+	; first, disable interrupts
+	inc 	dx
+	xor 	al, al
+	out 	dx, al
+
+	; set DLAB = 1
+	add 	dx, 2
+	add 	al, 10000000b
+	out 	dx, al
+
+	; set baud rate divisor
+	sub 	dx, 3
+	out 	dx, al
+	mov 	ah, al
+	inc 	dx
+	out 	dx, al
+
+	; set line control
+	mov 	al, bl
+	add 	dx, 2
+	out 	dx, al
+	dec 	dx
+
+	; enable fifo, clear w/ 14 byte threshold
+	mov 	al, 0xC7 
+	out 	dx, al
+
+	pop 	dx
+	ret
 
 ; ======================================================================== ;
 ;
@@ -54,6 +94,8 @@ serial_print:
 		lodsb
 		test	al, al
 		jz	.done
+		call 	serial_wait_tx_empty
+		jc 	.done
 		out	dx, al
 		jmp	.print_loop
 	.done:
@@ -63,6 +105,32 @@ serial_print:
 		pop	ax
 		pop 	si
 		ret
+
+; ======================================================================== ;
+; Simple function to check that serial line is 'empty', we can 
+; transmit byte
+; (We read line status, and by 0x20 to check if tx is empty)
+;
+; We set carry flag on error.
+;
+serial_wait_tx_empty:
+	push 	ax
+	push 	cx
+	mov 	cx, 50
+	add 	dx, 5
+	clc
+	.loop:
+		in 	al, dx
+		and 	al, 0x20
+		test 	al, al
+		jz 	.done
+		loop 	.loop
+	stc
+.done:
+	sub 	dx, 5
+	pop 	cx
+	pop 	ax
+	ret
 
 ; ======================================================================== ;
 ;
@@ -103,8 +171,13 @@ serial_printh:
 	.done:
 		mov	al, 0x0A
 		out	dx, al
+		call 	serial_wait_tx_empty
+		jc 	.end
 		mov	al, 0x0D
+		call 	serial_wait_tx_empty
+		jc 	.end
 		out	dx, al
+	.end:
 		pop	cx
 		pop	bx
 		pop	ax
@@ -117,4 +190,28 @@ serial_printh:
 		dec	cx
 		jnz	.itoah
 		jmp	.done
+
+; ======================================================================== ;
+; Get serial line status, this may or may not be relevant here.
+; Anyhow, int 14h, ah = 3 asks for status to be read to ah so here we go.
+;
+; requires:
+;	DX = port to io base
+; returns:
+; 	AH = line status
+;
+serial_get_line_status:
+	add 	dx, 5
+	in 	al, dx
+	sub 	dx, 5
+	ret
+
+; ======================================================================== ;
+; Get modem status, used by int 14h ah = 3 aswell
+serial_get_modem_status:
+	add 	dx, 6
+	in 	al, dx
+	sub 	dx, 6
+	ret
+	
 

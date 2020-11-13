@@ -6,6 +6,12 @@ mov	si, msg_bootloader
 mov	cl, byte [msg_bootloader_size]
 
 rep	outsb
+
+xor 	dx, dx
+mov 	al, 0x41
+mov 	ah, 0x01
+int 	0x14
+
 cli
 hlt
 

@@ -51,7 +51,6 @@ set_ivt_entry:
 init_interrupts:
 	call 	clear_ivt
 	call 	remap_pic
-	sti
 	ret
 
 ; Clear memory reserved for interrupt vector table, so that
@@ -61,7 +60,11 @@ init_interrupts:
 ;
 clear_ivt:
 	pusha
+	pushf
 	xor 	di, di
+	xor 	ax, ax
+	mov 	es, ax
+	mov 	ds, ax
 	mov 	eax, irq_handler
 	and 	eax, 0x0000ffff
 	mov 	bx, cs
@@ -71,9 +74,13 @@ clear_ivt:
 		mov 	word [di], bx
 		add 	di, 2
 		loop 	.loop
+	popf
 	popa
 	ret
 
+; this is a generic irq handler, so that each irq handler does not need
+; to contain this same code :P
+;
 irq_handler:
 	cli
 	pusha
@@ -84,7 +91,8 @@ irq_handler:
 	call 	pic_get_isr
 	call 	serial_printh
 
-	; check if this was spurious irq
+	; check if this was spurious or software defined irq
+	; if so, no need to send EOI
 	cmp 	ax, 0
 	je 	.end 
 

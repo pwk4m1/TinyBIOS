@@ -52,9 +52,6 @@
 pic_write:
 	out 	dx, ax
 	nop
-	nop
-	nop
-	nop
 	ret
 
 ; Even if I do use ivt + stick to 16 bit realmode, there are overlapping
@@ -96,36 +93,29 @@ remap_pic:
 	pop 	dx
 	ret
 
-; get ISR and IRR values. 
-; Requires:
-;	ax = ocw3 value
-; Returns:
-; 	ax = register content
-;
-__pic_get_irq_reg_helper:
+; get isr values from primary and secondary pic
+__pic_get_irq_reg:
 	push 	dx
-
-	; ocw3 to pic cmd to get register values, pic2 is chained and
-	; represents irqs 8-15, pic1 is irqs 0-7, 2 being the chain
+	push 	bx
+	mov 	bl, al
 	mov 	dx, PIC_CMD_PRI
-	call 	pic_write
+	out 	dx, al
+	in 	al, dx
+	shl 	ax, 8
+	mov 	al, bl
 	mov 	dx, PIC_CMD_SEC
-	call 	pic_write
-
+	out 	dx, al
 	in 	al, dx
-	shr 	ax, 4
-	mov 	dx, PIC_CMD_PRI
-	in 	al, dx
-
+	pop 	bx
 	pop 	dx
 	ret
 
 pic_get_isr:
-	mov 	ax, 0x0b
-	call 	__pic_get_irq_reg_helper
+	mov 	al, 0x0b
+	call 	__pic_get_irq_reg
 	ret
 
 pic_get_irr:
 	mov 	ax, 0x0a
-	call 	__pic_get_irq_reg_helper
+	call 	__pic_get_irq_reg
 	ret
