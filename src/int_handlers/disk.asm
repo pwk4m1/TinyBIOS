@@ -130,8 +130,8 @@ disk_service_read:
 	mov 	bx, sp
 	push 	0x00 	; bits 	32 - 24
 	push 	0x00 	; bits  24 - 16
-	push 	0x00 	; bits  16 - 8
-	push 	cl 	; bits 	8 - 0   ( sector )
+	xor 	ch, ch 	; bits  16 - 8
+	push 	cx 	; bits 	8 - 0   ( sector )
 
 	call 	ata_disk_read
 
@@ -142,7 +142,7 @@ disk_service_read:
 	pop 	ax
 	pop 	dx
 	xor 	ax, ax
-	jmp 	disk_service_read.done
+	jmp 	disk_service_int_handler.done
 .error:
 	pop 	dx
 	stc

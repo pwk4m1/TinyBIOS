@@ -12,9 +12,19 @@ mov 	al, 0x41
 mov 	ah, 0x01
 int 	0x14
 
+xor 	ax, ax
+mov 	es, ax
+mov 	bx, 0x8c00
+mov 	cl, 1
+mov 	ch, 0
+mov 	dh, 0
+mov 	ah, 2
+mov 	al, 1
+int 	0x13
+
 cli
 hlt
-
+jmp 	$ - 2
 
 msg_bootloader:
 	db "HELLO FROM BOOTLOADER :)", 0x0A, 0x0D, 0
