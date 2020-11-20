@@ -48,7 +48,7 @@ set_disk_ivt_entry:
 ; dl (device id)
 ;
 __get_disk_base_to_dx:
-	cmp 	dl, 0x80
+	cmp 	dx, 0x80
 	jne 	.not_supported
 	mov 	dx, 0x01f0
 	ret
@@ -111,10 +111,10 @@ disk_service_reset:
 ; 	dx: device io base
 ; 	cl: sector count
 ;	bx: pointer to LBA
-;
 disk_service_read:
 	push 	dx
 	call 	__get_disk_base_to_dx
+	test 	dx, dx
 	jz 	.error
 
 	push 	ax
@@ -127,18 +127,19 @@ disk_service_read:
 	mov 	di, bx
 
 	; set LBA to stack
-	mov 	bx, sp
+	;mov 	bx, sp
 	push 	0x00 	; bits 	32 - 24
 	push 	0x00 	; bits  24 - 16
-	xor 	ch, ch 	; bits  16 - 8
-	push 	cx 	; bits 	8 - 0   ( sector )
-
-	cli
-	hlt
-	jmp 	$ - 2
+	push 	cx 	; bits 	16 - 0
+	mov 	bx, LBAPTR
 
 	call 	ata_disk_read
 
+	; clean up stack
+	pop 	cx
+	pop 	cx
+	pop 	cx
+	
 	pop 	si
 	pop 	di
 	pop 	cx
@@ -146,10 +147,10 @@ disk_service_read:
 	pop 	ax
 	pop 	dx
 	xor 	ax, ax
+	mov 	al, 1
 	jmp 	disk_service_int_handler.done
 .error:
 	pop 	dx
 	stc
 	jmp 	disk_service_int_handler.done
-
 
