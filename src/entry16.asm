@@ -176,10 +176,17 @@ main:
 	test 	ax, ax
 	jz 	.boot_failed_no_bootsector
 	mov 	dx, ax
-	push 	si
-	call 	find_boot_sector
-	pop 	si
-	jc 	.find_boot_sector
+
+	; we read disk up to 10 times, as disk-read may randomly
+	; return all 0's for reson or another...
+	mov 	cx, 10
+	.read_retry_loop:
+		call 	find_boot_sector
+		jnc 	.read_success
+		loop 	.read_retry_loop
+	jmp 	.find_boot_sector
+
+.read_success:	
 
 	mov 	si, TMP_BOOTSECTOR_ADDR
 	call	bootsector_to_ram
@@ -203,10 +210,6 @@ main:
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
-
-	; testing 
-	sti
-	int 	0
 
 	mov	si, msg_jump_to_loader
 	call	serial_print
