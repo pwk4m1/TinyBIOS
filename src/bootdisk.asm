@@ -130,11 +130,8 @@ find_boot_sector:
 	jmp 	.done
 
 .disk_read_fail:
-	mov 	si, msg_disk_read_fail
-	call 	serial_print
+	stc
 	jmp 	.done
 
-msg_disk_read_fail:
-	db "FAILED TO READ DISK", 0x0A, 0x0D, 0
 
 

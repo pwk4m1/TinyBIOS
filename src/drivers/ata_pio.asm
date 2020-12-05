@@ -589,7 +589,6 @@ ata_poll:
 ; ======================================================================== ;
 ata_pio_b28_read:
 	pusha
-	clc
 
 	push	ax
 	; set sector count
@@ -642,7 +641,7 @@ ata_pio_b28_read:
 
 	.read_start:
 		push	cx
-		mov	cx, 512
+		mov	cx, 256
 
 		; point dx to BASE
 		sub	dl, 7
@@ -654,13 +653,18 @@ ata_pio_b28_read:
 			add 	di, 2
 			loop 	.loop
 
-		add	dl, 7
-		call	ata_poll
-		jc	.done
 		pop	cx
+
+		; read status
+		add 	dl, 7
+		in 	al, dx
+		test 	al, __ata_stat_err
+		jnz 	.disk_error
+
 		dec	cx
 		test	cx, cx
 		jnz	.read_start
+		clc
 
 	.done:
 		popa
@@ -668,7 +672,7 @@ ata_pio_b28_read:
 
 	.disk_error:
 		stc
-		jmp	.done
+		jmp 	.done
 
 ; ======================================================================== ;
 ; 
@@ -692,6 +696,11 @@ ata_disk_read:
 	mov	ax, dx
 	call	serial_printh
 
+	; I use si to store amount of disk read retry attempts 
+	; remaining, don't want to bother w/ push + pop for cx.
+	mov 	si, 60
+
+.check_disk_status:
 	; check disk status
 	in	al, dx
 	test	al, __ata_stat_wait
@@ -714,8 +723,12 @@ ata_disk_read:
 	jmp 	.do_ret 
 
 	.disk_status_ok:
+		dec 	si
+		test 	si, si
+		jz 	.disk_read_failed
 		mov	al, 0xE0
 		call	ata_pio_b28_read
+		jc 	.read_errored
 		clc
 
 	.do_ret:
@@ -728,6 +741,15 @@ ata_disk_read:
 		stc
 		jmp 	.do_ret
 
+	.disk_read_failed:
+		mov 	si, ata_msg_disk_read_failed
+		call 	serial_print
+		stc
+		jmp 	.do_ret
+
+	.read_errored:
+		call 	ata_sw_reset
+		jmp 	.check_disk_status
 
 ; ======================================================================== ;
 ; 
@@ -794,9 +816,5 @@ ata_msg_checking_disk_dev:
 ata_msg_reading_disk:
 	db "ATTEMPTING ATA DISK READ. DEV: 0x", 0
 
-
-bad:
-	mov 	bx, 0xdead
-	cli
-	hlt
-	jmp 	bad
+ata_msg_disk_read_failed:
+	db "DISK READ FAILED!", 0x0A, 0x0D, 0

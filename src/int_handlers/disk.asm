@@ -127,19 +127,17 @@ disk_service_read:
 	mov 	di, bx
 
 	; set LBA to stack
-	;mov 	bx, sp
-	push 	0x00 	; bits 	32 - 24
-	push 	0x00 	; bits  24 - 16
+	push 	0x0000 	; bits 	32 - 16
 	push 	cx 	; bits 	16 - 0
-	mov 	bx, LBAPTR
+	mov 	bx, sp
 
 	call 	ata_disk_read
 
 	; clean up stack
 	pop 	cx
 	pop 	cx
-	pop 	cx
 	
+	; restore registers
 	pop 	si
 	pop 	di
 	pop 	cx
