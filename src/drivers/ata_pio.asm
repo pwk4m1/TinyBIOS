@@ -722,12 +722,18 @@ ata_disk_read:
 	stc
 	jmp 	.do_ret 
 
+	; disk passed sanity checks, do the actual disk read now. 
 	.disk_status_ok:
-		dec 	si
-		test 	si, si
+		dec 	si 		; retries = retries - 1
+		test 	si, si 		; if 0 left, indicate error
 		jz 	.disk_read_failed
 		mov	al, 0xE0
 		call	ata_pio_b28_read
+
+		; if carry flag is set, we encountered error.
+		; try fixing it by nuking it away with disk reset,
+		; this is not the _correct_ way to do things but it'll
+		; do for now (meaning it'll be here forever, I'd expect...)
 		jc 	.read_errored
 		clc
 
