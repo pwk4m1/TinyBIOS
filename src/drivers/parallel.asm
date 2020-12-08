@@ -30,57 +30,79 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-; This file contains code related to setting up BIOS Data Area (BDA)
-;
-; Memory map:
-; 
-; 	addr   (size)		|	description
-; 	-=-=-=-=-=-=-=-=-=-=-=-=+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-;	0x0400 (4 words) 	| 	IO ports for COM1-COM4 serial
-; 	0x0408 (3 words)	|	IO ports for LPT1-LPT3 paraller
-; 	0x040E (1 word)		|	EBDA base addr >> 4
-;	0x0410 (1 word)		|	packed bit flags for detected hw
-;	0x0413 (1 word)		|	Number of kb's of mem before EBDA
-;	0x0417 (1 word) 	|	Keyboard state flags
-;	0x041e (32 bytes)	|	keyboard buffer
-;	0x0449 (1 byte)		|	Display mode
-;	0x044A (1 word)		|	Number of columns in text mode
-;	0x0463 (1 word)		|	base video IO port
-;	0x046C (word)		|	# of IRQ0 timer ticks since boot
-;	0x0475 (byte)		| 	# of hard disk drives detected
-;	0x0480 (word) 		|	keyboard buffer start
-;	0x0482 (word) 		|	keyboard buffer end
-;	0x0497 (byte)		|	last keyboard led/shift key state
-;
-; EBDA:
-;	used to store disk read status 'n other stuff for BIOS, nothing
-;	interesting in bootloader/os POV, none of this data is to be
-;	trusted by us internally as all of it can be changed by non-firmware
-;	program code!
-;
-; 	extended bios data area (EBDA) is to be set between
-;	0x00080000 and 0x0009FFFF, that leaves us 128kb of memory to use.
-;	
-;	NOTE: if malloc() and free() are used after boot by interrupt 
-;	handlers, use EBDA + <to be announced> for that.
-;
-setup_bda:
-	pusha
-	pushf
-	xor 	ax, ax
-	mov 	es, ax
-	mov 	di, 0x0400
+%ifndef LPT_ASM
+%define LPT_ASM
 
-	; first, enumerate all serial devices & set them to 
-	; 0x0400 ->
-	call 	serial_enum_devices
+; Common base addresses for LPT 
+%define LPT1 		0x0378 		; IRQ 7
+%define LPT1_secondary 	0x03BC 		; IRQ 7
+%define LPT2 		0x0278 		; IRQ 6
+%define LPT3 		0x03BC 		; IRQ 5 (... *sigh*)
 
+; ======================================================================== ;
+; Helper function to enumerate LPT devices
+;
+; Requires:
+;	es:di pointing to BDA at offset to LPT ports
+; Returns:
+;	none
+; sets:
+;	word [es:di] => lpt ports
+;
+probe_lpt_ports:
+	push 	dx
+	push 	ax
 
-	popf
-	popa
+	mov 	dx, LPT1
+	call 	__probe_lpt_port
+
+	mov 	dx, LPT2
+	call 	__probe_lpt_port
+
+	mov 	dx, LPT3
+	call 	__probe_lpt_port
+
+	pop 	ax
+	pop 	dx
 	ret
 
 
+; Probe single port, we do this by first sending initialize, waiting 
+; a bit, and then reading status.
+;
+; NOTE: initialize is active _LOW_ when writing
+; 	init being set may result in a printer performing a reset &
+; 	any buffers being reset,ut)
+;
+; we write [es:di] = port if lpt, 0 else, di += 2
+;
+__probe_lpt_port:
+	xor 	al, al 	; init is active low, rest are active high...
+	add 	dx, 2 	; command port = IO base + 2
+	out 	dx, al 	; write init
+	dec 	dx 	; status is IO base + 1
+	nop 		; very small delay, I hope it's enough 
+	nop
+	nop
+	nop
+	in 	al, dx 	; read status
+	
+	; status error, ack, and busy are active low, they should
+	; all be set to 1 now. rest should be 0
+	test 	al, 00010011b
+	jnz 	.not_lpt
+	mov 	ax, dx
+	dec 	dx
+.write:
+	stosw
+	ret
+.not_lpt:
+	test 	dx, LPT1
+	je 	.test_lpt1_secondary
+	xor 	ax, ax
+	jmp 	.write
+.test_lpt1_secondary:
+	mov 	dx, LPT1_secondary
+	jmp 	__probe_lpt_port
 
-
-
+%endif ; LPT_ASM
