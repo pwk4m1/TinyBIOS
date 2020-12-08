@@ -48,7 +48,7 @@ set_disk_ivt_entry:
 ; dl (device id)
 ;
 __get_disk_base_to_dx:
-	cmp 	dx, 0x80
+	cmp 	dl, 0x80
 	jne 	.not_supported
 	mov 	dx, 0x01f0
 	ret
@@ -70,6 +70,7 @@ disk_service_int_handler:
 	test 	ah, ah
 	jz 	disk_service_reset
 	cmp 	ah, 2
+	; jl 	get_disk_status
 	je 	disk_service_read
 	stc
 .done:
@@ -84,6 +85,43 @@ disk_service_reset:
 	jz 	disk_service_int_handler.done
 	call 	ata_sw_reset
 	jmp 	disk_service_int_handler.done
+
+; ======================================================================== ;
+; Get status of Last Drive Operation (13h, ah = 01)
+; Requires:
+; 	dl = drive
+; Returns:
+; 	cf set on error
+;
+; 	ah:
+;		00 - success
+; 		01 - invalid cmd
+; 		02 - can't find addr mark
+; 		03 - attempted write on write protected disk
+;	 	04 - sector not found
+; 		05 - reset failed
+; 		06 - disk changed line active
+; 		07 - drive param activity failed
+; 		08 - DMA overrun
+; 		09 - attempt to DMA over 64k bound
+; 		0A - bad sector
+; 		0B - bad track/cylinder
+; 		0C - media type not found 
+; 		0D - invalid number of sectors
+; 		0E - Control data addr mark detected
+; 		0F - DMA out of range
+; 		10 - CRC/ECC data error
+;		11 - ECC corrected data error
+; 		20 - controller failure
+; 		40 - seek failure
+; 		80 - drive timed out, assumed not rdy
+; 		AA - drive not ready
+; 		BB - undefined error
+; 		CC - write fault
+; 		E0 - status error
+; 		FF - sense operation failed
+;
+
 
 ; ======================================================================== ;
 ; Disk read is bit more difficult, we need lots of stuff from user,

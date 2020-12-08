@@ -85,11 +85,7 @@ irq_handler:
 	cli
 	pusha
 
-	mov 	si, .msg_bug_unhandled_irq
-	call 	serial_print
-
 	call 	pic_get_isr
-	call 	serial_printh
 
 	; check if this was spurious or software defined irq
 	; if so, no need to send EOI

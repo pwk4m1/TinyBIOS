@@ -207,6 +207,9 @@ main:
 ; ======================================================================== ;
 
 .setup_runtime:
+	; setup bios data area before int handlers
+	call 	setup_bda
+
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
@@ -214,6 +217,8 @@ main:
 	mov	si, msg_jump_to_loader
 	call	serial_print
 
+	; set boot device to dl
+	mov 	dl, 0x80
 	jmp	0x0000:0x7c00
 
 .hang:
@@ -273,6 +278,7 @@ msg_jump_to_loader:
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
 %include "src/interrupts.asm"
+%include "src/bda.asm"
 
 ; Interrupt handlers
 %include "src/int_handlers/serial.asm"

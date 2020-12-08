@@ -214,4 +214,49 @@ serial_get_modem_status:
 	sub 	dx, 6
 	ret
 	
+; ======================================================================== ;
+; Helper function for BDA population to enumerate COM1-COM4
+; This function uses stosw to store addresses, DI is *NOT* preserved.
+;
+serial_enum_devices:
+	push 	ax
+	push 	dx
+
+	; we find serial devices by probing them via scratch register
+	; (IO-base + 7, dlab = 0)
+	mov 	dx, 0x03F8 		; COM1
+	call 	__serial_port_enum_dev
+	sub 	dx, 0x0100 		; COM2 (0x02F8)
+	call 	__serial_port_enum_dev
+	mov 	dx, 0x03E8 		; COM3
+	call 	__serial_port_enum_dev
+	sub 	dx, 0x0100 		; COM4 (0x02E8)
+	call 	__serial_port_enum_dev
+
+	pop 	dx
+	pop 	ax
+	ret
+
+; helper for serial_port_enum_devices
+; requires:
+; 	dx = port to probe + 7 (io base + offset to scratch reg)
+; returns:
+;	nothing
+; sets:
+;	word [di] = port if exists, 0 if failed or faulty, di += 2
+;
+__serial_port_enum_dev:
+	mov 	ax, 0x4F4F 		; set ah to 4F for checking
+	out 	dx, al  		; write 0x4F to scratch reg
+	in 	al, dx 			; read back the scratch
+	test 	ah, al 			; check if value read back is 4F
+	jnz 	.no_port 		; if not, faulty or no device
+	mov 	ax, dx 			; else, store device IO base
+	sub 	ax, 7
+.store:
+	stosw
+	ret
+.no_port:
+	xor 	ax, ax
+	jmp 	.store
 
