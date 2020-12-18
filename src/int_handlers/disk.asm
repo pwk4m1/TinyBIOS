@@ -54,7 +54,6 @@ __get_disk_base_to_dx:
 	ret
 .not_supported:
 	mov 	dx, 0
-	stc
 	ret
 
 ; ======================================================================== ;
@@ -67,12 +66,15 @@ disk_service_int_handler:
 	cli
 	clc
 
-	test 	ah, ah
+	test 	ah, ah 			; ah = 0 => disk reset
 	jz 	disk_service_reset
 	cmp 	ah, 2
-	; jl 	get_disk_status
-	je 	disk_service_read
-	stc
+	; jl 	get_disk_status 	; ah = 1 => disk get status
+	je 	disk_service_read 	; ah = 2 => read sectors from drive
+
+	; I could support disk writes etc. but I rather (for now) just
+	; do read 1 sector at time, get status & reset disk, that's _all_
+	;
 .done:
 	iret
 
@@ -187,6 +189,5 @@ disk_service_read:
 	jmp 	disk_service_int_handler.done
 .error:
 	pop 	dx
-	stc
 	jmp 	disk_service_int_handler.done
 
