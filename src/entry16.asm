@@ -266,6 +266,7 @@ msg_jump_to_loader:
 %include "src/drivers/8259_pic.asm"
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
+%include "src/drivers/parallel.asm"
 
 %include "src/drivers/pci/pci_core.asm"
 %include "src/drivers/pci/pci_helpers.asm"

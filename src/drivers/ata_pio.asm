@@ -637,7 +637,7 @@ ata_pio_b28_read:
 
 	; read status
 	call	ata_poll
-	jc	.done
+	jc 	.disk_error
 
 	.read_start:
 		push	cx
@@ -758,7 +758,6 @@ ata_disk_read:
 		jmp 	.check_disk_status
 
 ; ======================================================================== ;
-; 
 ; Function to use for ata disk detection
 ; Does not require, nor return anything.
 ;
@@ -788,6 +787,31 @@ ata_check_disks:
 .ata_bus2_done:
 	popa
 	ret
+
+
+; ======================================================================== ;
+; Get ata disk count 
+;
+; returns amount of disks detected in CL
+; ======================================================================== ;
+ata_disk_count:
+	push 	si
+	push 	ax
+
+	mov 	si, ata_disk_addr_list
+	xor 	cx, cx
+	.loop:
+		lodsw
+		test 	ax, ax
+		jz 	.done
+		inc 	cl
+		jmp 	.loop
+
+	.done:
+		pop 	ax
+		pop 	si
+		ret
+
 
 ; ======================================================================== ;
 ; Messages related to ata bus

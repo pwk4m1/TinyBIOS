@@ -37,7 +37,7 @@
 ; 	addr   (size)		|	description
 ; 	-=-=-=-=-=-=-=-=-=-=-=-=+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 ;	0x0400 (4 words) 	| 	IO ports for COM1-COM4 serial
-; 	0x0408 (3 words)	|	IO ports for LPT1-LPT3 paraller
+; 	0x0408 (3 words)	|	IO ports for LPT1-LPT3 parallel
 ; 	0x040E (1 word)		|	EBDA base addr >> 4
 ;	0x0410 (1 word)		|	packed bit flags for detected hw
 ;	0x0413 (1 word)		|	Number of kb's of mem before EBDA
@@ -75,12 +75,74 @@ setup_bda:
 	; 0x0400 ->
 	call 	serial_enum_devices
 
+	; set parallel port addresses next
+	call 	probe_lpt_ports
+
+	; if we use extended bios data area, set it's base next
+%ifdef EBDA
+	mov 	ax, EBDA_BASE_ADDR ; NOTE: EBDA >> 4!
+	stosw
+%endif
+
+	; next is flags for detected hw, that means:
+	; bit 	| meaning
+	; 15 	| number of printer ports
+	; 14 	| ^
+	; 13 	| not used ,interna lmodem (ps/2)
+	; 12 	| game adapter
+	; 11 	| number of serial ports
+	; 10 	| ^
+	; 9 	| ^
+	; 8 	| 0 if DMA installed
+	; 7 	| Diskette drive count
+	; 6 	| ^
+	; 5 	| initial video mode
+	; 4 	| ^
+	; 3 	| -
+	; 2 	| less than 256k of  ram
+	; 1 	| math coprocessor
+	; 0 	| IPL diskette installed
+	mov 	ax, 0x342
+	stosw
+	
+	; kilobytes before EBDA
+	mov 	ax, 500
+	stosw
+
+	; keyboard state flags
+	xor 	ax, ax
+	stosw
+
+	; keyboard buffer (32 bytes)
+	mov 	cx, 16
+	rep 	stosw
+
+	; display mode byte 
+	stosb
+
+	; number of columns in text mode (word)
+	stosw
+
+	; base IO port for video
+	stosw
+
+	; IRQ0 timer ticks since boot
+	stosw
+
+	; hard disk drives detected
+	call 	ata_disk_count
+	mov 	ax, cx
+	stosb
+
+	; keyboard buffer start & end
+	xor 	ax, ax
+	stosw
+	stosw
+
+	; last kbd led/shift key state
+	stosb
 
 	popf
 	popa
 	ret
-
-
-
-
 
