@@ -69,11 +69,13 @@ setup_bda:
 	pushf
 	xor 	ax, ax
 	mov 	es, ax
-	mov 	di, 0x0400
+	mov 	edi, 0x0400
 
 	; first, enumerate all serial devices & set them to 
 	; 0x0400 ->
 	call 	serial_enum_devices
+
+	jmp 	$ - 2
 
 	; set parallel port addresses next
 	call 	probe_lpt_ports

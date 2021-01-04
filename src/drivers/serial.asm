@@ -224,11 +224,11 @@ serial_enum_devices:
 
 	; we find serial devices by probing them via scratch register
 	; (IO-base + 7, dlab = 0)
-	mov 	dx, 0x03F8 		; COM1
+	mov 	dx, 0x03F8 + 7 		; COM1
 	call 	__serial_port_enum_dev
 	sub 	dx, 0x0100 		; COM2 (0x02F8)
 	call 	__serial_port_enum_dev
-	mov 	dx, 0x03E8 		; COM3
+	mov 	dx, 0x03E8 + 7		; COM3
 	call 	__serial_port_enum_dev
 	sub 	dx, 0x0100 		; COM4 (0x02E8)
 	call 	__serial_port_enum_dev
