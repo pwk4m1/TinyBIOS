@@ -214,6 +214,7 @@ main:
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
 
+	xor 	esi, esi
 	mov	si, msg_jump_to_loader
 	call	serial_print
 

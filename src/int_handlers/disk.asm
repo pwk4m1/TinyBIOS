@@ -30,6 +30,7 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+
 ; ======================================================================== ;
 ; Set ivt entry for disk interface
 ;
@@ -69,12 +70,16 @@ disk_service_int_handler:
 	test 	ah, ah 			; ah = 0 => disk reset
 	jz 	disk_service_reset
 	cmp 	ah, 2
-	; jl 	get_disk_status 	; ah = 1 => disk get status
+	jl 	get_disk_status 	; ah = 1 => disk get status
 	je 	disk_service_read 	; ah = 2 => read sectors from drive
 
 	; I could support disk writes etc. but I rather (for now) just
 	; do read 1 sector at time, get status & reset disk, that's _all_
 	;
+	stc
+	mov 	al, 0x01
+	call 	__set_int_disk_drive_last_status
+	stosb
 .done:
 	iret
 
@@ -123,7 +128,14 @@ disk_service_reset:
 ; 		E0 - status error
 ; 		FF - sense operation failed
 ;
-
+get_disk_status:
+	; we read ATA Disk status register based on dx, and
+	; if no errors report back, we also check DISK_DRIVE_LAST_STATUS
+	; if both are 0, return ok
+	; if disk reported error, update DISK_DRIVE_LAST_STATUS and return
+	; if disk reported ok, but DISK_DRIVE_LAST_STATUS is not ok,
+	; return DISK_DRIVE_LAST_STATUS
+	;
 
 ; ======================================================================== ;
 ; Disk read is bit more difficult, we need lots of stuff from user,
@@ -155,7 +167,7 @@ disk_service_read:
 	push 	dx
 	call 	__get_disk_base_to_dx
 	test 	dx, dx
-	jz 	.error
+	jz 	.error_invalid_options
 
 	push 	ax
 	push 	bx
@@ -171,6 +183,9 @@ disk_service_read:
 	push 	cx 	; bits 	16 - 0
 	mov 	bx, sp
 
+	; read sectors from disk, error management is done after
+	; we've cleaned up stack & restored registers
+	;
 	call 	ata_disk_read
 
 	; clean up stack
@@ -184,10 +199,46 @@ disk_service_read:
 	pop 	bx
 	pop 	ax
 	pop 	dx
+
+	; now do error management for ata_disk_read 
+	jc 	.error_disk_read_failed
+
+	; if no errors encountered, return ok
 	xor 	ax, ax
-	mov 	al, 1
+
+	; set DISK_DRIVE_LAST_STATUS
+	call 	__set_int_disk_drive_last_status
+
+	inc 	al ; set return code
 	jmp 	disk_service_int_handler.done
-.error:
+
+.error_invalid_options:
+	push 	esi
+	push 	ax
+	mov 	al, 0x0C
+	call 	__set_int_disk_drive_last_status
+	pop 	ax
+	pop 	esi
 	pop 	dx
+	stc
 	jmp 	disk_service_int_handler.done
+
+.error_disk_read_failed:
+	mov 	al, 0x07
+	call 	__set_int_disk_drive_last_status
+	xor 	ax, ax
+	stc
+	jmp 	disk_service_int_handler.done
+
+; ======================================================================== ;
+; Helper for setting status of disk operation
+; requires:
+;	al = status code
+; ======================================================================== ;
+__set_int_disk_drive_last_status:
+	push 	esi
+	mov 	esi, DISK_DRIVE_LAST_STATUS
+	stosb
+	pop 	esi
+	ret
 
