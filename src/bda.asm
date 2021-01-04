@@ -75,8 +75,6 @@ setup_bda:
 	; 0x0400 ->
 	call 	serial_enum_devices
 
-	jmp 	$ - 2
-
 	; set parallel port addresses next
 	call 	probe_lpt_ports
 
