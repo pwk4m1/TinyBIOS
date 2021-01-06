@@ -24,7 +24,7 @@ test-s:
 
 test-tty:
 	qemu-system-x86_64 -nographic -serial mon:stdio \
-	    -bios bin/bios -hda test_disk &
+	    -bios bin/bios -hda linux_disk &
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \

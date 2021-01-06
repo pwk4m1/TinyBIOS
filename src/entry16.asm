@@ -213,6 +213,7 @@ main:
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
+	call 	cpuid_print_cpu_vendor
 
 	xor 	esi, esi
 	mov	si, msg_jump_to_loader
@@ -263,7 +264,8 @@ msg_init_interrupts:
 msg_jump_to_loader:
 	db "JUMP TO 0x0000:0x7C00", 0x0A, 0x0D, 0
 
-
+; Driver includes
+; 
 %include "src/drivers/8259_pic.asm"
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
@@ -276,6 +278,10 @@ msg_jump_to_loader:
 
 %include "src/drivers/vga/vga_core.asm"
 
+%include "src/drivers/cpu/common_ia86.asm"
+
+; Random helper & such includes
+;
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
@@ -285,3 +291,4 @@ msg_jump_to_loader:
 ; Interrupt handlers
 %include "src/int_handlers/serial.asm"
 %include "src/int_handlers/disk.asm"
+
