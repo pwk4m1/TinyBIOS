@@ -66,6 +66,8 @@ cpuid_get_cpu_vendor:
 		test 	ecx, ecx
 		jnz 	.loop_ecx
 	
+	xor 	al, al
+	stosb
 	popa
 	ret
 
@@ -87,8 +89,9 @@ cpuid_print_cpu_vendor:
 	test 	di, di
 	jz 	.end
 
-	mov 	si, di
+	push 	di
 	call 	cpuid_get_cpu_vendor
+	pop 	si
 	call 	serial_print
 	call 	free
 

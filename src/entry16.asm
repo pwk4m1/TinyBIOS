@@ -213,7 +213,6 @@ main:
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
-	call 	cpuid_print_cpu_vendor
 
 	xor 	esi, esi
 	mov	si, msg_jump_to_loader
