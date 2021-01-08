@@ -89,6 +89,8 @@ serial_print:
 
 	mov 	ax, 0xf000
 	mov 	ds, ax
+
+.print_start:
 	mov	dx, 0x3F8
 	.print_loop:
 		lodsb
@@ -105,6 +107,40 @@ serial_print:
 		pop	ax
 		pop 	si
 		ret
+
+; ======================================================================== ;
+; As simple serial print function, but used to print dynamic stuff from
+; RAM instead of ROM, so DS != 0xF000 but set by user.
+;
+; Requires:
+;	ds = offset to 0 terminated string
+; 	ax = segment to 0 terminated string
+;
+; Returns:
+;	nothing
+;
+serial_ram_print:
+	; back up original data segment
+	push 	bx
+	mov 	bx, ds
+	mov 	ds, ax
+
+	push 	dx
+
+	; print string from ds:si
+	mov 	dx, 0x03F8
+	.print:
+		lodsb
+		test 	al, al
+		jz 	.done
+		out 	dx, al
+		jmp 	.print
+	.done:
+		pop 	dx
+		mov 	ds, bx
+		pop 	bx
+		ret
+
 
 ; ======================================================================== ;
 ; Simple function to check that serial line is 'empty', we can 
@@ -131,6 +167,7 @@ serial_wait_tx_empty:
 	pop 	cx
 	pop 	ax
 	ret
+
 
 ; ======================================================================== ;
 ;
