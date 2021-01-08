@@ -73,8 +73,10 @@ malloc:
 
 	.mem_out_of_sync:
 		; we're out of sync now.. panic
+		push 	si
 		mov 	si, msg_heap_out_of_sync
 		call 	serial_print
+		pop 	si
 		cli
 		hlt
 		jmp 	$ - 2
