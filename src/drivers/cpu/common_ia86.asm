@@ -41,6 +41,9 @@
 ;
 cpuid_get_cpu_vendor:
 	pusha
+
+	; eax = 0, cpuid _should_ return cpu vendor string in
+	; ebx,ecx,edx
 	xor 	eax, eax
 	cpuid
 
@@ -48,26 +51,31 @@ cpuid_get_cpu_vendor:
 	.loop_ebx:
 		mov 	al, bl
 		stosb
-		shr 	ebx, 1
+		shr 	ebx, 8
 		test 	ebx, ebx
 		jnz 	.loop_ebx
 
 	.loop_edx:
 		mov 	al, dl
 		stosb
-		shr 	edx, 1
+		shr 	edx, 8
 		test 	edx, edx
 		jnz 	.loop_edx
 
 	.loop_ecx:
 		mov 	al, cl
 		stosb
-		shr 	ecx, 1
+		shr 	ecx, 8
 		test 	ecx, ecx
 		jnz 	.loop_ecx
 	
+	mov 	al, 0x0A
+	stosb
+	add 	al, 0x0D
+	stosb
 	xor 	al, al
 	stosb
+
 	popa
 	ret
 
@@ -83,19 +91,25 @@ cpuid_print_cpu_vendor:
 	push 	cx
 	push 	di
 	push 	si
+	push 	ax
 
-	mov 	cx, 13
+	mov 	cx, 16
 	call 	malloc
 	test 	di, di
 	jz 	.end
 
 	push 	di
 	call 	cpuid_get_cpu_vendor
-	pop 	si
+	mov 	si, msg_cpuid_vendor
 	call 	serial_print
-	call 	free
+	pop 	si
+	mov 	di, si
+	xor 	ax, ax
+	call 	serial_ram_print
 
+	call 	free
 .end:
+	pop 	ax
 	pop 	si
 	pop 	di
 	pop 	cx
@@ -104,3 +118,5 @@ cpuid_print_cpu_vendor:
 	pop 	bp
 	ret
 
+msg_cpuid_vendor:
+	db "CPU VENDOR: ", 0
