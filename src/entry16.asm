@@ -153,8 +153,9 @@ main:
 	; Show a simple bootsplash over serial port
 	mov	si, msg_boot_early
 	call	serial_print
-
 	call 	mm_heap_init
+
+	call 	cpuid_print_cpu_vendor
 
 	call 	pci_init
 	call 	pci_ide_test
