@@ -70,9 +70,9 @@ cpuid_get_cpu_vendor:
 		jnz 	.loop_ecx
 	
 	; EOL + null-terminator 
-	mov 	al, 0x0A
+	mov 	al, 0x0D
 	stosb
-	add 	al, 0x0D
+	mov 	al, 0x0A
 	stosb
 	xor 	al, al
 	stosb
