@@ -15,7 +15,7 @@ install:
 
 test:
 	qemu-system-x86_64 -bios bin/bios \
-	    -hda test_disk 
+	    -hda linux_disk 
 
 test-s:
 	qemu-system-x86_64 -bios bin/bios \
@@ -28,7 +28,7 @@ test-tty:
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \
-	-hda test_disk 2>&1 | \
+	-hda linux_disk 2>&1 | \
 	tee qemu_run_log.txt
 
 test-end:

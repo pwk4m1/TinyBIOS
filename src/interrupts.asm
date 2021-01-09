@@ -47,16 +47,27 @@ set_ivt_entry:
 
 ; helper function to handle setting up interrupts.
 ; Call this first, ivt can be updated on the go by device inits
+; Mask all hw interrupts for now. Invidual drivers etc. can unmask
+; them later on
 ;
 init_interrupts:
 	call 	clear_ivt
 	call 	remap_pic
+	push 	cx
+	mov 	cx, 15
+	mov 	bl, 1
+	.loop:
+		mov 	al, cl
+		inc 	al
+		call 	irq_mask
+		loop 	.loop
+
+	pop 	cx
 	ret
 
 ; Clear memory reserved for interrupt vector table, so that
 ; in case of random interrupts we don't die. 
 ; All handlers are set to be generic dummy one.
-; 
 ;
 clear_ivt:
 	pusha
@@ -89,8 +100,7 @@ irq_handler:
 
 	; check if this was spurious or software defined irq
 	; if so, no need to send EOI
-	cmp 	ax, 0
-	je 	.end 
+	jmp 	.end
 
 	; check if primary or secondary irq
 	cmp 	al, 8
@@ -107,6 +117,13 @@ irq_handler:
 	out 	dx, al
 
 .end:
+	mov 	si, .msg_bug_unhandled_irq
+	call 	serial_print
+	call 	serial_printh
+	cli
+	hlt
+	jmp 	$ - 2
+
 	popa
 	iret
 

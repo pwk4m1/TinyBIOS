@@ -69,6 +69,7 @@ cpuid_get_cpu_vendor:
 		test 	ecx, ecx
 		jnz 	.loop_ecx
 	
+	; EOL + null-terminator 
 	mov 	al, 0x0A
 	stosb
 	add 	al, 0x0D

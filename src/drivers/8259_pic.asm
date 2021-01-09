@@ -54,6 +54,35 @@ pic_write:
 	nop
 	ret
 
+; mask or unmask interrupts, both functions only require
+; al = irqline to mask
+; bl = set to 1 to set mask, or 0 to clear mask
+irq_mask:
+	push 	dx
+	push 	ax
+
+	cmp 	al, 8
+	jl 	.pri
+	mov 	dx, PIC_CMD_SEC
+	sub 	al, 8
+	jmp 	.do_mask_op
+.pri:
+	mov 	dx, PIC_CMD_PRI
+.do_mask_op:
+	mov 	ah, al
+	in 	al, dx
+	shr 	ah, 1
+	test 	bl, bl
+	jz 	.do_op
+	not 	ah	
+.do_op:
+	or 	al, ah
+	out 	dx, al
+
+	pop 	ax
+	pop 	dx
+	ret
+
 ; Even if I do use ivt + stick to 16 bit realmode, there are overlapping
 ; interrupts, I need to remap those.
 ;

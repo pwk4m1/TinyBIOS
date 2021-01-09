@@ -58,13 +58,24 @@ __get_disk_base_to_dx:
 	ret
 
 ; ======================================================================== ;
+; we don't atm support extended disk read
+; ======================================================================== ;
+extended_check:
+	stc
+	xor 	ah, ah
+	xor 	cx, cx
+	iret 
+
+; ======================================================================== ;
 ; Handler for hard disk related services. We only support disk reset
 ; and disk read, carry flag is set on error
 ;
 ; dl = disk to use
 ;
 disk_service_int_handler:
-	cli
+	cmp 	bx, 0x55aa
+	je 	extended_check
+	pushad
 	clc
 
 	test 	ah, ah 			; ah = 0 => disk reset
@@ -79,8 +90,8 @@ disk_service_int_handler:
 	stc
 	mov 	al, 0x01
 	call 	__set_int_disk_drive_last_status
-	stosb
 .done:
+	popad
 	iret
 
 ; ======================================================================== ;
