@@ -214,6 +214,7 @@ main:
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
+	call 	init_fault_interrupts
 
 	xor 	esi, esi
 	mov	si, msg_jump_to_loader
@@ -291,4 +292,5 @@ msg_jump_to_loader:
 ; Interrupt handlers
 %include "src/int_handlers/serial.asm"
 %include "src/int_handlers/disk.asm"
+%include "src/int_handlers/faults.asm"
 
