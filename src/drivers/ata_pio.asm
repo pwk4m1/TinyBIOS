@@ -317,7 +317,7 @@ ata_nonstd_detect_disk_by_dd:
 ;
 ; Requires:
 ;	dx = port to 'IO base' for device.
-;	al = master/slave (0xA0/0xB0)
+;	al = primary/secondary (0xA0/0xB0)
 ; Returns:
 ;	al = 0 if disk not detected or
 ;	     1 if disk is detected, but it's not ATA
@@ -584,7 +584,7 @@ ata_poll:
 ; ata_disk_read () instead.
 ;
 ; Requires:
-;	al	= 0xE0 for 'master' or 0xF0 for 'slave' device.
+;	al	= 0xE0 for 'primary' or 0xF0 for 'secondary' device.
 ;	di 	= pointer to buffer to read data into
 ;	dx 	= device 'io base' port
 ;	cl 	= sector count
@@ -625,7 +625,7 @@ ata_pio_b28_read:
 	inc	dx
 	out	dx, al
 
-	; bits 24 to28 OR'ed with master/slave flag
+	; bits 24 to28 OR'ed with primary/secondary flag
 	; dx = BASE + 6
 	pop	ax
 	inc	bx
