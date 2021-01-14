@@ -295,10 +295,16 @@ ata_nonstd_detect_disk_by_dd:
 	add	dx, 7
 	mov	al, 0x90
 	out	dx, al
+	sub 	dx, 6
 	in	al, dx
-	sub	dx, 7
+	dec 	dx
+	cmp 	al, 0xFF
+	jne 	.no_disk
 	ret
-
+.no_disk:
+	xor 	al, al
+	ret
+	
 ; ======================================================================== ;
 ; End of non-std detection functionality.
 ; ======================================================================== ;
