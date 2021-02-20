@@ -42,7 +42,7 @@
 ; ======================================================================== ;
 bits	16
 
-%define VER_NUM "0.2"
+%define VER_NUM "0.3"
 
 main:
 	cli
@@ -58,84 +58,9 @@ main:
 	; this macro is provided by drivers/dev/superio.asm
 	SUPERIO_INIT_MACRO
 
-; ======================================================================== ;
-; Set up cache as ram, this is left undone only if we run in qemu
-; ======================================================================== ;
-
-%define CACHE_AS_RAM_BASE 	0x08000000
-%define CACHE_AS_RAM_SIZE 	0x2000
-%define MEMORY_TYPE_WRITEBACK 	0x06
-%define MTRR_PAIR_VALID 	0x800
-
-; base
-%define MTRR_PHYB_LO 		(CACHE_AS_RAM_BASE | MEMORY_TYPE_WRITEBACK)
-%define MTRR_PHYB_REG0 		0x200
-%define MTRR_PHYB_HI 		0x00
-
-; mask
-%define MTRR_PHYM_LO 		((~((CACHE_AS_RAM_SIZE) - 1)) | \
-					MTRR_PAIR_VALID)
-
-%define MTRR_PHYM_HI 		0xF
-%define MTRR_PHYM_REG0 		0x201
-
-%define MTRR_DEFTYPE_REG0 	0x2FF
-%define MTRR_ENABLE 		0x800
-
+	; this macro is provided by drivers/cpu/YOURCPU.asm
 %ifdef USE_CAR
-	; setup MTRR base 
-	mov 	eax, MTRR_PHYB_LO	; mtrr phybase low
-	mov 	ecx, MTRR_PHYB_REG0	; ia32 mtrr phybase reg0
-	xor 	edx, edx
-	wrmsr
-
-	; setup MTRR mask
-	mov 	eax, MTRR_PHYM_LO
-	mov 	ecx, MTRR_PHYM_REG0
-	mov 	edx, MTRR_PHYM_HI
-	wrmsr
-
-	; enable MTRR subsystem
-	mov 	ecx, MTRR_DEFTYPE_REG0
-	rdmsr
-	or 	eax, MTRR_ENABLE
-	wrmsr
-
-	; enter normal cache mode
-	mov 	eax, cr0
-	and 	eax, 0x9fffffff
-	invd
-	mov 	cr0, eax
-
-	; establish tags for cache-as-ram region in cache
-	mov 	esi, CACHE_AS_RAM_BASE
-	mov 	ecx, (CACHE_AS_RAM_SIZE / 2)
-	rep 	lodsw
-
-	; clear cache memory region
-	mov 	edi, CACHE_AS_RAM_BASE
-	mov 	ecx, (CACHE_AS_RAM_SIZE / 2)
-	rep 	stosw
-
-	xor 	ax, ax
-	mov 	ss, ax
-	mov 	esp, (CACHE_AS_RAM_BASE + CACHE_AS_RAM_SIZE)
-
-	call	check_ram
-	cmp	al, 0
-	jne 	.hang
-
-	; ram seems to be enabled & working, disable cache as ram
-	; / mtrr subsystem.
-	mov 	eax, cr0
-	or 	eax, 0x30000000
-	mov 	cr0, eax
-
-	mov 	ecx, MTRR_DEFTYPE_REG0
-	rdmsr
-	xor 	eax, MTRR_ENABLE
-	wrmsr
-
+	INIT_CAR_IF_ENABLED
 %endif
 
 ; ======================================================================== ;
