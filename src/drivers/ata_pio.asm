@@ -555,6 +555,30 @@ ata_poll:
 
 ; ======================================================================== ;
 ;
+; Following function may be used to read disk info, assuming
+; that valid ATA disk has been found.
+;
+; Requires:
+;       di = pointer to 512 bytes large buffer to read disk info into.
+;       dx = disk io base
+; Returns:
+;       carry flag set on error
+;
+; ======================================================================== ;
+ata_disk_read_info:
+        push    cx
+        mov     cx, 256
+        .loop:
+                in      ax, dx
+                mov     word [di], ax
+                add     di, 2
+                loop    .loop
+        pop     cx
+        ret
+
+
+; ======================================================================== ;
+;
 ; Read data from ATA disk in 28 bit PIO mode.
 ; This function should not be called directly, use
 ; ata_disk_read () instead.
