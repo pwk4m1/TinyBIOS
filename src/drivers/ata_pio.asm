@@ -440,30 +440,6 @@ ata_detect_disk_by_identify:
 		ret
 
 ; ======================================================================== ;
-;
-; Following function may be used to read disk info, assuming
-; that valid ATA disk has been found.
-;
-; Requires:
-;	di = pointer to 512 bytes large buffer to read disk info into.
-;	dx = disk io base
-; Returns:
-;	carry flag set on error
-;
-; ======================================================================== ;
-ata_disk_read_info:
-	push	cx
-	mov	cx, 256
-	.loop:
-		in 	ax, dx
-		mov 	word [di], ax
-		add 	di, 2
-		loop 	.loop
-	pop	cx
-	ret
-
-
-; ======================================================================== ;
 ; 
 ; Check if given ATA disk exists, update disk count, and show
 ; user info about found disk
@@ -576,6 +552,30 @@ ata_poll:
 	.done:
 		popa
 		ret
+
+; ======================================================================== ;
+;
+; Following function may be used to read disk info, assuming
+; that valid ATA disk has been found.
+;
+; Requires:
+;       di = pointer to 512 bytes large buffer to read disk info into.
+;       dx = disk io base
+; Returns:
+;       carry flag set on error
+;
+; ======================================================================== ;
+ata_disk_read_info:
+        push    cx
+        mov     cx, 256
+        .loop:
+                in      ax, dx
+                mov     word [di], ax
+                add     di, 2
+                loop    .loop
+        pop     cx
+        ret
+
 
 ; ======================================================================== ;
 ;
