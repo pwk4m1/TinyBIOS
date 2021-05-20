@@ -321,6 +321,7 @@ pci_add_device:
 	movsd
 	sub 	si, 8
 	xor 	cx, cx
+
 	; backup original offset
 	mov 	eax, dword [si+12]
 	push 	eax

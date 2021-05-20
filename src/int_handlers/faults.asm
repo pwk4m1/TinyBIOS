@@ -30,7 +30,7 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-%macro ADD_EXCEPTION_HANDLR 2
+%macro ADD_EXCEPTION_HANDLER 2
 exception_%1:
 	mov 	si, %2
 	jmp 	exception_abort
@@ -42,13 +42,13 @@ exception_%1:
 	call 	set_ivt_entry
 %endmacro
 
-ADD_EXCEPTION_HANDLR dbze, msg_exception_divide_by_zero
-ADD_EXCEPTION_HANDLR breakpoint, msg_exception_breakpoint_trap
-ADD_EXCEPTION_HANDLR overflow, msg_exception_overflow
-ADD_EXCEPTION_HANDLR bre, msg_exception_bre
-ADD_EXCEPTION_HANDLR invalid_opcode, msg_exception_ill
-ADD_EXCEPTION_HANDLR dna, msg_exception_dna
-ADD_EXCEPTION_HANDLR df, msg_exception_df
+ADD_EXCEPTION_HANDLER dbze, 		msg_exception_divide_by_zero
+ADD_EXCEPTION_HANDLER breakpoint, 	msg_exception_breakpoint_trap
+ADD_EXCEPTION_HANDLER overflow, 	msg_exception_overflow
+ADD_EXCEPTION_HANDLER bre, 		msg_exception_bre
+ADD_EXCEPTION_HANDLER invalid_opcode, 	msg_exception_ill
+ADD_EXCEPTION_HANDLER dna, 		msg_exception_dna
+ADD_EXCEPTION_HANDLER df, 		msg_exception_df
 
 init_fault_interrupts:
 	pusha

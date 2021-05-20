@@ -81,8 +81,11 @@ disk_service_int_handler:
 	test 	ah, ah 			; ah = 0 => disk reset
 	jz 	disk_service_reset
 	cmp 	ah, 2
-	jl 	get_disk_status 	; ah = 1 => disk get status
+	jl 	disk_service_get_status ; ah = 1 => disk get status
 	je 	disk_service_read 	; ah = 2 => read sectors from drive
+
+;	cmp 	ah, 8 			; ah = 8 => read drive params
+
 
 	; I could support disk writes etc. but I rather (for now) just
 	; do read 1 sector at time, get status & reset disk, that's _all_
@@ -139,7 +142,7 @@ disk_service_reset:
 ; 		E0 - status error
 ; 		FF - sense operation failed
 ;
-get_disk_status:
+disk_service_get_status:
 	; we read ATA Disk status register based on dx, and
 	; if no errors report back, we also check DISK_DRIVE_LAST_STATUS
 	; if both are 0, return ok
@@ -147,6 +150,9 @@ get_disk_status:
 	; if disk reported ok, but DISK_DRIVE_LAST_STATUS is not ok,
 	; return DISK_DRIVE_LAST_STATUS
 	;
+	cli
+	hlt
+	jmp 	disk_service_get_status
 
 ; ======================================================================== ;
 ; Disk read is bit more difficult, we need lots of stuff from user,
@@ -209,10 +215,10 @@ disk_service_read:
 	pop 	cx
 	pop 	bx
 	pop 	ax
-	pop 	dx
 
 	; now do error management for ata_disk_read 
 	jc 	.error_disk_read_failed
+	pop 	dx
 
 	; if no errors encountered, return ok
 	xor 	ax, ax
@@ -224,12 +230,10 @@ disk_service_read:
 	jmp 	disk_service_int_handler.done
 
 .error_invalid_options:
-	push 	esi
 	push 	ax
 	mov 	al, 0x0C
 	call 	__set_int_disk_drive_last_status
 	pop 	ax
-	pop 	esi
 	pop 	dx
 	stc
 	jmp 	disk_service_int_handler.done

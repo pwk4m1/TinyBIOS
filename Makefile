@@ -31,6 +31,10 @@ logtest:
 	-hda linux_disk 2>&1 | \
 	tee qemu_run_log.txt
 
+gdb:
+	qemu-system-i386 -S -gdb tcp::1234 -bios bin/bios \
+	-hda linux_disk 
+
 test-end:
 	kill -9 `ps aux | grep qemu | grep -v grep | awk '{print $$2}'`
 

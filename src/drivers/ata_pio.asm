@@ -696,11 +696,11 @@ ata_pio_b28_read:
 ata_disk_read:
 	pusha
 
-	mov	si, ata_msg_reading_disk
-	call	serial_print
+;	mov	si, ata_msg_reading_disk
+;	call	serial_print
 
-	mov	ax, dx
-	call	serial_printh
+;	mov	ax, dx
+;	call	serial_printh
 
 	; I use si to store amount of disk read retry attempts 
 	; remaining, don't want to bother w/ push + pop for cx.
@@ -754,8 +754,8 @@ ata_disk_read:
 		jmp 	.do_ret
 
 	.disk_read_failed:
-		mov 	si, ata_msg_disk_read_failed
-		call 	serial_print
+		;mov 	si, ata_msg_disk_read_failed
+		;call 	serial_print
 		stc
 		jmp 	.do_ret
 
