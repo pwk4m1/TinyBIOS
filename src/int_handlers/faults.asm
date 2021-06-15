@@ -84,11 +84,33 @@ exception_abort:
 	pop 	si
 	call 	serial_print
 
+	; pop instruction pointer to ax, and start fetching bytes
+	pop 	ax
+
+	mov 	si, msg_illegal_address
+	call 	serial_print
+	call 	serial_printh
+
+	mov 	si, msg_illegal_bytes
+	call 	serial_print
+
+	mov 	si, ax
+	mov 	cx, 8
+	.print_offending_line_loop:
+		lodsw
+		call 	serial_printh
+		loop 	.print_offending_line_loop
+
 	; hang
 	cli
 	hlt
 	jmp 	$ - 2
 
+msg_illegal_address:
+	db "EXCEPTION OCCURED AT: ", 0
+
+msg_illegal_bytes:
+	db "OFFENDING BYTE SEQUENCE: ", 0x0A, 0x0D, 0
 
 msg_exception:
 	db "PANIC: ", 0

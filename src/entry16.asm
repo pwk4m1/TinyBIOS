@@ -32,6 +32,7 @@
 
 ; later on, add ifdef <TARGET PLATFORM> or smhn like that.
 
+%include "src/log.asm"
 %include "src/fixed_pointers.asm"
 %include "src/drivers/qemu/superio.asm"
 

@@ -58,13 +58,71 @@ __get_disk_base_to_dx:
 	ret
 
 ; ======================================================================== ;
-; we don't atm support extended disk read
+; Helper function to handle parsing of the Disk Address Packet (DAP) 
+;
+; Requires: ds:si = DAP ptr
+; Returns:
+; 	
+;	di: pointer to destination buffer
+; 	dx: device io base
+; 	cl: sector count
+;	bx: pointer to LBA
+;
 ; ======================================================================== ;
-extended_check:
-	stc
-	xor 	ah, ah
+__parse_DAP:
+	push 	ax
+
 	xor 	cx, cx
-	iret 
+
+	; move to rightmost byte of sector count
+	add 	si, 3
+	mov 	cl, byte [si]
+
+	; get segment:offset to destination
+	inc 	si
+	mov 	es, word [si]
+	add 	si, 2
+	mov 	di, word [si]
+
+	; Lba pointer
+	add 	si, 2
+	mov 	bx, si
+
+	pop 	ax
+	ret
+
+; ======================================================================== ;
+; Function to respond to extended disk read check.
+;
+; ======================================================================== ;
+disk_service_extended_detect:
+	LOG 	msg_extended_detect_check
+	popad
+	xor 	ax, ax
+	xchg 	bh, bl
+	mov 	cx, 1
+
+	DEBUG_LOG 	ata_msg_int_done
+	iret
+
+msg_extended_detect_check:
+	db "RESPONDING TO INT #13H AH=41H", 0x0A, 0x0D, 0
+
+; ======================================================================== ;
+; we don't atm support extended disk read (NAAH WE DO NOW!)
+;
+; Requirements for extended disk read:
+;	ah = 42h
+;	dl = drive index
+;	ds:si = DAP ptr
+;
+; return is handled by jump to disk_service_int_handler.done
+; ======================================================================== ;
+disk_service_extended_read:
+	call 	__parse_DAP
+	cmp 	cl, 0
+	jne 	disk_service_read
+	jmp 	disk_service_int_handler.done
 
 ; ======================================================================== ;
 ; Handler for hard disk related services. We only support disk reset
@@ -72,11 +130,24 @@ extended_check:
 ;
 ; dl = disk to use
 ;
+msg_serving_disk_int:
+	db "HANDLING INT #13H", 0x0A, 0x0D, 0
+
+ata_msg_int_done:
+	db "DONE HANDLING INT #13H", 0x0A, 0x0D, 0
+
+msg_disk_oper:
+	db "DISK OPERATION: ", 0
+
 disk_service_int_handler:
-	cmp 	bx, 0x55aa
-	je 	extended_check
+
+	LOG 	msg_serving_disk_int
+
 	pushad
 	clc
+
+	DEBUG_LOG 	msg_disk_oper
+	; DEBUG_call 	serial_printh
 
 	test 	ah, ah 			; ah = 0 => disk reset
 	jz 	disk_service_reset
@@ -86,6 +157,10 @@ disk_service_int_handler:
 
 ;	cmp 	ah, 8 			; ah = 8 => read drive params
 
+	cmp 	bx, 0x55aa
+	je 	disk_service_extended_detect
+	cmp 	ah, 0x42
+	je 	disk_service_extended_read
 
 	; I could support disk writes etc. but I rather (for now) just
 	; do read 1 sector at time, get status & reset disk, that's _all_
@@ -94,8 +169,28 @@ disk_service_int_handler:
 	mov 	al, 0x01
 	call 	__set_int_disk_drive_last_status
 .done:
+	mov 	word [.retstatus], ax
 	popad
+	mov 	ax, word [.retstatus]
+	cmp 	word [esp], 0
+	je 	.panic_invalid_retptr
+	clc
+
+	DEBUG_LOG 	ata_msg_int_done
 	iret
+
+.retstatus:
+	dw 	0
+
+.panic_invalid_retptr:
+	mov 	si, msg_invalid_retptr
+	call 	serial_print
+	cli
+	hlt
+	jmp 	$ - 2
+
+msg_invalid_retptr:
+	db "INT #13H: INVALID RETURN POINTER (0000H)", 0x0A, 0x0D, 0
 
 ; ======================================================================== ;
 ; Do disk reset, that's fairly simple, we only need dx = I/O base
@@ -180,18 +275,18 @@ disk_service_get_status:
 ; 	dx: device io base
 ; 	cl: sector count
 ;	bx: pointer to LBA
-disk_service_read:
-	push 	dx
-	call 	__get_disk_base_to_dx
-	test 	dx, dx
-	jz 	.error_invalid_options
+msg_call_ata_disk_read:
+	db "CALLING ATA_DISK_READ", 0x0A, 0x0D, 0
 
+disk_service_read:
 	push 	ax
 	push 	bx
 	push 	cx
 	push 	di
 	push 	si
 	
+	push 	dx
+	call 	__get_disk_base_to_dx
 	; set di = pointer to 
 	mov 	di, bx
 
@@ -203,7 +298,9 @@ disk_service_read:
 	; read sectors from disk, error management is done after
 	; we've cleaned up stack & restored registers
 	;
+	DEBUG_LOG 	msg_call_ata_disk_read
 	call 	ata_disk_read
+	DEBUG_LOG 	msg_done
 
 	; clean up stack
 	pop 	cx
@@ -224,9 +321,10 @@ disk_service_read:
 	xor 	ax, ax
 
 	; set DISK_DRIVE_LAST_STATUS
-	call 	__set_int_disk_drive_last_status
+	; call 	__set_int_disk_drive_last_status
 
 	inc 	al ; set return code
+	xor 	ah, ah
 	jmp 	disk_service_int_handler.done
 
 .error_invalid_options:
@@ -243,7 +341,11 @@ disk_service_read:
 	call 	__set_int_disk_drive_last_status
 	xor 	ax, ax
 	stc
+	pop 	dx
 	jmp 	disk_service_int_handler.done
+
+msg_LBA_debug:
+	db "LBA: ", 0
 
 ; ======================================================================== ;
 ; Helper for setting status of disk operation
