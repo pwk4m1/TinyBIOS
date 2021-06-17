@@ -2,7 +2,7 @@
 ; Copyright (c) 2020, k4m1 <k4m1@protonmail.com>
 ; All rights reserved. See /LICENSE for full license agreement.
 ;
-; let's implement malloc+free in hopefully sane way.
+; let's implement malloc+free in hopefully reasonable way.
 ;
 ; Memory block header:
 ;	4 bytes: used/free
