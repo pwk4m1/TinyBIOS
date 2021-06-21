@@ -51,6 +51,10 @@
 %endif ; __DO_VERBOSE_LOG__
 
 %ifdef __DO_DEBUG_LOG__
+	%macro DEBUG_call 1
+		call 	%1
+	%endmacro
+
 	%macro DEBUG_LOG 1
 		push 	si
 		mov 	si, %1
@@ -59,6 +63,9 @@
 	%endmacro
 %else
 	%macro DEBUG_LOG 1
+	%endmacro
+
+	%macro DEBUG_call 1
 	%endmacro
 %endif ; __DO_DEBUG_LOG__
 
