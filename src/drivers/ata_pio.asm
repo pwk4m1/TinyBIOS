@@ -677,8 +677,10 @@ ata_pio_b28_read:
 		ret
 
 	.disk_error:
-		stc
 		jmp 	.done
+	
+	.msg_disk_error:
+		db "ATA DISK READ ERRORED!", 0x0A, 0x0D, 0
 
 ; ======================================================================== ;
 ; 
@@ -694,6 +696,7 @@ ata_pio_b28_read:
 ;
 ; ======================================================================== ;
 ata_disk_read:
+	clc
 	pusha
 
 	LOG 	ata_msg_reading_disk
@@ -727,7 +730,7 @@ ata_disk_read:
 	stc
 	jmp 	.do_ret 
 
-	; disk passed sanity checks, do the actual disk read now. 
+	; disk passed checks, do the actual disk read now. 
 	.disk_status_ok:
 		dec 	si 		; retries = retries - 1
 		test 	si, si 		; if 0 left, indicate error
