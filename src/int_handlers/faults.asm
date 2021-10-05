@@ -77,6 +77,8 @@ init_fault_interrupts:
 ;
 ; ======================================================================= ;
 exception_abort:
+	iret
+
 	; print exception message
 	push 	si
 	mov 	si, msg_exception
@@ -86,6 +88,7 @@ exception_abort:
 
 	; pop instruction pointer to ax, and start fetching bytes
 	pop 	ax
+	push 	ax
 
 	mov 	si, msg_illegal_address
 	call 	serial_print
@@ -94,7 +97,7 @@ exception_abort:
 	mov 	si, msg_illegal_bytes
 	call 	serial_print
 
-	mov 	si, ax
+	pop 	si
 	mov 	cx, 8
 	.print_offending_line_loop:
 		lodsw

@@ -103,10 +103,17 @@ disk_service_extended_detect:
 	mov 	cx, 1
 
 	DEBUG_LOG 	ata_msg_int_done
+	DEBUG_LOG 	ata_msg_ret_to
+	pop 	ax
+	push 	ax
+	DEBUG_call 	serial_printh
 	iret
 
 msg_extended_detect_check:
 	db "RESPONDING TO INT #13H AH=41H", 0x0A, 0x0D, 0
+
+ata_msg_ret_to:
+	db "RET AFTER INT #13H TO: ", 0
 
 ; ======================================================================== ;
 ; we don't atm support extended disk read (NAAH WE DO NOW!)
@@ -177,6 +184,10 @@ disk_service_int_handler:
 	clc
 
 	DEBUG_LOG 	ata_msg_int_done
+	DEBUG_LOG 	ata_msg_ret_to
+	pop 	ax
+	push 	ax
+	DEBUG_call 	serial_printh
 	iret
 
 .retstatus:
@@ -292,16 +303,22 @@ disk_service_read:
 
 	; set LBA to stack
 	push 	0x0000 	; bits 	32 - 16
-	push 	cx 	; bits 	16 - 0
-	mov 	bx, sp
+	push 	0x0002
+;	xor 	ch, ch
+;	push 	cx 	; bits 	16 - 0
+	mov 	ebx, esp
 
 	; read sectors from disk, error management is done after
 	; we've cleaned up stack & restored registers
 	;
 	DEBUG_LOG 	msg_call_ata_disk_read
 	call 	ata_disk_read
+	cli
+	hlt
+	jc 	.error_disk_read_failed
 	DEBUG_LOG 	msg_done
 
+.cleanup:
 	; clean up stack
 	pop 	cx
 	pop 	cx
@@ -313,8 +330,6 @@ disk_service_read:
 	pop 	bx
 	pop 	ax
 
-	; now do error management for ata_disk_read 
-	jc 	.error_disk_read_failed
 	pop 	dx
 
 	; if no errors encountered, return ok
@@ -341,8 +356,14 @@ disk_service_read:
 	call 	__set_int_disk_drive_last_status
 	xor 	ax, ax
 	stc
-	pop 	dx
-	jmp 	disk_service_int_handler.done
+	DEBUG_LOG 	msg_ata_disk_read_fail
+	cli
+	hlt
+	jmp 	$ -2
+	jmp 	disk_service_read.cleanup
+
+msg_ata_disk_read_fail:
+	db "DISK READ FAILED ON INT #13H", 0x0A, 0x0D, 0
 
 msg_LBA_debug:
 	db "LBA: ", 0

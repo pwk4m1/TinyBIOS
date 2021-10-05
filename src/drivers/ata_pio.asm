@@ -540,7 +540,7 @@ ata_check_disk_by_base:
 ; ======================================================================== ;
 ata_poll:
 	pusha
-	mov	cl, 15
+	mov	cl, 150
 	clc
 	.loop:
 		call	ata_delay_in
@@ -588,7 +588,15 @@ ata_disk_read_info:
 ;	di 	= pointer to buffer to read data into
 ;	dx 	= device 'io base' port
 ;	cl 	= sector count
-;	bx	= pointer to LBA 
+;	bx	= pointer to LBA *top*
+; Note:
+;	LBA should be arranged so that LBA pointer points to 
+;	LOW byte of LBA, followed by higher bytes, eg:
+;
+;	LBAPTR:
+;		db val 	; low'est byte ( bits 0 - 8 )
+; 		...
+;		db val 	; highest byte ( bits 24 - 32 )
 ; Returns:
 ;	Carry flag set on error
 ;
@@ -677,10 +685,12 @@ ata_pio_b28_read:
 		ret
 
 	.disk_error:
+		mov 	si, .msg_disk_error
+		call 	serial_print
 		jmp 	.done
 	
 	.msg_disk_error:
-		db "ATA DISK READ ERRORED!", 0x0A, 0x0D, 0
+		db "ATA DISK ERRORED AFTER STATUS POLL!", 0x0A, 0x0D, 0
 
 ; ======================================================================== ;
 ; 
@@ -699,10 +709,10 @@ ata_disk_read:
 	clc
 	pusha
 
-	LOG 	ata_msg_reading_disk
+	DEBUG_LOG 	ata_msg_reading_disk
 
 	mov	ax, dx
-	call	serial_printh
+	DEBUG_call 	serial_printh
 
 	; I use si to store amount of disk read retry attempts 
 	; remaining, don't want to bother w/ push + pop for cx.
@@ -743,7 +753,6 @@ ata_disk_read:
 		; this is not the _correct_ way to do things but it'll
 		; do for now (meaning it'll be here forever, I'd expect...)
 		jc 	.read_errored
-		clc
 
 	.do_ret:
 		popa
@@ -756,8 +765,8 @@ ata_disk_read:
 		jmp 	.do_ret
 
 	.disk_read_failed:
-		;mov 	si, ata_msg_disk_read_failed
-		;call 	serial_print
+		mov 	si, ata_msg_disk_read_failed
+		call 	serial_print
 		stc
 		jmp 	.do_ret
 

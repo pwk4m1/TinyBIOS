@@ -161,10 +161,10 @@ main:
 	jmp 	.hang
 
 LBAPTR:
-	db	0	; bits 32 - 24 
-	db	0	; bits 24 - 16
-	db	0	; bits 16 - 8
-	db	0x01	; bits 8 - 0 
+	db 	1 	; bits 0 - 8
+	db 	0 	; 8 - 16
+	db 	0 	; ...
+	db 	0
 
 msg_no_bootsector:
 	db "FAILED TO FIND BOOTABLE DISK!", 0x0A, 0x0D, 0

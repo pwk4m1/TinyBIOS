@@ -10,6 +10,9 @@ clean:
 car:
 	$(as) $(asflags) -DUSE_CAR -o bin/bios src/reset.asm
 
+debug:
+	$(as) $(asflags) -o bin/bios -D__DO_DEBUG_LOG__ src/reset.asm
+
 install:
 	$(as) $(asflags) -o bin/bios src/reset.asm
 
