@@ -18,7 +18,7 @@ install:
 
 test:
 	qemu-system-x86_64 -bios bin/bios \
-	    -hda linux_disk 
+	    -hda test_disk 
 
 test-s:
 	qemu-system-x86_64 -bios bin/bios \
@@ -27,16 +27,16 @@ test-s:
 
 test-tty:
 	qemu-system-x86_64 -nographic -serial mon:stdio \
-	    -bios bin/bios -hda linux_disk &
+	    -bios bin/bios -hda test_disk &
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \
-	-hda linux_disk 2>&1 | \
+	-hda test_disk 2>&1 | \
 	tee qemu_run_log.txt
 
 gdb:
 	qemu-system-i386 -S -gdb tcp::1234 -bios bin/bios \
-	-hda linux_disk 
+	-hda test_disk 
 
 test-end:
 	kill -9 `ps aux | grep qemu | grep -v grep | awk '{print $$2}'`
