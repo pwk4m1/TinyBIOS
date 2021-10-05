@@ -1,4 +1,3 @@
-
 as=nasm
 aflags=-fbin -Wall -O0 
 
@@ -38,6 +37,4 @@ gdb:
 	qemu-system-i386 -S -gdb tcp::1234 -bios bin/bios \
 	-hda test_disk 
 
-test-end:
-	kill -9 `ps aux | grep qemu | grep -v grep | awk '{print $$2}'`
 
