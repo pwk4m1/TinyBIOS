@@ -100,7 +100,6 @@
 %define __ata_dcr_rsvd	01111000b	; Reserved
 %define __ata_dcr_hob	10000000b	; Set this to read the High Order Byte
 					; of the last LBA48 value sent.
-
 ; ======================================================================== ;
 ; drive address register bit definitions
 ; ======================================================================== ;
@@ -121,6 +120,65 @@
 ;	    according to specs. If not, enumerate PCI bus to find disks.
 ;
 ; ======================================================================== ;
+
+
+; ======================================================================== ;
+; Print ata error bits explanations from al
+; requires:
+;	al = bits to print 
+; returns:
+;	nothing
+; ======================================================================== ;
+ata_print_error_bits:
+	pusha
+	
+	mov 	cl, 8
+	mov 	bx, .error_msg_array
+
+	mov 	dx, 0x0F
+	mov 	ds, dx
+
+	.loop:
+		test 	al, al
+		jz 	.print_error
+	.next:
+		shr 	al, 1
+		add 	bx, 2
+		loop 	.loop
+	popa
+	ret
+
+.print_error:
+	mov 	si, word [bx]
+	call 	serial_print
+	jmp 	.next
+
+.ata_err_amnf:
+	db 	" * Address mark not found", 0x0A, 0x0D, 0 
+.ata_err_tkznf:
+	db 	" * Track zero not found", 0x0A, 0x0D, 0
+.ata_err_abrt:
+	db 	" * Command aborted", 0x0A, 0x0D, 0
+.ata_err_mcr:
+	db 	" * Media change request", 0x0A, 0x0D, 0
+.ata_err_idnf:
+	db 	" * ID Not found", 0x0A, 0x0D, 0
+.ata_err_mc:
+	db 	" * Media changed", 0x0A, 0x0D, 0
+.ata_err_unc:
+	db 	" * Uncorrectable data error", 0x0A, 0x0D, 0
+.ata_err_bbd:
+	db 	" * Bad block detected", 0x0A, 0x0D, 0
+
+.error_msg_array:
+	dd 	.ata_err_amnf
+	dd 	.ata_err_tkznf
+	dd 	.ata_err_abrt
+	dd 	.ata_err_mcr
+	dd 	.ata_err_idnf
+	dd 	.ata_err_mc
+	dd 	.ata_err_unc
+	dw 	.ata_err_bbd
 
 ; ======================================================================== ;
 ;
@@ -651,7 +709,7 @@ ata_pio_b28_read:
 
 	; read status
 	call	ata_poll
-	jc 	.disk_error
+	jc 	.disk_error_poll
 
 	.read_start:
 		push	cx
@@ -685,12 +743,20 @@ ata_pio_b28_read:
 		ret
 
 	.disk_error:
-		mov 	si, .msg_disk_error
+		mov 	si, ata_msg_disk_error_read_stat
+		call 	serial_print
+		sub 	dx, 6 		; point to error register
+		in 	al, dx
+		xor 	ah, ah
+		call 	ata_print_error_bits
+		
+		jmp 	.done
+
+	.disk_error_poll:
+		mov 	si, ata_msg_disk_error_poll
 		call 	serial_print
 		jmp 	.done
 	
-	.msg_disk_error:
-		db "ATA DISK ERRORED AFTER STATUS POLL!", 0x0A, 0x0D, 0
 
 ; ======================================================================== ;
 ; 
@@ -710,7 +776,6 @@ ata_disk_read:
 	pusha
 
 	DEBUG_LOG 	ata_msg_reading_disk
-
 	mov	ax, dx
 	DEBUG_call 	serial_printh
 
@@ -755,6 +820,7 @@ ata_disk_read:
 		jc 	.read_errored
 
 	.do_ret:
+		DEBUG_LOG 	ata_msg_disk_read_returning
 		popa
 		ret
 	
@@ -865,3 +931,13 @@ ata_msg_reading_disk:
 
 ata_msg_disk_read_failed:
 	db "DISK READ FAILED!", 0x0A, 0x0D, 0
+
+ata_msg_disk_error_poll:
+	db "ATA DISK ERRORED AFTER STATUS POLL!", 0x0A, 0x0D, 0
+
+ata_msg_disk_error_read_stat:
+	db "ATA DISK ERRORED ON READ, STATUS: ", 0x0A, 0x0D, 0
+
+ata_msg_disk_read_returning:
+	db "ATA DISK READ DONE, RET", 0x0A, 0x0D, 0
+
