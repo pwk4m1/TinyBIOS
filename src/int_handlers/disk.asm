@@ -154,7 +154,7 @@ disk_service_int_handler:
 	clc
 
 	DEBUG_LOG 	msg_disk_oper
-	; DEBUG_call 	serial_printh
+	DEBUG_call 	serial_printh
 
 	test 	ah, ah 			; ah = 0 => disk reset
 	jz 	disk_service_reset
@@ -261,6 +261,49 @@ disk_service_get_status:
 	jmp 	disk_service_get_status
 
 ; ======================================================================== ;
+; Helper to calculate LBA from CHS.
+; Requires:
+; 	- CH 	= Cylinder
+; 	- DH 	= Head
+; 	- CL 	= Sector
+; sets LBA to DISK_INT_HANDLER_LBAPTR
+;
+; For now, assume 16 heads, 64 sectors. TODO: Find these from
+; ata disk info.
+;
+calculate_lba_from_chs:
+	; LBA = (C * HPC + H) * SPT + (S - 1)
+	;
+	push 	ax
+	push 	bx
+
+	; ax = C * HPC + H
+	xor 	ax, ax
+	mov 	al, 16
+	mul 	ch
+	add 	al, dh
+
+	mov 	bx, ax
+	push 	dx
+	mov 	ax, 63
+	mul 	bx
+	dec 	cl
+	add 	al, cl
+
+	mov 	word [INTHANDLER_LBAPTR], ax
+	mov 	ax, dx
+	mov 	word [INTHANDLER_LBAPTR+2], ax
+
+	pop 	dx
+	pop 	bx
+	pop 	ax
+	ret
+
+INTHANDLER_LBAPTR:
+	dw 	0
+	dw 	0
+
+; ======================================================================== ;
 ; Disk read is bit more difficult, we need lots of stuff from user,
 ; this is done in C/H/S mode. 
 ;
@@ -286,6 +329,7 @@ disk_service_get_status:
 ; 	dx: device io base
 ; 	cl: sector count
 ;	bx: pointer to LBA
+;
 msg_call_ata_disk_read:
 	db "CALLING ATA_DISK_READ", 0x0A, 0x0D, 0
 
@@ -295,41 +339,57 @@ disk_service_read:
 	push 	cx
 	push 	di
 	push 	si
-	
 	push 	dx
-	call 	__get_disk_base_to_dx
-	; set di = pointer to 
+	
+	; Set CHS->LBA as driver needs
+	call 	calculate_lba_from_chs
+
+	; Sets destination for disk read
 	mov 	di, bx
 
-	; set LBA to stack
-	push 	0x0000 	; bits 	32 - 16
-	push 	0x0002
-;	xor 	ch, ch
-;	push 	cx 	; bits 	16 - 0
-	mov 	ebx, esp
+	; backup ax
+	mov 	bx, ax
+
+	; backup BDA 400h - 404h
+	push 	word [0x400]
+	push 	word [0x402]
+
+	; set 400h = LBA 
+	mov 	ax, word [INTHANDLER_LBAPTR]
+	mov 	word [0x400], ax
+	mov 	ax, word [INTHANDLER_LBAPTR+2]
+	mov 	word [0x402], ax
+	mov 	ax, bx
+
+	; Get device "id" -> actual disk
+	call 	__get_disk_base_to_dx
 
 	; read sectors from disk, error management is done after
 	; we've cleaned up stack & restored registers
 	;
 	DEBUG_LOG 	msg_call_ata_disk_read
+	; set bx to point to LBA
+	mov 	bx, 0x400
+
+	; set sector count for disk read
+	mov 	cl, al
+
 	call 	ata_disk_read
-	cli
-	hlt
+
+	; restore BDA
+	pop 	word [0x402]
+	pop 	word [0x400]
+
 	jc 	.error_disk_read_failed
 	DEBUG_LOG 	msg_done
 
 .cleanup:
-	; clean up stack
-	pop 	cx
-	pop 	cx
-	
 	; restore registers
 	pop 	si
 	pop 	di
 	pop 	cx
 	pop 	bx
 	pop 	ax
-
 	pop 	dx
 
 	; if no errors encountered, return ok
@@ -357,9 +417,6 @@ disk_service_read:
 	xor 	ax, ax
 	stc
 	DEBUG_LOG 	msg_ata_disk_read_fail
-	cli
-	hlt
-	jmp 	$ -2
 	jmp 	disk_service_read.cleanup
 
 msg_ata_disk_read_fail:
