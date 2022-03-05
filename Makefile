@@ -1,5 +1,5 @@
 as=nasm
-aflags=-fbin -Wall -O0 
+aflags=-fbin -O0 
 
 all: clean install
 
@@ -26,6 +26,7 @@ logtest:
 
 gdb:
 	qemu-system-i386 -S -gdb tcp::1234 -bios bin/bios \
-	-hda test_disk 
+	-hda test_disk -d in_asm 2>&1 | tee gdb_runlog.txt
+
 
 
