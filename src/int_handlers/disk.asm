@@ -29,7 +29,7 @@
 ; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
-
+bits 	16
 
 ; ======================================================================== ;
 ; Set ivt entry for disk interface
@@ -96,24 +96,11 @@ __parse_DAP:
 ;
 ; ======================================================================== ;
 disk_service_extended_detect:
-	LOG 	msg_extended_detect_check
-	popad
+	DEBUG_LOG 	msg_extended_detect_check
 	xor 	ax, ax
 	xchg 	bh, bl
 	mov 	cx, 1
-
-	DEBUG_LOG 	ata_msg_int_done
-	DEBUG_LOG 	ata_msg_ret_to
-	pop 	ax
-	push 	ax
-	DEBUG_call 	serial_printh
-	iret
-
-msg_extended_detect_check:
-	db "RESPONDING TO INT #13H AH=41H", 0x0A, 0x0D, 0
-
-ata_msg_ret_to:
-	db "RET AFTER INT #13H TO: ", 0
+	jmp 	disk_service_int_handler.done
 
 ; ======================================================================== ;
 ; we don't atm support extended disk read (NAAH WE DO NOW!)
@@ -132,23 +119,53 @@ disk_service_extended_read:
 	jmp 	disk_service_int_handler.done
 
 ; ======================================================================== ;
+; Handle disk read parameters call, int 13h ah=8
+;
+; we'll get:
+;	ah = 8
+; 	dl = drive index
+;	es:di = 0, probably
+; return:
+;	cf = set on error, clear on success
+;	ah = return code
+;	dl = number of disks
+; 	dh = logical last index of heads, starts from 0
+; 	cx = [7:6][15:8] logical last index of cylinders
+; 	     [5:0] = logical last index of sectors per track
+; 	bl = drive type for AT or PS2 floppies
+;	es:di = pointer to drive param table for floppies
+;
+disk_service_read_parameters:
+	call 	__get_disk_base_to_dx
+	cmp 	dx, 0x1f0
+	jne 	.not_supported
+
+	; todo: make dynamic
+	clc
+	mov 	ah, 0
+	mov 	dl, 1
+	mov 	dh, 1
+	mov 	cx, 0xff3f
+	mov 	bl, 0
+	mov 	di, 0
+
+	jmp 	disk_service_int_handler.done
+
+.not_supported:
+	stc
+	jmp 	disk_service_int_handler.done
+
+; ======================================================================== ;
 ; Handler for hard disk related services. We only support disk reset
 ; and disk read, carry flag is set on error
 ;
 ; dl = disk to use
 ;
-msg_serving_disk_int:
-	db "HANDLING INT #13H", 0x0A, 0x0D, 0
-
-ata_msg_int_done:
-	db "DONE HANDLING INT #13H", 0x0A, 0x0D, 0
-
-msg_disk_oper:
-	db "DISK OPERATION: ", 0
-
 disk_service_int_handler:
 
 	LOG 	msg_serving_disk_int
+	pop 	word [INT_HANDLER_RET_PTR]
+	push 	word [INT_HANDLER_RET_PTR]
 
 	pushad
 	clc
@@ -162,9 +179,12 @@ disk_service_int_handler:
 	jl 	disk_service_get_status ; ah = 1 => disk get status
 	je 	disk_service_read 	; ah = 2 => read sectors from drive
 
-;	cmp 	ah, 8 			; ah = 8 => read drive params
+	cmp 	ah, 8 			; ah = 8 => read drive params
+	je 	disk_service_read_parameters
 
 	cmp 	bx, 0x55aa
+	je 	disk_service_extended_detect
+	cmp 	ah, 0x41
 	je 	disk_service_extended_detect
 	cmp 	ah, 0x42
 	je 	disk_service_extended_read
@@ -175,6 +195,10 @@ disk_service_int_handler:
 	stc
 	mov 	al, 0x01
 	call 	__set_int_disk_drive_last_status
+
+	; unified "DONE" part for functions to restore stack, check
+	; address to return to is still correct, etc.
+	;
 .done:
 	mov 	word [.retstatus], ax
 	popad
@@ -188,6 +212,8 @@ disk_service_int_handler:
 	pop 	ax
 	push 	ax
 	DEBUG_call 	serial_printh
+	cmp 	ax, word [INT_HANDLER_RET_PTR]
+	jne 	.panic_invalid_retptr
 	iret
 
 .retstatus:
@@ -200,8 +226,6 @@ disk_service_int_handler:
 	hlt
 	jmp 	$ - 2
 
-msg_invalid_retptr:
-	db "INT #13H: INVALID RETURN POINTER (0000H)", 0x0A, 0x0D, 0
 
 ; ======================================================================== ;
 ; Do disk reset, that's fairly simple, we only need dx = I/O base
@@ -256,9 +280,13 @@ disk_service_get_status:
 	; if disk reported ok, but DISK_DRIVE_LAST_STATUS is not ok,
 	; return DISK_DRIVE_LAST_STATUS
 	;
-	cli
-	hlt
-	jmp 	disk_service_get_status
+	cmp 	dl, 0x80
+	je 	.fetch_stat
+	mov 	al, 0xE0
+	ret
+.fetch_stat:
+	mov 	al, byte [DISK_DRIVE_LAST_STATUS]
+	ret
 
 ; ======================================================================== ;
 ; Helper to calculate LBA from CHS.
@@ -266,6 +294,7 @@ disk_service_get_status:
 ; 	- CH 	= Cylinder
 ; 	- DH 	= Head
 ; 	- CL 	= Sector
+; 	- BX 	= disk to read from
 ; sets LBA to DISK_INT_HANDLER_LBAPTR
 ;
 ; For now, assume 16 heads, 64 sectors. TODO: Find these from
@@ -276,6 +305,8 @@ calculate_lba_from_chs:
 	;
 	push 	ax
 	push 	bx
+
+	; disk info is at 0x80100 now
 
 	; ax = C * HPC + H
 	xor 	ax, ax
@@ -330,8 +361,6 @@ INTHANDLER_LBAPTR:
 ; 	cl: sector count
 ;	bx: pointer to LBA
 ;
-msg_call_ata_disk_read:
-	db "CALLING ATA_DISK_READ", 0x0A, 0x0D, 0
 
 disk_service_read:
 	push 	ax
@@ -419,12 +448,6 @@ disk_service_read:
 	DEBUG_LOG 	msg_ata_disk_read_fail
 	jmp 	disk_service_read.cleanup
 
-msg_ata_disk_read_fail:
-	db "DISK READ FAILED ON INT #13H", 0x0A, 0x0D, 0
-
-msg_LBA_debug:
-	db "LBA: ", 0
-
 ; ======================================================================== ;
 ; Helper for setting status of disk operation
 ; requires:
@@ -437,3 +460,32 @@ __set_int_disk_drive_last_status:
 	pop 	esi
 	ret
 
+
+; All the messages are here
+;
+msg_call_ata_disk_read:
+	db "CALLING ATA_DISK_READ", 0x0A, 0x0D, 0
+
+msg_ata_disk_read_fail:
+	db "DISK READ FAILED ON INT #13H", 0x0A, 0x0D, 0
+
+msg_LBA_debug:
+	db "LBA: ", 0
+
+msg_extended_detect_check:
+	db "RESPONDING TO INT #13H AH=41H", 0x0A, 0x0D, 0
+
+ata_msg_ret_to:
+	db "RET AFTER INT #13H TO: ", 0
+
+msg_serving_disk_int:
+	db "HANDLING INT #13H", 0x0A, 0x0D, 0
+
+ata_msg_int_done:
+	db "DONE HANDLING INT #13H", 0x0A, 0x0D, 0
+
+msg_disk_oper:
+	db "DISK OPERATION: ", 0
+
+msg_invalid_retptr:
+	db "INT #13H: CORRUPTED RETURN POINTER!", 0x0A, 0x0D, 0
