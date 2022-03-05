@@ -47,11 +47,10 @@
 %define pci_dev_ptr_array       0x5002
 %define pci_dev_cnt             0x5000
 
-%define EBDA_BASE_ADDR 		0x8000 ; shifted right by 4 bytes.
+%define EBDA_BASE_ADDR 		0x8000 ; shifted right by 4.
 
-; disk int handler for statuses 'n all other disk related
-; info that we use internally.
-;
-%define DISK_DRIVE_LAST_STATUS 	0x00080000
+%define DISK_DRIVE_LAST_STATUS 	0x04A0 	; 1 byte
+%define INT_HANDLER_RET_PTR 	0x04A1 	; 2 bytes
+%define DISK_MAIN_SIZE_LBA 	0x04A3 	; 2 bytes
 
 %endif
