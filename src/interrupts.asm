@@ -97,15 +97,19 @@ irq_handler:
 	pusha
 
 	call 	pic_get_isr
+	test 	al, al
+	jz 	.PIT
 
 	; check if this was spurious or software defined irq
 	; if so, no need to send EOI
-	jmp 	.end
+	cmp 	al, 7
+	je 	.end
 
 	; check if primary or secondary irq
 	cmp 	al, 8
 	jl 	.pri
 
+.secondary:
 	; send secondary pic EOI
 	mov 	dx, PIC_CMD_SEC
 	mov 	al, 0
@@ -115,20 +119,16 @@ irq_handler:
 .pri:
 	mov 	dx, PIC_CMD_PRI
 	out 	dx, al
-
 .end:
-	mov 	si, .msg_bug_unhandled_irq
-	call 	serial_print
-	call 	serial_printh
-	cli
-	hlt
-	jmp 	$ - 2
-
 	popa
 	iret
 
+; Below this line are IRQ specific handlers/management
+;  
+.PIT:
+	call 	dev_pit_handle_irq
+	jmp 	.pri
+	
 .msg_bug_unhandled_irq:
 	db "BUG: UNHANDLED INTERRUPT, IRQ#: ", 0
-
-
 
