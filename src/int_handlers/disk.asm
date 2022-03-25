@@ -136,6 +136,7 @@ disk_service_extended_read:
 ;	es:di = pointer to drive param table for floppies
 ;
 disk_service_read_parameters:
+	DEBUG_LOG msg_serving_read_params
 	call 	__get_disk_base_to_dx
 	cmp 	dx, 0x1f0
 	jne 	.not_supported
@@ -489,3 +490,6 @@ msg_disk_oper:
 
 msg_invalid_retptr:
 	db "INT #13H: CORRUPTED RETURN POINTER!", 0x0A, 0x0D, 0
+
+msg_serving_read_params:
+	db "INT #13H: READ DISK PARAMETERS", 0x0A, 0x0D, 0
