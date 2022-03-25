@@ -193,6 +193,10 @@ msg_jump_to_loader:
 
 ; Driver includes
 ; 
+%include "src/drivers/vga/vga_core.asm"
+%include "src/drivers/cpu/common_ia86.asm"
+%include "src/drivers/pit/pit.asm"
+
 %include "src/drivers/8259_pic.asm"
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"
@@ -203,9 +207,6 @@ msg_jump_to_loader:
 %include "src/drivers/pci/pci_ide.asm"
 %include "src/drivers/pci/pci_vga.asm"
 
-%include "src/drivers/vga/vga_core.asm"
-
-%include "src/drivers/cpu/common_ia86.asm"
 
 ; Random helper & such includes
 ;
