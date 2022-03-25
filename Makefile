@@ -1,7 +1,7 @@
 as=nasm
 aflags=-fbin -O0 
 
-all: clean install
+all: clean build
 
 clean:
 	rm -rf bin/bios
@@ -12,7 +12,7 @@ car:
 debug:
 	$(as) $(asflags) -o bin/bios -D__DO_DEBUG_LOG__ src/reset.asm
 
-install:
+build:
 	$(as) $(asflags) -o bin/bios src/reset.asm
 
 test:
