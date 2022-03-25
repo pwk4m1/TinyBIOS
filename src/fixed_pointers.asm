@@ -53,4 +53,6 @@
 %define INT_HANDLER_RET_PTR 	0x04A1 	; 2 bytes
 %define DISK_MAIN_SIZE_LBA 	0x04A3 	; 2 bytes
 
+%define PIT_SYSTEM_TIME 	0x00080000 ; System time, 4 bytes
+
 %endif
