@@ -17,7 +17,7 @@ install:
 
 test:
 	qemu-system-x86_64 -bios bin/bios -serial stdio \
-		-hda /Users/k4m1/cdx/ewf1
+		-hda test_disk
 
 
 logtest:
