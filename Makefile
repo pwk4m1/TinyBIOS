@@ -16,8 +16,9 @@ install:
 	$(as) $(asflags) -o bin/bios src/reset.asm
 
 test:
-	qemu-system-x86_64 -bios bin/bios \
-	    -hda test_disk 
+	qemu-system-x86_64 -bios bin/bios -serial stdio \
+		-hda /Users/k4m1/cdx/ewf1
+
 
 logtest:
 	qemu-system-x86_64 -d in_asm -bios bin/bios  \
