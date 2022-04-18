@@ -30,26 +30,53 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-%define PIT_CHANNEL_0 	0x40
-%define PIT_CHANNEL_1 	0x41
-%define PIT_CHANNEL_2 	0x42
-%define PIT_MCR_WO 	0x43 	; mode/command register, write-only
-
-; Initialises PIT so that interrupt occures once a second.
+; ======================================================================== ;
+; Set ivt entry for serial interface
 ;
-init_pit:
-	push 	eax
+set_pseudo_vga_ivt_entry:
+	pusha
+	mov 	eax, pseudo_vga_service_int_handler
+	and 	eax, 0x0000ffff
+	mov 	bx, cs
+	mov 	di, (0x10 * 4)
+	call 	set_ivt_entry
+	popa
+	ret
 
-	mov 	eax, PIT_SYSTEM_TIME
-	mov 	dword [eax], 0
+; ======================================================================== ;
+; Handler for serial port related services
+;
+pseudo_vga_service_int_handler:
+	pusha
+	cli
+	cmp 	ah, 0x09
+	je 	.write
+	cmp 	ah, 0x0a
+	je 	.write
+	cmp 	ah, 0x0e
+	je 	.write
+	cmp 	ah, 0x13
+	je 	.write_str
+	mov 	si, pseudovga_msg_unknown_command
+	call 	serial_print
+	call 	serial_printh
+	
+.done:
+	; We get here by software interrupt by CPU, not by 
+	; PIC generated int, so don't send EOI !
+	popa
+	iret
 
-	mov 	al, 0x36
-	out 	PIT_MCR_WO, al
+.write:
+	mov 	dx, 0x03f8
+	out 	dx, al
+	jmp 	.done
 
-	mov 	al, 0x9b
-	out 	PIT_CHANNEL_0, al
-	mov 	al, 0x2e
-	out 	PIT_CHANNEL_0, al
+.write_str:
+	mov 	si, bp
+	call 	serial_print
+	jmp 	.done
 
-	pop 	eax
-        ret
+pseudovga_msg_unknown_command:
+	db "UNKNOWN INT 10H COMMAND: ", 0
+

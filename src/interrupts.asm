@@ -100,6 +100,10 @@ irq_handler:
 	test 	al, al
 	jz 	.PIT
 
+	mov 	si, .msg_bug_unhandled_irq
+	call 	serial_print
+	call 	serial_printh
+
 	; check if this was spurious or software defined irq
 	; if so, no need to send EOI
 	cmp 	al, 7
@@ -130,5 +134,5 @@ irq_handler:
 	jmp 	.pri
 	
 .msg_bug_unhandled_irq:
-	db "BUG: UNHANDLED INTERRUPT, IRQ#: ", 0
+	db "UNHANDLED INTERRUPT, IRQ#: ", 0
 

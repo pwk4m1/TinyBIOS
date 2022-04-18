@@ -80,6 +80,7 @@ main:
 	mov	si, msg_boot_early
 	call	serial_print
 	call 	mm_heap_init
+	call 	init_pit
 
 	call 	cpuid_print_cpu_vendor
 
@@ -140,6 +141,7 @@ main:
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
+	call 	set_pseudo_vga_ivt_entry
 	call 	init_fault_interrupts
 
 	xor 	esi, esi
@@ -178,12 +180,12 @@ msg_boot_early:
 	db 0x0A, 0x0D, 0
 
 msg_not_boot_sector:
-	db "ATA DISK HAS NO BOOTLOADER, EXPECTED 55AA, GOT: ", 0
+	db "ATA DISK HAS NO BOOTLOADER, EXPECTED AA55, GOT: ", 0
 msg_disk_read_failed:
 	db "FAILED TO READ DISK 0x", 0
 
 msg_bootsector_found:
-	db "FOUND BOOT SECTOR SIGNATURE (55AA) FROM DISK", 0x0A, 0x0D, 0
+	db "FOUND BOOT SECTOR SIGNATURE (AA55) FROM DISK", 0x0A, 0x0D, 0
 
 msg_init_interrupts:
 	db "SETTING UP IVT & INTERRUPT HANDLERS", 0x0A, 0x0D, 0
@@ -207,7 +209,6 @@ msg_jump_to_loader:
 %include "src/drivers/pci/pci_ide.asm"
 %include "src/drivers/pci/pci_vga.asm"
 
-
 ; Random helper & such includes
 ;
 %include "src/test_ram.asm"
@@ -217,7 +218,11 @@ msg_jump_to_loader:
 %include "src/bda.asm"
 
 ; Interrupt handlers
-%include "src/int_handlers/serial.asm"
-%include "src/int_handlers/disk.asm"
-%include "src/int_handlers/faults.asm"
+%include "src/int_handlers/pit.asm"
+
+; software triggered interrupt handlers
+%include "src/int_handlers/swint/serial.asm"
+%include "src/int_handlers/swint/vga_dummy.asm"
+%include "src/int_handlers/swint/disk.asm"
+%include "src/int_handlers/swint/faults.asm"
 

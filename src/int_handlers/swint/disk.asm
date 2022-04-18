@@ -143,12 +143,12 @@ disk_service_read_parameters:
 
 	; todo: make dynamic
 	clc
-	mov 	ah, 0
+	mov 	ah, 1
 	mov 	dl, 1
 	mov 	dh, 1
 	mov 	cx, 0xff3f
-	mov 	bl, 0
-	mov 	di, 0
+	mov 	bl, 1
+	mov 	di, 1
 
 	jmp 	disk_service_int_handler.done
 
@@ -174,8 +174,8 @@ disk_service_int_handler:
 	DEBUG_LOG 	msg_disk_oper
 	DEBUG_call 	serial_printh
 
-	test 	ah, ah 			; ah = 0 => disk reset
-	jz 	disk_service_reset
+	cmp 	ax, 0
+	je 	disk_service_reset
 	cmp 	ah, 2
 	jl 	disk_service_get_status ; ah = 1 => disk get status
 	je 	disk_service_read 	; ah = 2 => read sectors from drive
