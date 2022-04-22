@@ -149,7 +149,7 @@
 
 ; Some predefined responses to commands
 %define kbdctl_selftest_success 	0x55
-%define kbdctl_cmd_ack 			0xFA
+%define kbdctl_stat_ack			0xFA
 
 ; Helper functions to various operations related to kbdctl
 ;
@@ -158,173 +158,52 @@
 ; Requires:
 ;	al = command byte to send
 ; Returns:
-;	-
+; 	carry flag on error/nack
 ; Notes:
 ;	Display error if command is not acknowledged
 ;
 kbdctl_send_cmd:
-	out 	kbdctl_cmd_wo, al
-	in 	al, kbdctl_data_rw
-	cmp 	al, kbdctl_cmd_ack
-	je 	.done
+	clc
+	push 	ax
+	push 	cx
+
+	mov 	cx, 50
+	xchg 	al, ah
+	.cmd_write:
+		; check that controller input buffer status is empty
+		;
+		in 	al, kbdctl_stat_ro
+		test 	al, kbdctl_stat_in_buf
+		; if it's not, jump to loop
+		;
+		jnz 	.loop_next
+		xchg  	ah, al
+		; try writing command, backup command byte in case
+		; we don't get ack
+		;
+		out 	kbdctl_cmd_wo, al
+		xchg 	ah, al
+		; check status of write command, if ACK, we're
+		; done here. go back to loop othervice.
+		; 
+		in 	al, kbdctl_data_rw
+		cmp 	al, kbdctl_stat_ack
+		je 	.done
+	.loop_next:
+		loop 	.cmd_write
+	; the thing has timed out, time to set carry flag
+	; and display error
+	;
 	push 	si
-	mov 	si, kbdctl_msg_nack
+	mov 	si, kbdctl_msg_ctl_timeout
 	call 	serial_print
 	pop 	si
-.done:
-	ret
-
-; Perform CPU reset immediately/asap
-; This function does not return, as CPU is reset.
-;
-sysrst_hard:
-	; wait for empty input buffer
-	in 	al, kbdctl_stat_ro
-	test 	al, kbdctl_stat_in_buf
-	jne 	sysrst_hard
-
-	; send reset to kbd controller
-	mov 	al, kbdctl_cmd_cpu_hard_reset
-	out 	kbdctl_cmd_wo, al
-
-	; reset should have happened, just in case
-	; do infinite loop here
-	cli
-	hlt
-	jmp 	$ - 2
-
-
-; Disable all ps/2 devices connected to the controller.
-; 
-kbdctl_disable_all_devices:
-	push 	ax
-
-	mov 	al, kbdctl_cmd_disable_p1
-	call 	kbdctl_send_cmd
-
-	mov 	al, kbdctl_cmd_disable_p2
-	out 	kbdctl_data_rw, al
-
-	pop 	ax
-	ret
-
-; Flush output buffer of kbd controller
-; Carry flag set on error, clear on success
-;
-kbdctl_flush_ctl_out_buf:
-	clc
-	push 	ax
-	push 	cx
-	push 	dx
-
-	; try up to 65k polls
-	mov 	cx, 0xffff
-	.poll:
-		mov 	dx, kbdctl_stat_ro
-		in 	al, dx
-		mov 	dx, kbdctl_data_rw
-		in 	al, dx
-		test 	al, kbdctl_stat_out_buf
-		je 	.done
-		loop 	.poll
-	.timeout:
-		stc
+	stc
 	.done:
-		pop 	dx
-		pop  	cx
-		pop 	ax
-		ret	
-
-; Set controller configuration. This has it's own wrapper function
-; solely because some bits of controllers are not universal :(
-; This means that we'll read the odld value, do required changes and
-; finally write it back.
-;
-kbdctl_write_default_config:
-	push 	dx
-	push 	ax
-
-	; issue read configuration command
-	mov  	al, kbdctl_cmd_read_config
-	call 	kbdctl_send_cmd
-
-	; read the configuration
-	in 	al, kbdctl_data_rw
-
-	; apply mask of ours / disable IRQs + translation
-	and 	al, kbdctl_default_config_mask
-	xchg 	al, ah
-
-	; issue write configuration command
-	mov 	al, kbdctl_cmd_write_config
-	call 	kbdctl_send_cmd
-
-	; write new configuration
-	xchg 	al, ah
-	out 	kbdctl_data_rw, al
-
-	; store the new configuration for later use
-	mov 	byte [KBDCTL_CONFIG_BYTE], al
-
-	pop 	ax
-	pop 	dx
-	ret
-
-; Perform controller self test. Some controllers get reset due 
-; this function, no clue why. *if* that happens, then restore the
-; config from KBDCTL_CONFIG_BYTE.
-;
-; Carry flag set on error, clear on success
-;
-kbdctl_do_cst:
-	clc
-	push 	cx
-	push 	ax
-
-	; send selftest command 
-	mov 	al, kbdctl_cmd_test_ctl
-	call 	kbdctl_send_cmd
-
-	; poll up to 50 times for self test success 
-	mov 	cx, 50
-	.loop:
-		in 	al, kbdctl_data_rw
-		cmp 	al, kbdctl_selftest_success
-		je 	.done
-		loop 	.loop
-	.dev_reset:
-		; controller has timed out
-		; check if reset occured.
-		mov 	al, kbdctl_cmd_read_config
-		call 	kbdctl_send_cmd
-
-		in 	al, kbdctl_data_rw
-		cmp 	al, byte [KBDCTL_CONFIG_BYTE]
-		; something's odd, no reset/configuration
-		; hasn't changed, but self test failed!
-		;
-		je 	.selftest_failed
-		; write old configuration back to the device
-		mov 	al, kbdctl_cmd_write_config
-		call 	kbdctl_send_cmd
-
-		mov 	al, byte [KBDCTL_CONFIG_BYTE]
-		out 	kbdctl_data_rw, al
-	.done:
-		pop 	ax
 		pop 	cx
+		pop 	ax
 		ret
-	.selftest_failed:
-		stc
-		mov 	si, kbdctl_msg_self_test_fail
-		call 	serial_print
-		jmp 	.done
 
-kbdctl_msg_nack:
-	db "ERROR: KEYBOARD CONTROLLER COMMAND NOT ACKNOWLEDGED!"
-	db 0x0A, 0x0D, 0
-
-kbdctl_msg_self_test_fail:
-	db "ERROR: KEYBOARD CONTROLLER SELF TEST FAILED!", 0x0A, 0x0D, 0
+; Read 1 byte from data port once data become s readable
 
 
