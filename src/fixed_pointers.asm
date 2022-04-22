@@ -43,6 +43,9 @@
 ; ata.asm
 %define ata_disk_addr_list 	0x3200
 
+; 8042
+%define KBDCTL_CONFIG_BYTE 	0x3400
+
 ; pci.asm
 %define pci_dev_ptr_array       0x5002
 %define pci_dev_cnt             0x5000
@@ -54,5 +57,6 @@
 %define DISK_MAIN_SIZE_LBA 	0x04A3 	; 2 bytes
 
 %define PIT_SYSTEM_TIME 	0x00080000 ; System time, 4 bytes
+
 
 %endif

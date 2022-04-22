@@ -199,6 +199,7 @@ msg_jump_to_loader:
 %include "src/drivers/cpu/common_ia86.asm"
 %include "src/drivers/pit/pit.asm"
 
+%include "src/drivers/8042_ps2.asm"
 %include "src/drivers/8259_pic.asm"
 %include "src/drivers/ata_pio.asm"
 %include "src/drivers/serial.asm"

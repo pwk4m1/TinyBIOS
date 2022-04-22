@@ -30,7 +30,7 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-; Driver for 8042/"ps2" controller. You might be
+; Driver for kbdctl/"ps2" controller. You might be
 ; familiar with this due such legacy treasures as a20
 ;
 
@@ -38,12 +38,12 @@
 ; Do note, that status and command happen over 0x64, but
 ; the port acts different based on read/write
 ;
-%define 8042_data_rw 			0x60
-%define 8042_stat_ro 			0x64
-%define 8042_cmd_wo 			0x64
+%define kbdctl_data_rw 			0x60
+%define kbdctl_stat_ro 			0x64
+%define kbdctl_cmd_wo 			0x64
 
 ; Status register bit meanings:
-; 1.) Output & input statuses
+; 0,1.) Output & input statuses
 ; 2.) System flag, this is cleared on reset
 ; 		and we set it when system has passed POST (Todo oneday)
 ; 3.) Command/data, if 0 then data written to input buffer is for ps/2 dev
@@ -52,12 +52,12 @@
 ; 5.) Timeout error (0 = good, 1  = time'd out)
 ; 6.) Parity error (0 = good, 1 = parity error)
 ; 
-%define 8042_stat_out_buf 		0x00
-%define 8042_stat_in_buf 		0x02
-%define 8042_stat_sysf 			0x04
-%define 8042_stat_cd 			0x08
-%define 8042_stat_timeout 		0x40
-%define 8042_stat_parity 		0x80
+%define kbdctl_stat_out_buf 		0x01
+%define kbdctl_stat_in_buf 		0x02
+%define kbdctl_stat_sysf 		0x04
+%define kbdctl_stat_cd 			0x08
+%define kbdctl_stat_timeout 		0x40
+%define kbdctl_stat_parity 		0x80
 
 ; Configuration byte bit definitions:
 ; 0.) First ps/2 port interrupt enabled
@@ -69,12 +69,34 @@
 ; 6.) First ps/2 port translation enabled
 ; 7.) Zero
 ;
-%define 8042_ctl_p1_ie 			0x00
-%define 8042_ctl_p2_ie 			0x02
-%define 8042_ctl_sf 			0x04
-%define 8042_ctl_ps1_clke 		0x10
-%define 8042_ctl_ps2_clke 		0x20
-%define 8042_ctl_ps1_te 		0x40
+%define kbdctl_ctl_p1_ie 		0x01
+%define kbdctl_ctl_p2_ie 		0x02
+%define kbdctl_ctl_sf 			0x04
+%define kbdctl_ctl_ps1_clke 		0x10
+%define kbdctl_ctl_ps2_clke 		0x20
+%define kbdctl_ctl_ps1_te 		0x40
+
+; Disable IRQs and translation 
+%define kbdctl_default_config_mask 	0xbc
+
+; Controller output port bit definitions
+; 0.) System reset (output), Always set to 1. Pulse reset with 0xFE
+;     Setting to '0' can cause 'reset forever'.
+; 1.) A20 gate (output)
+; 2.) Second ps/2 port clock
+; 3.) Second ps/2 port data
+; 4.) Output buffer full with byte from 1st PS/2 port (IRQ1)
+; 5.) As above for 2nd PS/2 port (IRQ12)
+; 6.) First ps/2 port clock
+; 7.) First ps/2 port data
+%define kbdctl_ctl_out_sysrst 		0x01
+%define kbdctl_ctl_out_a20 		0x02
+%define kbdctl_ctl_out_p2_clk 		0x04
+%define kbdctl_ctl_out_p2_data 		0x08
+%define kbdctl_ctl_out_buf_full_irq1 	0x10
+%define kbdctl_ctl_out_buf_full_irq12 	0x20
+%define kbdctl_ctl_out_p1_clk 		0x40
+%define kbdctl_ctl_out_p1_data 		0x80
 
 ; Command bytes:
 ; 1.)  Read "Byte 0" from internal ram, returns controller config byte
@@ -102,27 +124,207 @@
 ; 20.) Write next byte to ps/2 port input buffer
 ; 	Note: Sends next byte to second ps/2 port)
 ;
-%define 8042_cmd_read_config 		0x20
-%define 8042_cmd_readbN(N) 		(0x20 + N)
-%define 8042_cmd_write_config 		0x60
-%define 8042_cmd_writebN(N) 		(0x60 + N)
-%define 8042_cmd_disable_p2 		0xA7
-%define 8042_cmd_enable_p2 		0xA8
-%define 8042_cmd_test_p2 		0xA9
-%define 8042_cmd_test_ctl 		0xAA
-%define 8042_cmd_test_p1 		0xAB
-%define 8042_cmd_dump_ram 		0xAC
-%define 8042_cmd_disable_p1 		0xAD
-%define 8042_cmd_enable_p1 		0xAE
-%define 8042_cmd_read_ctl_in 		0xC0
-%define 8042_cmd_cp_inlo_stathi 	0xC1
-%define 8042_cmd_cp_inhi_stathi 	0xC2
-%define 8042_cmd_read_ctl_out 		0xC3
-%define 8042_cmd_writenext_ctl_out 	0xD1
-%define 8042_cmd_writenext_p1outbuf 	0xD2
-%define 8042_cmd_writenext_p2outbuf 	0xD3
-%define 8042_cmd_writenext_p4inbuf 	0xD4
-%define 8042_cmd_pulse_out_low(n) 	(n | 0xF0)
+%define kbdctl_cmd_read_config 		0x20
+%define kbdctl_cmd_readbN(N) 		(0x20 + N)
+%define kbdctl_cmd_write_config 	0x60
+%define kbdctl_cmd_writebN(N) 		(0x60 + N)
+%define kbdctl_cmd_disable_p2 		0xA7
+%define kbdctl_cmd_enable_p2 		0xA8
+%define kbdctl_cmd_test_p2 		0xA9
+%define kbdctl_cmd_test_ctl 		0xAA
+%define kbdctl_cmd_test_p1 		0xAB
+%define kbdctl_cmd_dump_ram 		0xAC
+%define kbdctl_cmd_disable_p1 		0xAD
+%define kbdctl_cmd_enable_p1 		0xAE
+%define kbdctl_cmd_read_ctl_in 		0xC0
+%define kbdctl_cmd_cp_inlo_stathi 	0xC1
+%define kbdctl_cmd_cp_inhi_stathi 	0xC2
+%define kbdctl_cmd_read_ctl_out 	0xC3
+%define kbdctl_cmd_writenext_ctl_out 	0xD1
+%define kbdctl_cmd_writenext_p1outbuf 	0xD2
+%define kbdctl_cmd_writenext_p2outbuf 	0xD3
+%define kbdctl_cmd_writenext_p4inbuf 	0xD4
+%define kbdctl_cmd_pulse_out_low(n) 	(n | 0xF0)
+%define kbdctl_cmd_cpu_hard_reset 	0xFE
 
+; Some predefined responses to commands
+%define kbdctl_selftest_success 	0x55
+%define kbdctl_cmd_ack 			0xFA
+
+; Helper functions to various operations related to kbdctl
+;
+
+; Send command to controller, read response (ack)
+; Requires:
+;	al = command byte to send
+; Returns:
+;	-
+; Notes:
+;	Display error if command is not acknowledged
+;
+kbdctl_send_cmd:
+	out 	kbdctl_cmd_wo, al
+	in 	al, kbdctl_data_rw
+	cmp 	al, kbdctl_cmd_ack
+	je 	.done
+	push 	si
+	mov 	si, kbdctl_msg_nack
+	call 	serial_print
+	pop 	si
+.done:
+	ret
+
+; Perform CPU reset immediately/asap
+; This function does not return, as CPU is reset.
+;
+sysrst_hard:
+	; wait for empty input buffer
+	in 	al, kbdctl_stat_ro
+	test 	al, kbdctl_stat_in_buf
+	jne 	sysrst_hard
+
+	; send reset to kbd controller
+	mov 	al, kbdctl_cmd_cpu_hard_reset
+	out 	kbdctl_cmd_wo, al
+
+	; reset should have happened, just in case
+	; do infinite loop here
+	cli
+	hlt
+	jmp 	$ - 2
+
+
+; Disable all ps/2 devices connected to the controller.
+; 
+kbdctl_disable_all_devices:
+	push 	ax
+
+	mov 	al, kbdctl_cmd_disable_p1
+	call 	kbdctl_send_cmd
+
+	mov 	al, kbdctl_cmd_disable_p2
+	out 	kbdctl_data_rw, al
+
+	pop 	ax
+	ret
+
+; Flush output buffer of kbd controller
+; Carry flag set on error, clear on success
+;
+kbdctl_flush_ctl_out_buf:
+	clc
+	push 	ax
+	push 	cx
+	push 	dx
+
+	; try up to 65k polls
+	mov 	cx, 0xffff
+	.poll:
+		mov 	dx, kbdctl_stat_ro
+		in 	al, dx
+		mov 	dx, kbdctl_data_rw
+		in 	al, dx
+		test 	al, kbdctl_stat_out_buf
+		je 	.done
+		loop 	.poll
+	.timeout:
+		stc
+	.done:
+		pop 	dx
+		pop  	cx
+		pop 	ax
+		ret	
+
+; Set controller configuration. This has it's own wrapper function
+; solely because some bits of controllers are not universal :(
+; This means that we'll read the odld value, do required changes and
+; finally write it back.
+;
+kbdctl_write_default_config:
+	push 	dx
+	push 	ax
+
+	; issue read configuration command
+	mov  	al, kbdctl_cmd_read_config
+	call 	kbdctl_send_cmd
+
+	; read the configuration
+	in 	al, kbdctl_data_rw
+
+	; apply mask of ours / disable IRQs + translation
+	and 	al, kbdctl_default_config_mask
+	xchg 	al, ah
+
+	; issue write configuration command
+	mov 	al, kbdctl_cmd_write_config
+	call 	kbdctl_send_cmd
+
+	; write new configuration
+	xchg 	al, ah
+	out 	kbdctl_data_rw, al
+
+	; store the new configuration for later use
+	mov 	byte [KBDCTL_CONFIG_BYTE], al
+
+	pop 	ax
+	pop 	dx
+	ret
+
+; Perform controller self test. Some controllers get reset due 
+; this function, no clue why. *if* that happens, then restore the
+; config from KBDCTL_CONFIG_BYTE.
+;
+; Carry flag set on error, clear on success
+;
+kbdctl_do_cst:
+	clc
+	push 	cx
+	push 	ax
+
+	; send selftest command 
+	mov 	al, kbdctl_cmd_test_ctl
+	call 	kbdctl_send_cmd
+
+	; poll up to 50 times for self test success 
+	mov 	cx, 50
+	.loop:
+		in 	al, kbdctl_data_rw
+		cmp 	al, kbdctl_selftest_success
+		je 	.done
+		loop 	.loop
+	.dev_reset:
+		; controller has timed out
+		; check if reset occured.
+		mov 	al, kbdctl_cmd_read_config
+		call 	kbdctl_send_cmd
+
+		in 	al, kbdctl_data_rw
+		cmp 	al, byte [KBDCTL_CONFIG_BYTE]
+		; something's odd, no reset/configuration
+		; hasn't changed, but self test failed!
+		;
+		je 	.selftest_failed
+		; write old configuration back to the device
+		mov 	al, kbdctl_cmd_write_config
+		call 	kbdctl_send_cmd
+
+		mov 	al, byte [KBDCTL_CONFIG_BYTE]
+		out 	kbdctl_data_rw, al
+	.done:
+		pop 	ax
+		pop 	cx
+		ret
+	.selftest_failed:
+		stc
+		mov 	si, kbdctl_msg_self_test_fail
+		call 	serial_print
+		jmp 	.done
+
+kbdctl_msg_nack:
+	db "ERROR: KEYBOARD CONTROLLER COMMAND NOT ACKNOWLEDGED!"
+	db 0x0A, 0x0D, 0
+
+kbdctl_msg_self_test_fail:
+	db "ERROR: KEYBOARD CONTROLLER SELF TEST FAILED!", 0x0A, 0x0D, 0
 
 
