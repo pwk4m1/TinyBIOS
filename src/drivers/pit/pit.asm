@@ -37,7 +37,7 @@
 
 ; Initialises PIT so that interrupt occures once a second.
 ;
-init_pit:
+pit_init:
 	push 	eax
 
 	mov 	eax, PIT_SYSTEM_TIME

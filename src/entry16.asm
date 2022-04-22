@@ -80,9 +80,11 @@ main:
 	mov	si, msg_boot_early
 	call	serial_print
 	call 	mm_heap_init
-	call 	init_pit
 
 	call 	cpuid_print_cpu_vendor
+
+	call 	pit_init
+	call 	kbdctl_init
 
 	call 	pci_init
 	call 	pci_ide_test

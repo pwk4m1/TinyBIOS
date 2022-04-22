@@ -30,6 +30,12 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
+
+KBDCTL_CURRENT_CONFIG:
+	db 0
+KBDCTL_DUAL_CHANNEL_ENABLED:
+	db 0
+
 ; Driver for kbdctl/"ps2" controller. You might be
 ; familiar with this due such legacy treasures as a20
 ;
@@ -178,17 +184,10 @@ kbdctl_send_cmd:
 		;
 		jnz 	.loop_next
 		xchg  	ah, al
-		; try writing command, backup command byte in case
-		; we don't get ack
+		; write command
 		;
 		out 	kbdctl_cmd_wo, al
-		xchg 	ah, al
-		; check status of write command, if ACK, we're
-		; done here. go back to loop othervice.
-		; 
-		in 	al, kbdctl_data_rw
-		cmp 	al, kbdctl_stat_ack
-		je 	.done
+		jmp 	.done
 	.loop_next:
 		loop 	.cmd_write
 	; the thing has timed out, time to set carry flag
@@ -204,6 +203,194 @@ kbdctl_send_cmd:
 		pop 	ax
 		ret
 
-; Read 1 byte from data port once data become s readable
+; Read 1 byte from data port once data becomes readable
+; Requires:
+;	 -
+; Returns:
+;	 Al = byte recv'd
+; Notes:
+; 	Carry flag set on timeout.
+;
+kbdctl_recv_data_poll:
+	clc
+	push 	cx
 
+	mov 	cx, 50
+	.data_recv:
+		; check that controller input buffer is not empty
+		;
+		in 	al, kbdctl_stat_ro
+		test 	al, kbdctl_stat_out_buf
+		jz 	.read_loop
+		in 	al, kbdctl_data_rw
+		jmp 	.done
+	.read_loop:
+		loop 	.data_recv
+	; data has not been readable for 50 iterations, call
+	; it quits, display error
+	;
+	push 	si
+	mov 	si, kbdctl_msg_ctl_timeout
+	call 	serial_print
+	pop 	si
+	stc
+	.done:
+		pop 	cx
+		ret
+
+; Write 1 byte of data to port once it becomes writable.
+; Requires:
+;	Al = byte to write
+; Returns:
+;	-
+; Notes:
+;	Carry flag set on timeout.
+;
+kbdctl_send_data_poll:
+	clc
+	push 	cx
+	push 	ax
+
+	mov 	cx, 50
+	.data_send:
+		; check that controller input buffer is empty
+		in 	al, kbdctl_stat_ro
+		test 	al, kbdctl_stat_in_buf
+		jnz 	.loop
+		pop 	ax
+		out 	kbdctl_data_rw, al
+		jmp 	.done
+	.loop:
+		loop 	.data_send
+	; data has not been writable for 50 iterations, call
+	; it quits, display error
+	;
+	push 	si
+	mov 	si, kbdctl_msg_ctl_timeout
+	call 	serial_print
+	pop 	si
+	stc
+	pop 	ax
+	.done:
+		pop 	cx
+		ret
+	
+
+; Disable all devices, this is used for the controller init.
+; Requires:
+;	-
+; Returns:
+;	-
+; Notes:
+;	Carry flag set on error
+;
+kbdctl_disable_devices:
+	push 	ax
+	mov 	al, kbdctl_cmd_disable_p1
+	call 	kbdctl_send_cmd
+	jc 	.errored
+
+	mov 	al, kbdctl_cmd_disable_p2
+	call 	kbdctl_send_cmd
+.errored:
+	pop 	ax
+	ret
+
+; Set kbd controller byte with default config mask w/ interrupts and
+; translation layer disabled. 
+; Requires:
+;	-
+; Returns:
+;	-
+; Notes:
+;	Carry flag set on error
+;
+kbdctl_init_config:
+	push 	ax
+	mov 	al, kbdctl_cmd_read_config
+	call 	kbdctl_send_cmd
+	jc 	.done
+.get_data:
+	call 	kbdctl_recv_data_poll
+
+	and 	al, kbdctl_default_config_mask
+	test 	al, kbdctl_ctl_ps2_clke
+	jz 	.single_channel
+	mov 	byte [KBDCTL_DUAL_CHANNEL_ENABLED], 1
+	mov 	byte [KBDCTL_CURRENT_CONFIG], al
+.single_channel:
+	xchg 	al, ah
+	mov 	al, kbdctl_cmd_write_config
+	call 	kbdctl_send_cmd
+	xchg 	al, ah
+	call 	kbdctl_send_data_poll
+	
+.done:
+	pop 	ax
+	ret
+
+; Perform controller self test. 
+; If the device got reset, restore the configuration set at
+; kbdctl_init_config.
+; Requires:
+;	-
+; Returns:
+;	-
+; Notes:
+;	Carry flag set on error
+;
+kbdctl_self_test:
+	push 	ax
+	mov 	al, kbdctl_cmd_test_ctl
+	call 	kbdctl_send_cmd
+	jc 	.done
+
+	call 	kbdctl_recv_data_poll
+	cmp 	al, kbdctl_selftest_success
+	je 	.done
+	push 	si
+	mov 	si, kbdctl_msg_selftest_fail
+	call 	serial_print
+	call 	serial_printh
+
+	; if self test has failed (response was not ACK+STAT OK)
+	; 
+	mov 	al, kbdctl_cmd_read_config
+	call 	kbdctl_send_cmd
+	jc 	.done
+	call 	kbdctl_recv_data_poll
+	jc 	.done
+	
+	; if prior configuration has been lost, device has been reset.
+	; In such case, restore from KBDCTL_CURRENT_CONFIG
+	;
+	cmp 	al, byte [KBDCTL_CURRENT_CONFIG]
+	je 	.done
+	mov 	si, kbdctl_msg_dev_no_reset
+	call 	serial_print
+	pop 	si
+	call 	kbdctl_init_config
+.done:
+	pop 	ax
+	ret
+
+; test for now
+kbdctl_init:
+	call 	kbdctl_disable_devices
+	jc 	.done
+	call 	kbdctl_init_config
+	jc 	.done
+	call 	kbdctl_self_test
+.done:
+	ret
+
+kbdctl_msg_ctl_timeout:
+	db "KEYBOARD CONTROLLER TIMED OUT", 0x0A, 0x0D, 0
+
+kbdctl_msg_dev_no_reset:
+	db "KEYBOARD CONTROLLER DIDN'T RESET AFTER FAILED SELF TEST!"
+	db 0x0A, 0x0D, 0
+
+kbdctl_msg_selftest_fail:
+	db "KEYBOARD CONTROLLER FAILED SELF TEST, RESPONSE: ", 0
 
