@@ -339,7 +339,7 @@ kbdctl_init_config:
 ; Notes:
 ;	Carry flag set on error
 ;
-kbdctl_self_test:
+kbdctl_ctl_test:
 	push 	ax
 	mov 	al, kbdctl_cmd_test_ctl
 	call 	kbdctl_send_cmd
@@ -374,14 +374,110 @@ kbdctl_self_test:
 	pop 	ax
 	ret
 
+; Super simple helper that only performs
+; device test on single device
+;
+; Requires:
+;	al = command for device to test
+; Returns:
+;	al = status of test
+; Notes:
+;	Carry flag set on timeout
+;
+kbdctl_dev_test:
+	call 	kbdctl_send_cmd
+	jc 	.done
+	call 	kbdctl_recv_data_poll
+.done:
+	ret
+
+; Print device status if it errored
+;
+kbdctl_print_device_status:
+	push 	si
+	cmp 	al, 0
+	je 	.done
+	cmp 	al, 2
+	jl 	.cll
+	je 	.clh
+	cmp 	al, 4
+	jl 	.dll
+	je 	.dlh
+	mov 	si, kbdctl_msg_dev_error_unknown
+.print:
+	call 	serial_print
+.done:
+	pop 	si
+	ret
+.cll:
+	mov 	si, kbdctl_msg_dev_clock_low
+	jmp 	.print
+.clh:
+	mov 	si, kbdctl_msg_dev_clock_high
+	jmp 	.print
+.dll:
+	mov 	si, kbdctl_msg_dev_data_low
+	jmp 	.print
+.dlh:
+	mov 	si, kbdctl_msg_dev_data_high
+	jmp 	.print
+
+; Perform device tests
+; If device returns with:
+; 	00, test passed
+; 	01, clock line stuck low
+;	02, clock line stuck high
+; 	03, data line stuck low
+; 	04, data line stuck high
+; 
+; Requires:
+;	-
+; Returns:
+;	-
+; Notes:
+;	Carry flag set on error
+;
+kbdctl_dev_test_all:
+	push 	ax
+	mov 	al, kbdctl_cmd_test_p1
+	call 	kbdctl_dev_test
+	jc 	.done
+	cmp 	byte [KBDCTL_DUAL_CHANNEL_ENABLED], 1
+	jne 	.test_done_p1
+	xchg 	al, ah
+	mov 	al, kbdctl_cmd_test_p2
+	call 	kbdctl_dev_test
+	jc 	.done
+.test_done_p2:
+	cmp 	byte [KBDCTL_DUAL_CHANNEL_ENABLED], 1
+	jne 	.test_done_p1
+	call 	kbdctl_print_device_status
+.test_done_p1:
+	xchg 	ah, al
+	call 	kbdctl_print_device_status
+.done:
+	pop 	ax
+	ret
+
 ; test for now
 kbdctl_init:
+	push 	ax
 	call 	kbdctl_disable_devices
 	jc 	.done
+	; flush output buffer, we don't care about content so 
+	; no need to poll
+	;
+	in 	al, kbdctl_data_rw
+	; flush done, go on.
+	;
 	call 	kbdctl_init_config
 	jc 	.done
-	call 	kbdctl_self_test
+	call 	kbdctl_ctl_test
+	jc 	.done
+	call 	kbdctl_dev_test_all
+	jc 	.done
 .done:
+	pop 	ax
 	ret
 
 kbdctl_msg_ctl_timeout:
@@ -393,4 +489,19 @@ kbdctl_msg_dev_no_reset:
 
 kbdctl_msg_selftest_fail:
 	db "KEYBOARD CONTROLLER FAILED SELF TEST, RESPONSE: ", 0
+
+kbdctl_msg_dev_clock_low:
+	db "CLOCK STUCK LOW", 0x0A, 0x0D, 0
+
+kbdctl_msg_dev_clock_high:
+	db "CLOCK STUCK HIGH", 0x0A, 0x0D, 0
+
+kbdctl_msg_dev_data_low:
+	db "DATA STUCK LOW", 0x0A, 0x0D, 0
+
+kbdctl_msg_dev_data_high:
+	db "DATA STUCK HIGH", 0x0A, 0x0D, 0
+
+kbdctl_msg_dev_error_unknown:
+	db "UNKNOWN ERROR", 0x0A, 0x0D, 0
 
