@@ -30,7 +30,6 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-
 KBDCTL_CURRENT_CONFIG:
 	db 0
 KBDCTL_DUAL_CHANNEL_ENABLED:
@@ -87,7 +86,7 @@ KBDCTL_DUAL_CHANNEL_ENABLED:
 
 ; Controller output port bit definitions
 ; 0.) System reset (output), Always set to 1. Pulse reset with 0xFE
-;     Setting to '0' can cause 'reset forever'.
+; Setting to '0' can cause 'reset forever'.
 ; 1.) A20 gate (output)
 ; 2.) Second ps/2 port clock
 ; 3.) Second ps/2 port data
@@ -393,10 +392,18 @@ kbdctl_dev_test:
 
 ; Print device status if it errored
 ;
+; Requires:
+;	al = Device self test status
+; Returns:
+; 	-
+;
+
 kbdctl_print_device_status:
 	push 	si
+	mov 	si, kbdctl_msg_dev_stat
+	call 	serial_print
 	cmp 	al, 0
-	je 	.done
+	je 	.passed
 	cmp 	al, 2
 	jl 	.cll
 	je 	.clh
@@ -421,6 +428,10 @@ kbdctl_print_device_status:
 .dlh:
 	mov 	si, kbdctl_msg_dev_data_high
 	jmp 	.print
+.passed:
+	mov 	si, kbdctl_msg_dev_stat_ok
+	call 	serial_print
+	jmp 	.done
 
 ; Perform device tests
 ; If device returns with:
@@ -439,6 +450,7 @@ kbdctl_print_device_status:
 ;
 kbdctl_dev_test_all:
 	push 	ax
+	push 	bx
 	mov 	al, kbdctl_cmd_test_p1
 	call 	kbdctl_dev_test
 	jc 	.done
@@ -456,6 +468,7 @@ kbdctl_dev_test_all:
 	xchg 	ah, al
 	call 	kbdctl_print_device_status
 .done:
+	pop 	bx
 	pop 	ax
 	ret
 
@@ -489,6 +502,12 @@ kbdctl_msg_dev_no_reset:
 
 kbdctl_msg_selftest_fail:
 	db "KEYBOARD CONTROLLER FAILED SELF TEST, RESPONSE: ", 0
+
+kbdctl_msg_dev_stat:
+	db "STATUS OF PS2 DEVICE: ", 0
+
+kbdctl_msg_dev_stat_ok:
+	db "OK", 0x0A, 0x0D, 0
 
 kbdctl_msg_dev_clock_low:
 	db "CLOCK STUCK LOW", 0x0A, 0x0D, 0
