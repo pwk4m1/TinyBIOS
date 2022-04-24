@@ -30,11 +30,6 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-KBDCTL_CURRENT_CONFIG:
-	db 0
-KBDCTL_DUAL_CHANNEL_ENABLED:
-	db 0
-
 ; Driver for kbdctl/"ps2" controller. You might be
 ; familiar with this due such legacy treasures as a20
 ;
