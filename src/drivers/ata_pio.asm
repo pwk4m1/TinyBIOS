@@ -935,7 +935,7 @@ ata_msg_disk_error_poll:
 	db "ATA DISK ERRORED AFTER STATUS POLL!", 0x0A, 0x0D, 0
 
 ata_msg_disk_error_read_stat:
-	db "ATA DISK ERRORED ON READ, STATUS BITS: ", 0x0A, 0x0D, 0
+	db "ATA DISK ERRORED ON READ, ERROR BITS: ", 0x0A, 0x0D, 0
 
 ata_msg_disk_read_returning:
 	db "ATA DISK READ DONE, RET", 0x0A, 0x0D, 0
