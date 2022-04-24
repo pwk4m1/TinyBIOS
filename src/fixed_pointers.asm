@@ -34,29 +34,32 @@
 %define FIXED_PTRS
 
 ; entry.asm
-%define TMP_BOOTSECTOR_ADDR 	0x3000
+%define TMP_BOOTSECTOR_ADDR 		0x3000
 
 ; mm.asm
-%define __MM_MEM_START  	0xC000
-%define __MM_MEM_END    	0xCFFF
+%define __MM_MEM_START  		0xC000
+%define __MM_MEM_END    		0xCFFF
 
 ; ata.asm
-%define ata_disk_addr_list 	0x3200
+%define ata_disk_addr_list 		0x3200
 
 ; 8042
-%define KBDCTL_CONFIG_BYTE 	0x3400
+%define KBDCTL_CONFIG_BYTE 		0x3400
+%define KBDCTL_CURRENT_CONFIG 		0x3401
+%define KBDCTL_DUAL_CHANNEL_ENABLED 	0x3402
+
 
 ; pci.asm
-%define pci_dev_ptr_array       0x5002
-%define pci_dev_cnt             0x5000
+%define pci_dev_ptr_array       	0x5002
+%define pci_dev_cnt             	0x5000
 
-%define EBDA_BASE_ADDR 		0x8000 ; shifted right by 4.
+%define EBDA_BASE_ADDR 			0x8000 ; shifted right by 4.
 
-%define DISK_DRIVE_LAST_STATUS 	0x04A0 	; 1 byte
-%define INT_HANDLER_RET_PTR 	0x04A1 	; 2 bytes
-%define DISK_MAIN_SIZE_LBA 	0x04A3 	; 2 bytes
+%define DISK_DRIVE_LAST_STATUS 		0x04A0 	; 1 byte
+%define INT_HANDLER_RET_PTR 		0x04A1 	; 2 bytes
+%define DISK_MAIN_SIZE_LBA 		0x04A3 	; 2 bytes
 
-%define PIT_SYSTEM_TIME 	0x00080000 ; System time, 4 bytes
+%define PIT_SYSTEM_TIME 		0x00080000 ; System time, 4 bytes
 
 
 %endif
