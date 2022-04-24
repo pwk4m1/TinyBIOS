@@ -133,23 +133,32 @@ ata_print_error_bits:
 	pusha
 	
 	mov 	cl, 8
-	mov 	bx, .error_msg_array
+	mov 	si, .ata_err_amnf
+	call 	strlen
+	inc 	cx
 
 	mov 	dx, 0x0F
 	mov 	ds, dx
 
+	xor 	ah, ah	
+
 	.loop:
 		test 	al, al
-		jz 	.print_error
+		jz 	.done
+
+		test 	al, 1
+		jnz 	.print_error
 	.next:
+		add 	si, cx
+		call 	strlen
+		inc 	cx
 		shr 	al, 1
-		add 	bx, 2
-		loop 	.loop
+		jmp 	.loop
+.done:
 	popa
 	ret
 
 .print_error:
-	mov 	si, word [bx]
 	call 	serial_print
 	jmp 	.next
 
@@ -169,16 +178,6 @@ ata_print_error_bits:
 	db 	" * Uncorrectable data error", 0x0A, 0x0D, 0
 .ata_err_bbd:
 	db 	" * Bad block detected", 0x0A, 0x0D, 0
-
-.error_msg_array:
-	dd 	.ata_err_amnf
-	dd 	.ata_err_tkznf
-	dd 	.ata_err_abrt
-	dd 	.ata_err_mcr
-	dd 	.ata_err_idnf
-	dd 	.ata_err_mc
-	dd 	.ata_err_unc
-	dw 	.ata_err_bbd
 
 ; ======================================================================== ;
 ;
@@ -936,7 +935,7 @@ ata_msg_disk_error_poll:
 	db "ATA DISK ERRORED AFTER STATUS POLL!", 0x0A, 0x0D, 0
 
 ata_msg_disk_error_read_stat:
-	db "ATA DISK ERRORED ON READ, STATUS: ", 0x0A, 0x0D, 0
+	db "ATA DISK ERRORED ON READ, STATUS BITS: ", 0x0A, 0x0D, 0
 
 ata_msg_disk_read_returning:
 	db "ATA DISK READ DONE, RET", 0x0A, 0x0D, 0
