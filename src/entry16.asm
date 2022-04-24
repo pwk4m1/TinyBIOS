@@ -214,6 +214,7 @@ msg_jump_to_loader:
 
 ; Random helper & such includes
 ;
+%include "src/str.asm"
 %include "src/test_ram.asm"
 %include "src/bootdisk.asm"
 %include "src/mm.asm"
