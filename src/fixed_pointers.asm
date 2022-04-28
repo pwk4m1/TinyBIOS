@@ -47,6 +47,9 @@
 %define KBDCTL_CONFIG_BYTE 		0x3400
 %define KBDCTL_CURRENT_CONFIG 		0x3401
 %define KBDCTL_DUAL_CHANNEL_ENABLED 	0x3402
+; bit 0: ps2 device 1 status: 1 ok, 0 error
+; bit 1: ps2 device 2 status: 1 ok, 0 error
+%define KBDCTL_PS2_DEV_STATUS_BITS 	0x3403
 
 
 ; pci.asm
