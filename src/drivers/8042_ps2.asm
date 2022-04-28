@@ -143,13 +143,17 @@
 %define kbdctl_cmd_writenext_ctl_out 	0xD1
 %define kbdctl_cmd_writenext_p1outbuf 	0xD2
 %define kbdctl_cmd_writenext_p2outbuf 	0xD3
-%define kbdctl_cmd_writenext_p4inbuf 	0xD4
+%define kbdctl_cmd_writenext_p2inbuf 	0xD4
 %define kbdctl_cmd_pulse_out_low(n) 	(n | 0xF0)
 %define kbdctl_cmd_cpu_hard_reset 	0xFE
+
+; Device commands 
+%define kbdctl_dev_cmd_reset 		0xFF
 
 ; Some predefined responses to commands
 %define kbdctl_selftest_success 	0x55
 %define kbdctl_stat_ack			0xFA
+%define kbdctl_stat_fail 		0xFC
 
 ; Helper functions to various operations related to kbdctl
 ;
@@ -394,39 +398,57 @@ kbdctl_dev_test:
 ;
 
 kbdctl_print_device_status:
+	push 	bx
+	push 	cx
 	push 	si
+
 	mov 	si, kbdctl_msg_dev_stat
 	call 	serial_print
 	cmp 	al, 0
 	je 	.passed
-	cmp 	al, 2
-	jl 	.cll
-	je 	.clh
-	cmp 	al, 4
-	jl 	.dll
-	je 	.dlh
-	mov 	si, kbdctl_msg_dev_error_unknown
+	xor 	bx, bx
+	mov 	si, .kbdctl_msg_dev_clock_low
+	call 	strlen
+	inc 	cx
+.loop:
+	cmp 	al, bl
+	je 	.print
+	inc 	bl
+	add 	si, cx
+	call 	strlen
+	inc 	cx
+	jmp 	.loop
+
 .print:
 	call 	serial_print
 .done:
 	pop 	si
+	pop 	cx
+	pop 	bx
 	ret
-.cll:
-	mov 	si, kbdctl_msg_dev_clock_low
-	jmp 	.print
-.clh:
-	mov 	si, kbdctl_msg_dev_clock_high
-	jmp 	.print
-.dll:
-	mov 	si, kbdctl_msg_dev_data_low
-	jmp 	.print
-.dlh:
-	mov 	si, kbdctl_msg_dev_data_high
-	jmp 	.print
 .passed:
 	mov 	si, kbdctl_msg_dev_stat_ok
-	call 	serial_print
-	jmp 	.done
+	jmp 	.print
+
+; Don't change order of messages or error reporting
+; will break.
+;
+.kbdctl_msg_dev_clock_low:
+	db "CLOCK STUCK LOW", 0x0A, 0x0D, 0
+
+.kbdctl_msg_dev_clock_high:
+	db "CLOCK STUCK HIGH", 0x0A, 0x0D, 0
+
+.kbdctl_msg_dev_data_low:
+	db "DATA STUCK LOW", 0x0A, 0x0D, 0
+
+.kbdctl_msg_dev_data_high:
+	db "DATA STUCK HIGH", 0x0A, 0x0D, 0
+
+.kbdctl_msg_dev_error_unknown:
+	db "UNKNOWN ERROR", 0x0A, 0x0D, 0
+
+
 
 ; Perform device tests
 ; If device returns with:
@@ -448,16 +470,21 @@ kbdctl_dev_test_all:
 	push 	bx
 	mov 	al, kbdctl_cmd_test_p1
 	call 	kbdctl_dev_test
+	cmp 	al, 0
+	je 	.set_p1_on
 	jc 	.done
+.set_p1_on:
+	or 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0x01
 	cmp 	byte [KBDCTL_DUAL_CHANNEL_ENABLED], 1
 	jne 	.test_done_p1
 	xchg 	al, ah
 	mov 	al, kbdctl_cmd_test_p2
 	call 	kbdctl_dev_test
+	cmp 	al, 0
+	je 	.test_done_p2
 	jc 	.done
 .test_done_p2:
-	cmp 	byte [KBDCTL_DUAL_CHANNEL_ENABLED], 1
-	jne 	.test_done_p1
+	or 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0x02
 	call 	kbdctl_print_device_status
 .test_done_p1:
 	xchg 	ah, al
@@ -467,11 +494,97 @@ kbdctl_dev_test_all:
 	pop 	ax
 	ret
 
+; Enable PS2 devices here
+; Requires:
+;	-
+; Returns:
+;	-
+;
+kbdctl_enable_devices:
+	push 	ax
+	mov 	al, kbdctl_cmd_enable_p1
+	call 	kbdctl_send_cmd
+	jc 	.failed_to_enable_device
+	test 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0x02
+	jz 	.done
+	mov 	al, kbdctl_cmd_enable_p2
+	call 	kbdctl_send_cmd
+	jc 	.failed_to_enable_device
+.done:
+	pop 	ax
+	ret
+.failed_to_enable_device:
+	push 	si
+	mov 	si, kbdctl_msg_failed_to_enable_device
+	call 	serial_print
+	pop 	si
+	jmp 	.done
+	
+; Reset all PS2 devices.
+; Requires:
+;	-
+; Returns:
+;	-
+;
+kbdctl_reset_devices:
+	push 	ax
+	push 	si
+	mov 	si, kbdctl_msg_dev_not_working
+
+	mov 	al, kbdctl_dev_cmd_reset
+	call 	kbdctl_send_data_poll
+	jc 	.done
+	call 	kbdctl_recv_data_poll
+	jc 	.done
+	cmp 	al, kbdctl_stat_ack
+	je 	.reset_p2
+
+	and 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0xfe
+	cmp 	al, kbdctl_stat_fail
+	jne 	.reset_p2
+
+	call 	serial_print
+
+.reset_p2:
+	test 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0x02
+	jz 	.done
+
+	mov 	al, kbdctl_cmd_writenext_p2inbuf
+	call 	kbdctl_send_cmd
+	jc 	.done
+
+	mov 	al, kbdctl_dev_cmd_reset
+	call 	kbdctl_send_data_poll
+	jc 	.done
+
+	call 	kbdctl_recv_data_poll
+	jc 	.done
+
+	cmp 	al, kbdctl_stat_ack
+	je 	.success
+
+	and 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0xFD
+	cmp 	al, kbdctl_stat_fail
+	jne 	.success
+
+	call 	serial_print
+.success:
+	clc
+.done:
+	pop 	si
+	pop 	ax
+	ret
+.err:
+	stc
+	jmp 	.done
+
 ; test for now
 kbdctl_init:
 	push 	ax
+	push 	si
+
 	call 	kbdctl_disable_devices
-	jc 	.done
+	jc 	.err
 	; flush output buffer, we don't care about content so 
 	; no need to poll
 	;
@@ -479,14 +592,29 @@ kbdctl_init:
 	; flush done, go on.
 	;
 	call 	kbdctl_init_config
-	jc 	.done
+	jc 	.err
 	call 	kbdctl_ctl_test
-	jc 	.done
+	jc 	.err
 	call 	kbdctl_dev_test_all
-	jc 	.done
+	jc 	.err
+	call 	kbdctl_enable_devices
+	jc 	.err
+	call 	kbdctl_reset_devices
+	jc 	.err
+	mov 	si, kbdctl_msg_init_done
+	call 	serial_print
+	mov 	al, byte [KBDCTL_PS2_DEV_STATUS_BITS]
+	xor 	ah, ah
+	call 	serial_printh
+
 .done:
+	pop 	si
 	pop 	ax
 	ret
+.err:
+	mov 	si, kbdctl_msg_init_failed
+	call 	serial_print
+	jmp 	.done
 
 kbdctl_msg_ctl_timeout:
 	db "KEYBOARD CONTROLLER TIMED OUT", 0x0A, 0x0D, 0
@@ -504,18 +632,15 @@ kbdctl_msg_dev_stat:
 kbdctl_msg_dev_stat_ok:
 	db "OK", 0x0A, 0x0D, 0
 
-kbdctl_msg_dev_clock_low:
-	db "CLOCK STUCK LOW", 0x0A, 0x0D, 0
+kbdctl_msg_failed_to_enable_device:
+	db "FAILED TO ENABLE PS2 DEVICE!", 0x0A, 0x0D, 0
 
-kbdctl_msg_dev_clock_high:
-	db "CLOCK STUCK HIGH", 0x0A, 0x0D, 0
+kbdctl_msg_dev_not_working:
+	db "PS2 DEVICE ATTACHED BUT IN UNKNOWN STATE", 0x0A, 0x0D, 0
 
-kbdctl_msg_dev_data_low:
-	db "DATA STUCK LOW", 0x0A, 0x0D, 0
+kbdctl_msg_init_done:
+	db "PS2 CONTROLLER INITIALISED, AMOUNT OF PS2 DEVICES DETECTED: "
+	db 0
 
-kbdctl_msg_dev_data_high:
-	db "DATA STUCK HIGH", 0x0A, 0x0D, 0
-
-kbdctl_msg_dev_error_unknown:
-	db "UNKNOWN ERROR", 0x0A, 0x0D, 0
-
+kbdctl_msg_init_failed:
+	db "PS2 CONTROLLER INIT FAILED", 0x0A, 0x0D, 0
