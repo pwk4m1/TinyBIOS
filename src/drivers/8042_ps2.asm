@@ -644,3 +644,4 @@ kbdctl_msg_init_done:
 
 kbdctl_msg_init_failed:
 	db "PS2 CONTROLLER INIT FAILED", 0x0A, 0x0D, 0
+
