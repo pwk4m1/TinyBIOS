@@ -485,11 +485,10 @@ kbdctl_dev_test_all:
 	jc 	.done
 .test_done_p2:
 	or 	byte [KBDCTL_PS2_DEV_STATUS_BITS], 0x02
-	call 	kbdctl_print_device_status
 .test_done_p1:
 	xchg 	ah, al
-	call 	kbdctl_print_device_status
 .done:
+	call 	kbdctl_print_device_status
 	pop 	bx
 	pop 	ax
 	ret
