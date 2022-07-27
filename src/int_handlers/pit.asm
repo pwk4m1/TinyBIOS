@@ -49,8 +49,8 @@ dev_pit_handle_irq:
 	; no need to add the msg into binary.
 pit_msg_system_time_updated:
 	db "SYSTEM TIME: ", 0
-.end:
 %endif
+.end:
 	pop 	eax
 	ret
 
