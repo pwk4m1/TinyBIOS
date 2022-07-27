@@ -49,8 +49,9 @@
 %define KBDCTL_DUAL_CHANNEL_ENABLED 	0x3402
 ; bit 0: ps2 device 1 status: 1 ok, 0 error
 ; bit 1: ps2 device 2 status: 1 ok, 0 error
+; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
+; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
 %define KBDCTL_PS2_DEV_STATUS_BITS 	0x3403
-
 
 ; pci.asm
 %define pci_dev_ptr_array       	0x5002
