@@ -194,7 +194,7 @@ ps2_detect_and_reset_keyboards:
 	or 	byte [KBDCTL_PS2_DEV_STATUS_BITS], PS2_KBD_PORT1_ON
 
 %ifdef __DO_DEBUG_LOG__
-	; SI already points to ps2_msg_keyboard_init_done
+	mov 	si, ps2_msg_keyboard_selftest_done
 	call 	serial_print
 %endif
 .done:
