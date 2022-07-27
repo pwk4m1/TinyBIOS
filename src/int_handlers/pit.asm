@@ -43,15 +43,13 @@ dev_pit_handle_irq:
 	mov 	ax, word [eax]
 	call 	serial_printh
 	pop 	esi
-	jmp 	.end
+%endif
+	pop 	eax
+	ret
 
+%ifdef __DO_DEBUG_LOG__
 	; only have the message If the __DO_DEBUG_LOG__ is set
 	; no need to add the msg into binary.
 pit_msg_system_time_updated:
 	db "SYSTEM TIME: ", 0
 %endif
-.end:
-	pop 	eax
-	ret
-
-
