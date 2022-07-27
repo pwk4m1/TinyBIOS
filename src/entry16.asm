@@ -146,6 +146,9 @@ main:
 	call 	set_pseudo_vga_ivt_entry
 	call 	init_fault_interrupts
 
+	; Final device init sequence here
+	call 	ps2_kbd_init
+
 	xor 	esi, esi
 	mov	si, msg_jump_to_loader
 	call	serial_print
@@ -211,6 +214,8 @@ msg_jump_to_loader:
 %include "src/drivers/pci/pci_helpers.asm"
 %include "src/drivers/pci/pci_ide.asm"
 %include "src/drivers/pci/pci_vga.asm"
+
+%include "src/drivers/ps2/ps2.asm"
 
 ; Random helper & such includes
 ;
