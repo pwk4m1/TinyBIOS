@@ -84,12 +84,12 @@
 ; status register bit definitions
 ; ======================================================================== ;
 %define __ata_stat_err	00000001b	; Error
-%define __ata_stat_ic	00000110b	; Index & correced data, always 0
-%define __ata_stat_rdy	00001000b	; Drive has data/is ready to recv
-%define __ata_stat_omsr	00010000b	; Overlapped Mode Service Request
-%define __ata_stat_dfe	00100000b	; Drive fault err (does not set err!)
-%define __ata_stat_cde	01000000b	; Clear on error / drive spun down
-%define __ata_stat_wait	10000000b	; Drive is preparing for send/recv
+%define __ata_stat_idx	00000110b	; Index & correced data, always 0
+%define __ata_stat_drq	00001000b	; Drive has data/is ready to recv
+%define __ata_stat_srv	00010000b	; Overlapped Mode Service Request
+%define __ata_stat_df	00100000b	; Drive fault err (does not set err!)
+%define __ata_stat_rdy	01000000b	; Clear on error / drive spun down
+%define __ata_stat_bsy	10000000b	; Drive is preparing for send/recv
 
 ; ======================================================================== ;
 ; device control register bit definitions
@@ -221,7 +221,7 @@ ata_cache_flush:
 	mov	cx, 50			; We wait up to 5000ns.
 	.wait_for_clear:
 		in	al, dx
-		test	al, __ata_stat_wait
+		test	al, __ata_stat_bsy
 		jz	.done
 		loop	.wait_for_clear
 
@@ -320,7 +320,7 @@ ata_nonstd_detect_disk_by_select:
 	inc	dx
 	
 	call	ata_delay_in
-	test	al, __ata_stat_cde
+	test	al, __ata_stat_rdy
 	jz	.no_drive
 	mov	al, 1
 
@@ -421,7 +421,7 @@ ata_detect_disk_by_identify:
 	mov	cx, 5000
 	.poll_wait:
 		in	al, dx
-		test	al, __ata_stat_wait
+		test	al, __ata_stat_bsy
 		jz	.poll_wait_done
 		loop	.poll_wait
 
@@ -481,7 +481,7 @@ ata_detect_disk_by_identify:
 	mov	cx, 5000
 	.poll_rdy:
 		in	al, dx
-		test	al, __ata_stat_rdy
+		test	al, __ata_stat_drq
 		jnz	.poll_rdy_done
 		test	al, __ata_stat_err
 		jnz	.poll_rdy_done
@@ -601,7 +601,7 @@ ata_poll:
 	clc
 	.loop:
 		call	ata_delay_in
-		test	al, __ata_stat_wait
+		test	al, __ata_stat_bsy
 		jz	.done
 		loop	.loop
 	; disk timed out
@@ -632,7 +632,6 @@ ata_disk_read_info:
                 loop    .loop
         pop     cx
         ret
-
 
 ; ======================================================================== ;
 ;
@@ -758,6 +757,52 @@ ata_pio_b28_read:
 	
 
 ; ======================================================================== ;
+; Helper to wait until disk is ready to accept commands again
+;
+; Requires:
+;	dx: device io base
+; 	si: timeout
+; Returns:
+; 	carry flag:
+;		set if timeout or error
+; 		clear if we're good to go
+; ======================================================================== ;
+disk_wait_for_ready:
+	push 	ax
+	push 	cx
+
+	mov 	cx, si
+	xor 	ax, ax
+	.loop:
+		; read disk status
+		in 	al, dx
+		call 	serial_printh
+		test 	al, __ata_stat_err
+		jnz 	.disk_error
+		test 	al, __ata_stat_bsy
+		jnz 	.disk_bsy
+		test 	al, __ata_stat_drq
+		jnz 	.disk_bsy
+		test 	al, __ata_stat_df
+		jnz 	.disk_error
+
+	.disk_ok:
+		clc
+	.ret:
+		pop 	cx
+		pop 	ax
+		ret
+
+	.disk_error:
+		stc
+		jmp 	.ret
+	
+	.disk_bsy:
+		loop 	.loop
+		stc
+		jmp 	.ret
+
+; ======================================================================== ;
 ; 
 ; Helper function to handle ATA PIO disk read
 ;
@@ -783,24 +828,15 @@ ata_disk_read:
 	mov 	si, 60
 
 .check_disk_status:
-	; check disk status
-	in	al, dx
-	test	al, __ata_stat_wait
-	jnz	.disk_status_ok
+	call 	disk_wait_for_ready
+	jnc 	.disk_status_ok
 
 	; do disk reset
 	call	ata_sw_reset
 
-	; re-check
-	in 	al, dx
-	test 	al, __ata_stat_wait
-	jnz 	.disk_status_ok
+	call 	disk_wait_for_ready
+	jnc 	.disk_status_ok
 
-	cmp 	al, 0xFF
-	je 	.ata_float_bug
-
-	mov  	si, ata_msg_bus_unknown_bug
-	call 	serial_print
 	stc
 	jmp 	.do_ret 
 
@@ -938,5 +974,5 @@ ata_msg_disk_error_read_stat:
 	db "ATA DISK ERRORED ON READ, ERROR BITS: ", 0x0A, 0x0D, 0
 
 ata_msg_disk_read_returning:
-	db "ATA DISK READ DONE, RET", 0x0A, 0x0D, 0
+	db "ATA DISK READ DONE", 0x0A, 0x0D, 0
 
