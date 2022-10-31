@@ -776,7 +776,6 @@ disk_wait_for_ready:
 	.loop:
 		; read disk status
 		in 	al, dx
-		call 	serial_printh
 		test 	al, __ata_stat_err
 		jnz 	.disk_error
 		test 	al, __ata_stat_bsy
