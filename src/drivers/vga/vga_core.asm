@@ -1,6 +1,6 @@
 ; BSD 3-Clause License
 ; 
-; Copyright (c) 2020, k4m1 <k4m1@protonmail.com>
+; Copyright (c) 2022, k4m1 <k4m1@protonmail.com>
 ; All rights reserved.
 ; 
 ; Redistribution and use in source and binary forms, with or without
@@ -33,147 +33,205 @@
 %ifndef VGA_CORE
 %define VGA_CORE
 
-%define VGA_ENABLE_PORT 0x3c3
-%define VGA_STAT_1 	0x3da
+%define VGA_ATTRIB_INPUT_STATUS_REGISTER 	0x03DA
+%define VGA_ATTRIB_INDEX_REGISTER 		0x03C0
+%define VGA_ATTRIB_DATA_REGISTER_R 		0x03C1
+%define VGA_ATTRIB_DATA_REGISTER_W 		0x03C0 
 
-%define VGA_MISC_R 	0x3c2
-%define VGA_MISC_W 	VGA_MISC_R + 1
-
-%define VGA_CR_INDEX 	0x3d4
-%define VGA_CR_VALUE 	VGA_CR_INDEX + 1
-
-; http://www.osdever.net/FreeVGA/vga/vgareg.htm#general
-; http://www.osdever.net/FreeVGA/vga/graphreg.htm#06
-; http://www.osdever.net/FreeVGA/vga/extreg.htm#3CCR3C2W
-; http://www.osdever.net/FreeVGA/vga/graphreg.htm#05
-; http://www.osdever.net/FreeVGA/vga/vgamem.htm
-; http://www.osdever.net/FreeVGA/vga/vga.htm#general
-; coreboot src/drivers/pc80/vga/vga_io.c
-
-; Function to enable masks on reasonable ports where no indexing is used
-; requires:
-;	bl = value
-;	bh = mask
-; 	dx = port
+; A helper function for reading from sequencer, graphics, and crtc regs
 ;
-__vga_enable_mask_generic:
+; Requires:
+; 	dx = Address register
+; 	bx = address register value for reading
+; 	cx = Data register
+; Returns:
+; 	ax = value from data register on success OR
+; 	carry flag set, ax undefined on error
+;
+vga_sgc_r:
+	clc
+	push 	dx
+	push 	bx
+	push 	cx
+
+	; Read in original address register value, and write new address
+	; Original address register value is backed up to bx.
+	; Also, check that address was really written.
+	in 	ax, dx
+	xchg 	ax, bx
+	out 	dx, ax
+	in 	ax, dx
+	cmp 	ax, bx
+	jne 	.error
+
+	; Read data register
+	xchg 	dx, cx
+	in 	ax, dx
+
+	; Restore original address register, and check that it
+	; indeed succeeded
 	push 	ax
+	mov 	ax, bx
+	mov 	dx, cx
+	out 	dx, ax
+	in 	ax, dx
+	cmp 	ax, bx
+	pop 	ax
+	je 	.done
+	
+.error:
+	stc
+.done:
+	pop 	cx
+	pop 	bx
+	pop 	dx
+	ret
+
+; A helper function for writing to Sequencer, Graphics, and CRTC registers.
+;
+; Requires:
+;	dx = Address register
+; 	bx = address register value for writing
+; 	cx = Data register
+; 	si = Data to write to data register
+; Returns:
+; 	Carry flag set on error
+; NOTE:
+;	DO be mindful of potential for reserved, undefined, etc. bits in
+; 	registers. DO back them up and only change those bits you _NEED_ to.
+;
+vga_sgc_w:
+	clc
+	push 	si
+	push 	cx
+	push 	bx
+	push 	ax
+	
+	; Read in original address register value, and write new address
+	; Original address register value is backed up to bx.
+	; Also, check that address was really written.
+	in 	ax, dx
+	xchg 	ax, bx
+	out 	dx, ax
+	in 	ax, dx
+	cmp 	ax, bx
+	jne 	.error
+
+	; Write data that you've modified to data register
+	mov 	ax, si
+	xchg 	cx, dx
+	out 	dx, ax
+
+	; Check that write actually succeeded
+	in 	ax, dx
+	cmp 	ax, si
+	jne 	.error
+
+	; If write succeeded, restore original addr reg
+	mov 	dx, cx
+	mov 	ax, bx
+	out 	dx, ax
+
+	; Ensure address is indeed restored correctly
+	in 	ax, dx
+	cmp 	ax, bx
+	je 	.done
+.error:
+	stc
+.done:
+	pop 	ax
+	pop 	bx
+	pop 	cx
+	pop 	si
+	ret
+
+; A helper function for reading from attribute registers
+;
+; Requires:
+; 	bx = address register value for reading
+; Returns:
+; 	ax = value from data register on success OR
+; 	carry flag set, ax undefined on error
+;
+; NOTE:
+;	Accessing attribute register is confusing and odd, I'll add status
+;	checking etc. after verifying it works.
+;
+; Note for future: you can read CRTC index 0x24, bit 7 on some (S)VGA chipsets
+; to determine the status of the flip-flot (0=address,1=data).
+; 	To check if this is supported, do:
+;		1.) read in from Input Status #1
+; 		2.) Check CRTC 0x24, bit 7 = 0
+; 		3.) Write index/address to Attrib addr/data register
+;		4.) Check CRTC 0x24, bit 7 = 1
+; 		5.) Steps 1 and 2 again
+;
+vga_attrib_r:
 	push 	bx
 
-	and 	bl, bh
-	not 	bh
+	; Read input status #1 register to reset address/data flipflop
+	in 	al, VGA_ATTRIB_INPUT_STATUS_REGISTER
 
-	in 	al, dx
-	and 	al, bh
-	or 	al, bl
-	out 	dx, al
+	; Read original address register
+	in 	al, VGA_ATTRIB_INDEX_REGISTER
+	push 	ax
 
-	pop 	bx
+	; output new index
+	mov 	ax, bx
+	out 	VGA_ATTRIB_INDEX_REGISTER, al
+
+	; read value from data register
+	in 	al, VGA_ATTRIB_DATA_REGISTER_R
+
+	; Restore original address
+	xchg 	ax, bx
 	pop 	ax
+	out 	VGA_ATTRIB_INDEX_REGISTER, al
+
+.done:
+	pop 	bx
 	ret
 
-
-; Function to enable masking in indexed ports
-; requires:
-;	bl = value
-;	bh = mask
-; 	dx = port
+; A helper function for writing to attribute registers
 ;
-__vga_enable_mask_misc:
-	push 	ax
+; Requires:
+; 	bx = address register value for reading
+; 	cx = data to write
+; Returns:
+; 	carry flag set, ax undefined on error
+;
+; NOTE:
+;	Accessing attribute register is confusing and odd, I'll add status
+;	checking etc. after verifying it works.
+;
+;	DO be mindful of potential for reserved, undefined, etc. bits in
+; 	registers. DO back them up and only change those bits you _NEED_ to.
+;
+vga_attrib_w:
+	clc
 	push 	bx
-	push 	dx
 
-	and 	bl, bh
-	not 	bh
+	; Read input status #1 register to reset address/data flipflop
+	in 	al, VGA_ATTRIB_INPUT_STATUS_REGISTER
 
-	in 	al, dx
-	and 	al, bh
-	or 	al, bl
-	inc 	dx
-	out 	dx, al
+	; Read original address register
+	in 	al, VGA_ATTRIB_INDEX_REGISTER
+	push 	ax
 
-	pop 	dx
+	; output new index
+	mov 	ax, bx
+	out 	VGA_ATTRIB_INDEX_REGISTER, al
+
+	; output the data
+	mov 	ax, cx
+	out 	VGA_ATTRIB_DATA_REGISTER_W, al
+
+	; restore original address
+	pop 	ax
+	out 	VGA_ATTRIB_INDEX_REGISTER, al
+
+.done:
 	pop 	bx
-	pop 	ax
 	ret
 
-; Read CR, super messy, super gross, oh well
-;
-; require:
-;	al = index
-;	dx = port
-;
-__vga_cr_read:
-	push 	dx
-
-	out 	dx, al
-	inc 	dx
-	in 	al, dx
-
-	pop 	dx
-	ret
-
-; Write CR, again, super messy & gross but well
-;
-; require:
-;	al = index
-;	ah = data
-;	dx = port
-;
-__vga_cr_write:
-	push 	dx
-	push 	ax
-
-	out 	dx, al
-	xchg 	al, ah
-	out 	dx, al
-
-	pop 	ax
-	pop 	dx
-	ret
-
-; Enable command register mask
-;
-; require:
-;	al = index
-;	ah = data
-;	dx = port
-;
-__vga_enable_mask_cr:
-	push 	ax
-	push 	bx
-	push 	dx
-
-	and 	bl, bh
-	not 	bh
-
-	and 	al, bh
-	or 	al, bl
-	inc 	dx
-	out 	dx, al
-
-	pop 	dx
-	pop 	bx
-	pop 	ax
-	ret
-
-; After the above
-; ah = 0x00 for enable
-; ah = 0x20 for disable
-__vga_palette_set:
-	push 	dx
-	push 	ax
-
-	mov 	dx, VGA_STAT_1
-
-	in 	al, dx
-	xchg 	al, ah
-	out 	dx, al
-	in 	al, dx
-
-	pop 	ax
-	pop 	dx
-	ret
-
-%endif
+%endif ; VGA_CORE
