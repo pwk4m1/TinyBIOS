@@ -33,12 +33,19 @@
 %ifndef VGA_CORE
 %define VGA_CORE
 
+; Include subsystems
+%include "src/drivers/vga/vga_dac.asm"
+
 %define VGA_ATTRIB_INPUT_STATUS_REGISTER 	0x03DA
 %define VGA_ATTRIB_INDEX_REGISTER 		0x03C0
 %define VGA_ATTRIB_DATA_REGISTER_R 		0x03C1
 %define VGA_ATTRIB_DATA_REGISTER_W 		0x03C0 
 
-; A helper function for reading from sequencer, graphics, and crtc regs
+%define VGA_PEL_ADDRESS_WRITE_MODE_REGISTER 	0x03C8
+%define VGA_PEL_DATA_REGISTER_R 		0x03C7
+%define VGA_PEL_DATA_REGISTER_W			0x03C9
+
+; read from sequencer, graphics, and crtc regs
 ;
 ; Requires:
 ; 	dx = Address register
@@ -87,7 +94,7 @@ vga_sgc_r:
 	pop 	dx
 	ret
 
-; A helper function for writing to Sequencer, Graphics, and CRTC registers.
+; write to Sequencer, Graphics, and CRTC registers.
 ;
 ; Requires:
 ;	dx = Address register
@@ -145,7 +152,7 @@ vga_sgc_w:
 	pop 	si
 	ret
 
-; A helper function for reading from attribute registers
+; read from attribute registers
 ;
 ; Requires:
 ; 	bx = address register value for reading
@@ -168,31 +175,37 @@ vga_sgc_w:
 ;
 vga_attrib_r:
 	push 	bx
+	push 	dx
 
 	; Read input status #1 register to reset address/data flipflop
-	in 	al, VGA_ATTRIB_INPUT_STATUS_REGISTER
+	mov 	dx, VGA_ATTRIB_INPUT_STATUS_REGISTER
+	in 	al, dx
 
 	; Read original address register
-	in 	al, VGA_ATTRIB_INDEX_REGISTER
+	mov 	dx, VGA_ATTRIB_INDEX_REGISTER
+	in 	al, dx
 	push 	ax
 
 	; output new index
 	mov 	ax, bx
-	out 	VGA_ATTRIB_INDEX_REGISTER, al
+	out 	dx, al
 
 	; read value from data register
-	in 	al, VGA_ATTRIB_DATA_REGISTER_R
+	mov 	dx, VGA_ATTRIB_DATA_REGISTER_W
+	in 	al, dx
 
 	; Restore original address
 	xchg 	ax, bx
 	pop 	ax
-	out 	VGA_ATTRIB_INDEX_REGISTER, al
+	mov 	dx, VGA_ATTRIB_INDEX_REGISTER
+	out 	dx, al
 
 .done:
+	pop 	dx
 	pop 	bx
 	ret
 
-; A helper function for writing to attribute registers
+; Write to attribute registers
 ;
 ; Requires:
 ; 	bx = address register value for reading
@@ -210,27 +223,104 @@ vga_attrib_r:
 vga_attrib_w:
 	clc
 	push 	bx
+	push 	dx
 
 	; Read input status #1 register to reset address/data flipflop
-	in 	al, VGA_ATTRIB_INPUT_STATUS_REGISTER
+	mov 	dx, VGA_ATTRIB_INPUT_STATUS_REGISTER
+	in 	al, dx
 
 	; Read original address register
-	in 	al, VGA_ATTRIB_INDEX_REGISTER
+	mov 	dx, VGA_ATTRIB_INDEX_REGISTER
 	push 	ax
 
 	; output new index
 	mov 	ax, bx
-	out 	VGA_ATTRIB_INDEX_REGISTER, al
+	out 	dx, al
 
 	; output the data
 	mov 	ax, cx
-	out 	VGA_ATTRIB_DATA_REGISTER_W, al
+	mov 	dx, VGA_ATTRIB_DATA_REGISTER_W
+	out 	dx, al
 
 	; restore original address
 	pop 	ax
-	out 	VGA_ATTRIB_INDEX_REGISTER, al
+	mov 	dx, VGA_ATTRIB_INDEX_REGISTER
+	out 	dx, al
 
 .done:
+	pop 	dx
+	pop 	bx
+	ret
+
+; read/write 
+;
+; Requires:
+;	bl = 1st colo entry to read 
+; 	cl = how many colour bytes to read
+;	di = where to read VGA Colour data
+; 	bh = is this read/write mode
+; Read:
+;	Requires:
+;		di = where to read to
+; Write:
+; 	Requires:
+;		si = where to write from
+;
+vga_colo_op:
+	pusha
+
+	; backup VGA DEC STATE
+	call 	vga_core_dac_status_register_r
+	push 	ax
+
+	; backup VGA_PEL_ADDRESS_WRITE_MODE_REGISTER
+	mov 	dx, VGA_PEL_ADDRESS_WRITE_MODE_REGISTER
+	in 	al, dx
+	push 	ax
+
+	; write the 1st colour entry to be read to the PEL Address Read Mode Register
+	mov 	al, bl
+	out 	dx, al
+
+	; Read colours
+	mov 	dx, VGA_PEL_DATA_REGISTER_R
+	cmp 	bh, 1
+	je 	.do_write
+	rep 	insb
+	jmp 	.op_done
+.do_write:
+	rep 	outsb
+.op_done:
+	; r/w done
+	pop 	ax 		; original VGA_PEL_ADDRESS_WRITE_MODE_REGISTER
+	pop 	bx 		; original DEC STATE
+
+	; restore PEL on r/w depending on DAC status 
+	cmp 	bl, VGA_DAC_STATUS_READ
+	je 	.dac_read_set
+
+	mov 	dx, VGA_PEL_DATA_REGISTER_W
+	out 	dx, al
+	jmp 	.done
+
+.dac_read_set:
+	mov 	dx, VGA_PEL_DATA_REGISTER_R
+	out 	dx, al
+	popa
+	ret
+
+; Read/Write functions
+vga_colo_r:
+	push 	bx
+	mov 	bh, 1
+	call 	vga_colo_op
+	pop 	bx
+	ret
+
+vga_colo_w:
+	push 	bx
+	mov 	bh, 0
+	call 	vga_colo_op
 	pop 	bx
 	ret
 
