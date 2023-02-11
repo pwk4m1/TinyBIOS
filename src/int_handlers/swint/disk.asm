@@ -117,8 +117,15 @@ disk_service_extended_detect:
 disk_service_extended_read:
 	call 	__parse_DAP
 	cmp 	cl, 0
-	jne 	disk_service_read
+	je 	disk_service_int_handler.done
+
+	; di = pointer to dst buffer
+	; dx = device io base
+	; cl = sector count
+	; bx = lbaptr
+	call 	ata_disk_read
 	jmp 	disk_service_int_handler.done
+
 
 ; ======================================================================== ;
 ; Handle disk read parameters call, int 13h ah=8
@@ -294,11 +301,12 @@ disk_service_get_status:
 ; 	- DH 	= Head
 ; 	- CL 	= Sector
 ; 	- BX 	= disk to read from
+; 	- DI 	= LBAPTR
 ; sets LBA to DISK_INT_HANDLER_LBAPTR
 ;
 ; For now, assume 16 heads, 64 sectors. TODO: Find these from
 ; ata disk info.
-;
+; 
 calculate_lba_from_chs:
 	; LBA = (C * HPC + H) * SPT + (S - 1)
 	;
@@ -320,18 +328,15 @@ calculate_lba_from_chs:
 	dec 	cl
 	add 	al, cl
 
-	mov 	word [INTHANDLER_LBAPTR], ax
-	mov 	ax, dx
-	mov 	word [INTHANDLER_LBAPTR+2], ax
+	mov 	ax, 1
+	mov 	dx, 0
+	mov 	word [di], ax
+	mov 	word [di+2], dx
 
 	pop 	dx
 	pop 	bx
 	pop 	ax
 	ret
-
-INTHANDLER_LBAPTR:
-	dw 	0
-	dw 	0
 
 ; ======================================================================== ;
 ; Disk read is bit more difficult, we need lots of stuff from user,
@@ -370,24 +375,19 @@ disk_service_read:
 	push 	dx
 	
 	; Set CHS->LBA as driver needs
+	push 	bx
+	push 	di
+	push 	cx
+	mov 	cx, 4
+	call 	malloc
+	pop 	cx
 	call 	calculate_lba_from_chs
 
 	; Sets destination for disk read
-	mov 	di, bx
+	pop 	bx
 
 	; backup ax
 	mov 	bx, ax
-
-	; backup BDA 400h - 404h
-	push 	word [0x400]
-	push 	word [0x402]
-
-	; set 400h = LBA 
-	mov 	ax, word [INTHANDLER_LBAPTR]
-	mov 	word [0x400], ax
-	mov 	ax, word [INTHANDLER_LBAPTR+2]
-	mov 	word [0x402], ax
-	mov 	ax, bx
 
 	; Get device "id" -> actual disk
 	call 	__get_disk_base_to_dx
@@ -396,20 +396,22 @@ disk_service_read:
 	; we've cleaned up stack & restored registers
 	;
 	DEBUG_LOG 	msg_call_ata_disk_read
+
 	; set bx to point to LBA
-	mov 	bx, 0x400
+	mov 	bx, di
 
 	; set sector count for disk read
 	mov 	cl, al
 
+	; set destination pointer to di
+	pop 	di
+
+	push 	bx
 	call 	ata_disk_read
-
-	; restore BDA
-	pop 	word [0x402]
-	pop 	word [0x400]
-
-	jc 	.error_disk_read_failed
 	DEBUG_LOG 	msg_done
+
+	pop 	di
+	call 	free
 
 .cleanup:
 	; restore registers
@@ -427,7 +429,6 @@ disk_service_read:
 	; call 	__set_int_disk_drive_last_status
 
 	inc 	al ; set return code
-	xor 	ah, ah
 	jmp 	disk_service_int_handler.done
 
 .error_invalid_options:
