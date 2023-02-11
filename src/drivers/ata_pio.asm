@@ -625,11 +625,7 @@ ata_poll:
 ata_disk_read_info:
         push    cx
         mov     cx, 256
-        .loop:
-                in      ax, dx
-                mov     word [di], ax
-                add     di, 2
-                loop    .loop
+	rep 	insw
         pop     cx
         ret
 
@@ -658,7 +654,20 @@ ata_disk_read_info:
 ;
 ; ======================================================================== ;
 ata_pio_b28_read:
+	cli
 	pusha
+
+	pusha
+	call 	serial_printh
+	mov 	ax, bx
+	call 	serial_printh
+	mov 	ax, cx
+	call 	serial_printh
+	mov 	ax, dx
+	call 	serial_printh
+	mov 	ax, di
+	call 	serial_printh
+	popa
 
 	push	ax
 	; set sector count
@@ -706,8 +715,17 @@ ata_pio_b28_read:
 	out	dx, al
 
 	; read status
-	call	ata_poll
-	jc 	.disk_error_poll
+	.wait_for_data_to_be_rdy:
+		call	ata_poll
+		jc 	.disk_error_poll
+
+		test 	al, __ata_stat_drq
+		jnz 	.read_start
+
+		; reset disk and retry
+		call 	ata_sw_reset
+		popa
+		jmp 	ata_pio_b28_read
 
 	.read_start:
 		push	cx
@@ -717,11 +735,7 @@ ata_pio_b28_read:
 		sub	dl, 7
 
 		; read 256 words (1 sector)
-		.loop:
-			in 	ax, dx
-			mov 	word [di], ax
-			add 	di, 2
-			loop 	.loop
+		rep 	insw
 
 		pop	cx
 
@@ -844,8 +858,10 @@ ata_disk_read:
 		dec 	si 		; retries = retries - 1
 		test 	si, si 		; if 0 left, indicate error
 		jz 	.disk_read_failed
-		mov	al, 0xE0
+		mov	ax, 0xE0
+		push 	di
 		call	ata_pio_b28_read
+		pop 	di
 
 		; if carry flag is set, we encountered error.
 		; try fixing it by nuking it away with disk reset,
