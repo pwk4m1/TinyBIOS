@@ -97,9 +97,11 @@ __parse_DAP:
 ; ======================================================================== ;
 disk_service_extended_detect:
 	DEBUG_LOG 	msg_extended_detect_check
-	xor 	ax, ax
-	xchg 	bh, bl
-	mov 	cx, 1
+	clc
+	mov 	ah, 0x01
+	mov 	bx, 0x55aa
+	mov 	cx, 0x01
+	clc
 	jmp 	disk_service_int_handler.done
 
 ; ======================================================================== ;
@@ -168,9 +170,6 @@ disk_service_int_handler:
 	pop 	word [INT_HANDLER_RET_PTR]
 	push 	word [INT_HANDLER_RET_PTR]
 
-	pushad
-	clc
-
 	DEBUG_LOG 	msg_disk_oper
 	DEBUG_call 	serial_printh
 
@@ -201,18 +200,17 @@ disk_service_int_handler:
 	; address to return to is still correct, etc.
 	;
 .done:
+
 	mov 	word [.retstatus], ax
-	popad
 	mov 	ax, word [.retstatus]
 	cmp 	word [esp], 0
 	je 	.panic_invalid_retptr
-	clc
 
-	DEBUG_LOG 	ata_msg_int_done
-	DEBUG_LOG 	ata_msg_ret_to
+	; DEBUG_LOG 	ata_msg_int_done
+	; DEBUG_LOG 	ata_msg_ret_to
 	pop 	ax
 	push 	ax
-	DEBUG_call 	serial_printh
+	; DEBUG_call 	serial_printh
 	cmp 	ax, word [INT_HANDLER_RET_PTR]
 	jne 	.panic_invalid_retptr
 	iret
