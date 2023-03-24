@@ -140,6 +140,8 @@ main:
 	; setup bios data area before int handlers
 	call 	setup_bda
 
+	call 	vga_init
+
 	call 	init_interrupts
 	call 	set_serial_ivt_entry
 	call 	set_disk_ivt_entry
@@ -201,6 +203,7 @@ msg_jump_to_loader:
 ; Driver includes
 ; 
 %include "src/drivers/vga/vga_core.asm"
+%include "src/drivers/vga/vga_init.asm"
 %include "src/drivers/cpu/common_ia86.asm"
 %include "src/drivers/pit/pit.asm"
 
