@@ -33,44 +33,37 @@
 %ifndef FIXED_PTRS
 %define FIXED_PTRS
 
-section .bss
-absolute 0
+; entry.asm
+%define TMP_BOOTSECTOR_ADDR 		0x3000
 
-; Interrupt vector table
-ADDR_IVT:
-	resb 0x3ff
+; mm.asm
+%define __MM_MEM_START  		0xC000
+%define __MM_MEM_END    		0xCFFF
 
-; Bios data area
-ADDR_BDA:
-	resb 256
+; ata.asm
+%define ata_disk_addr_list 		0x3200
 
-; 29.75 KB of free memory
-ADDR_ATA_DISK_ADDR_LIST:
-	; up to 4 buses with up to 2 disks each.
-	resb 4 * 2 * 2
+; 8042
+%define KBDCTL_CONFIG_BYTE 		0x3400
+%define KBDCTL_CURRENT_CONFIG 		0x3401
+%define KBDCTL_DUAL_CHANNEL_ENABLED 	0x3402
+; bit 0: ps2 device 1 status: 1 ok, 0 error
+; bit 1: ps2 device 2 status: 1 ok, 0 error
+; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
+; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
+%define KBDCTL_PS2_DEV_STATUS_BITS 	0x3403
 
-ADDR_KBDCTL_CONFIG:
-	resb 1
-ADDR_KBDCTL_CURRENT_CONFIG:
-	resb 1
-ADDR_KBDCTL_DUAL_CHANNEL_ENABLED:
-	resb 1
-ADDR_KBDCTL_PS2_DEV_STATUS:
-	; bit 0: ps2 device 1 status: 1 ok, 0 error
-	; bit 1: ps2 device 2 status: 1 ok, 0 error
-	; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
-	; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
-	resb 1
+; pci.asm
+%define pci_dev_ptr_array       	0x5002
+%define pci_dev_cnt             	0x5000
 
-; Bootloader sector
-absolute 0x7c00
-ADDR_MBR:
-	resb 0x200
+%define EBDA_BASE_ADDR 			0x8000 ; shifted right by 4.
 
-; 480 Kilobytes of free space
-; reserve 33 kilobytes for heap
-ADDR_HEAP:
-	resb (0xffff - 0x7e00)
+%define DISK_DRIVE_LAST_STATUS 		0x04A0 	; 1 byte
+%define INT_HANDLER_RET_PTR 		0x04A1 	; 2 bytes
+%define DISK_MAIN_SIZE_LBA 		0x04A3 	; 2 bytes
 
-section .text
+%define PIT_SYSTEM_TIME 		0x00080000 ; System time, 4 bytes
+
+
 %endif

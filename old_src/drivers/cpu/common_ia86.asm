@@ -1,6 +1,6 @@
 ; BSD 3-Clause License
 ; 
-; Copyright (c) 2019, k4m1 <k4m1@protonmail.com>
+; Copyright (c) 2020, k4m1 <k4m1@protonmail.com>
 ; All rights reserved.
 ; 
 ; Redistribution and use in source and binary forms, with or without
@@ -30,47 +30,94 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-%ifndef FIXED_PTRS
-%define FIXED_PTRS
+; ======================================================================== ;
+; Helper to get cpuid related stuff 
+; ======================================================================== ;
 
-section .bss
-absolute 0
+; Function to get cpu vendor string, requires:
+;	di: pointer to memory where to store the string
+; Returns:
+;	nothing
+;
+cpuid_get_cpu_vendor:
+	pusha
 
-; Interrupt vector table
-ADDR_IVT:
-	resb 0x3ff
+	; eax = 0, cpuid _should_ return cpu vendor string in
+	; ebx,ecx,edx
+	xor 	eax, eax
+	cpuid
 
-; Bios data area
-ADDR_BDA:
-	resb 256
+	; store right-most byte at time to di
+	.loop_ebx:
+		mov 	al, bl
+		stosb
+		shr 	ebx, 8
+		test 	ebx, ebx
+		jnz 	.loop_ebx
 
-; 29.75 KB of free memory
-ADDR_ATA_DISK_ADDR_LIST:
-	; up to 4 buses with up to 2 disks each.
-	resb 4 * 2 * 2
+	.loop_edx:
+		mov 	al, dl
+		stosb
+		shr 	edx, 8
+		test 	edx, edx
+		jnz 	.loop_edx
 
-ADDR_KBDCTL_CONFIG:
-	resb 1
-ADDR_KBDCTL_CURRENT_CONFIG:
-	resb 1
-ADDR_KBDCTL_DUAL_CHANNEL_ENABLED:
-	resb 1
-ADDR_KBDCTL_PS2_DEV_STATUS:
-	; bit 0: ps2 device 1 status: 1 ok, 0 error
-	; bit 1: ps2 device 2 status: 1 ok, 0 error
-	; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
-	; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
-	resb 1
+	.loop_ecx:
+		mov 	al, cl
+		stosb
+		shr 	ecx, 8
+		test 	ecx, ecx
+		jnz 	.loop_ecx
+	
+	; EOL + null-terminator 
+	mov 	al, 0x0D
+	stosb
+	mov 	al, 0x0A
+	stosb
+	xor 	al, al
+	stosb
 
-; Bootloader sector
-absolute 0x7c00
-ADDR_MBR:
-	resb 0x200
+	popa
+	ret
 
-; 480 Kilobytes of free space
-; reserve 33 kilobytes for heap
-ADDR_HEAP:
-	resb (0xffff - 0x7e00)
+; Function to print cpu vendor string, requires no arguments
+; and returns nothing.
+;
+; cpu vendor is printed over serial line
+;
+cpuid_print_cpu_vendor:
+	push 	bp
+	mov 	bp, sp
 
-section .text
-%endif
+	push 	cx
+	push 	di
+	push 	si
+	push 	ax
+
+	mov 	cx, 16
+	call 	malloc
+	test 	di, di
+	jz 	.end
+
+	push 	di
+	call 	cpuid_get_cpu_vendor
+	mov 	si, msg_cpuid_vendor
+	call 	serial_print
+	pop 	si
+	mov 	di, si
+	xor 	ax, ax
+	call 	serial_ram_print
+
+	call 	free
+.end:
+	pop 	ax
+	pop 	si
+	pop 	di
+	pop 	cx
+
+	mov 	sp, bp
+	pop 	bp
+	ret
+
+msg_cpuid_vendor:
+	db "CPU VENDOR: ", 0

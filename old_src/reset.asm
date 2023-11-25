@@ -30,47 +30,34 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-%ifndef FIXED_PTRS
-%define FIXED_PTRS
 
-section .bss
-absolute 0
+; ======================================================================== ;
+; This file handles the reset vector 
+; ======================================================================== ;
+bits	16
+org	0xFFFE0000
+align	4
 
-; Interrupt vector table
-ADDR_IVT:
-	resb 0x3ff
+times	0x10000 - ($-$$) db 0
+entry16:
 
-; Bios data area
-ADDR_BDA:
-	resb 256
+%include 'src/entry16.asm'
+	cli
+	hlt
 
-; 29.75 KB of free memory
-ADDR_ATA_DISK_ADDR_LIST:
-	; up to 4 buses with up to 2 disks each.
-	resb 4 * 2 * 2
+times	0x20000 - 0x10 - ($-$$) db 0xFF
+__reset:
+	; disable all interrupts, currently any exception and/or interrupt
+	; will shutdown the CPU. 
+	; (
+	;  Interrupt will modify CS register, which would mean that we cant
+	;  return back here.
+	; )
 
-ADDR_KBDCTL_CONFIG:
-	resb 1
-ADDR_KBDCTL_CURRENT_CONFIG:
-	resb 1
-ADDR_KBDCTL_DUAL_CHANNEL_ENABLED:
-	resb 1
-ADDR_KBDCTL_PS2_DEV_STATUS:
-	; bit 0: ps2 device 1 status: 1 ok, 0 error
-	; bit 1: ps2 device 2 status: 1 ok, 0 error
-	; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
-	; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
-	resb 1
+	cli
+;	db	0xe9
+;	dd	entry16 - ($ + 2)
+	jmp 	entry16 - ($ + 2)
 
-; Bootloader sector
-absolute 0x7c00
-ADDR_MBR:
-	resb 0x200
+	times	12 db 0xff
 
-; 480 Kilobytes of free space
-; reserve 33 kilobytes for heap
-ADDR_HEAP:
-	resb (0xffff - 0x7e00)
-
-section .text
-%endif

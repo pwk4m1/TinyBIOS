@@ -1,6 +1,6 @@
 ; BSD 3-Clause License
 ; 
-; Copyright (c) 2019, k4m1 <k4m1@protonmail.com>
+; Copyright (c) 2020, k4m1 <k4m1@protonmail.com>
 ; All rights reserved.
 ; 
 ; Redistribution and use in source and binary forms, with or without
@@ -30,47 +30,13 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ; 
 
-%ifndef FIXED_PTRS
-%define FIXED_PTRS
+; initialize superio on qemu, this is bit silly I know, but
+; oh well.
+%macro SUPERIO_INIT_MACRO 0
+	mov 	dx, 0x03f8
+	xor 	al, al
+	out 	dx, al
+	out 	dx, al
+%endmacro
 
-section .bss
-absolute 0
 
-; Interrupt vector table
-ADDR_IVT:
-	resb 0x3ff
-
-; Bios data area
-ADDR_BDA:
-	resb 256
-
-; 29.75 KB of free memory
-ADDR_ATA_DISK_ADDR_LIST:
-	; up to 4 buses with up to 2 disks each.
-	resb 4 * 2 * 2
-
-ADDR_KBDCTL_CONFIG:
-	resb 1
-ADDR_KBDCTL_CURRENT_CONFIG:
-	resb 1
-ADDR_KBDCTL_DUAL_CHANNEL_ENABLED:
-	resb 1
-ADDR_KBDCTL_PS2_DEV_STATUS:
-	; bit 0: ps2 device 1 status: 1 ok, 0 error
-	; bit 1: ps2 device 2 status: 1 ok, 0 error
-	; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
-	; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
-	resb 1
-
-; Bootloader sector
-absolute 0x7c00
-ADDR_MBR:
-	resb 0x200
-
-; 480 Kilobytes of free space
-; reserve 33 kilobytes for heap
-ADDR_HEAP:
-	resb (0xffff - 0x7e00)
-
-section .text
-%endif

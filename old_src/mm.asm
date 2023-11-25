@@ -13,12 +13,11 @@
 
 %define __MM_MEM_USED 	"used"
 %define __MM_MEM_FREE 	"free"
-%define __MM_MEM_SIZE 	(0xffff - 0x7e00)
-%define __MM_MEM_END 	ADDR_HEAP + __MM_MEM_SIZE
+%define __MM_MEM_SIZE 	(__MM_MEM_END - __MM_MEM_START)
 
 mm_heap_init:
-	mov 	dword [ADDR_HEAP],  __MM_MEM_FREE
-	mov 	dword [ADDR_HEAP+4], __MM_MEM_SIZE
+	mov 	dword [__MM_MEM_START],  __MM_MEM_FREE
+	mov 	word [__MM_MEM_START+4], __MM_MEM_SIZE
 	ret
 
 ; ====================================================================== ;
@@ -38,7 +37,7 @@ malloc:
 	push 	eax ; used for temp. storing signaturE
 
 	xor 	di, di 	; set default ret value to 0
-	mov 	si, ADDR_HEAP  ; start looking for free memory to allocate
+	mov 	si, __MM_MEM_START  ; start looking for free memory to allocate
 
 	.check_next_block:
 		lodsd
