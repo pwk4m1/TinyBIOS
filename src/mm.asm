@@ -35,7 +35,7 @@ malloc:
 
 	push 	si
 	push 	cx
-	push 	eax ; used for temp. storing signaturE
+	push 	eax ; used for temp. storing signature
 
 	xor 	di, di 	; set default ret value to 0
 	mov 	si, ADDR_HEAP  ; start looking for free memory to allocate
@@ -43,14 +43,14 @@ malloc:
 	.check_next_block:
 		lodsd
 		cmp 	eax, __MM_MEM_FREE
-		je 	.free_block_found
+		je 	    .free_block_found
 		cmp 	eax, __MM_MEM_USED
 		jne 	.mem_out_of_sync
 		
 		lodsw
 		add 	si, ax
 		cmp 	si, __MM_MEM_END
-		jl 	.check_next_block
+		jl 	    .check_next_block
 
 		; we fell out of memory region/out of heap..
 		; / no more space left to allocate
@@ -63,13 +63,14 @@ malloc:
 		ret
 
 	.free_block_found:
+        and     eax, 0x0000FFFF
 		lodsw
 		cmp 	ax, cx
-		jg 	.do_malloc
+		jl 	    .do_malloc
 		; memory block was not large enough, move to next
 		add 	si, ax
 		cmp 	si, __MM_MEM_END
-		jl 	.check_next_block
+		jl 	    .check_next_block
 		jmp 	.ret
 
 	.mem_out_of_sync:
@@ -93,7 +94,7 @@ malloc:
 		; check how large is the free block, do we fill it totally?
 		add 	cx, 8 ; add (header size + 1 byte of memory (lol))
 		cmp 	cx, ax
-		je 	.fullfill
+		je 	    .fullfill
 
 		; we don't fill it all, so let's split it
 		sub 	cx, 8
