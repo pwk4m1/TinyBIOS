@@ -97,7 +97,7 @@ cpuid_print_cpu_vendor:
 	mov 	cx, 16
 	call 	malloc
 	test 	di, di
-	jz 	.end
+	jz 	    .end
 
 	push 	di
 	call 	cpuid_get_cpu_vendor
