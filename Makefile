@@ -6,9 +6,6 @@ all: clean build
 clean:
 	rm -rf bin/bios
 
-car:
-	$(as) $(asflags) -D__USE_CAR__ -o bin/bios src/reset.asm
-
 debug:
 	$(as) $(asflags) -o bin/bios -D__DO_DEBUG_LOG__ src/reset.asm
 

@@ -30,8 +30,6 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;
 
-%ifdef __USE_CAR__
-
     %define CACHE_AS_RAM_BASE       0x08000000
     %define CACHE_AS_RAM_SIZE       0x2000
     %define MEMORY_TYPE_WRITEBACK   0x06
@@ -104,8 +102,6 @@
     xor eax, MTRR_ENABLE
     wrmsr    
 %endmacro
-
-%endif
 
 
 

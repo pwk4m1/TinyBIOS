@@ -38,10 +38,10 @@
 ; Offset from ROM beginning is 0x10000.
 ;
 ; ======================================================================== ;
-bits	16
+bits    16
 %define VER_NUM "0.4"
 entry:
-	jmp 	main
+    jmp     main
 
 ; ======================================================================== ;
 ; Includes here
@@ -49,6 +49,7 @@ entry:
 %include "src/fixed_pointers.asm"
 %include "src/mm.asm"
 
+%include "src/drivers/ram/ram_init_common_entry.asm"
 %include "src/drivers/serial.asm"
 
 %include "src/drivers/qemu/superio.asm"
@@ -62,47 +63,62 @@ entry:
 %define EOL 0x0a, 0x0d, 0
 
 msg_boot_early:
-	db "Tinybios ", VER_NUM, " booting...", EOL
+    db "Tinybios ", VER_NUM, " booting...", EOL
 
 ; ======================================================================== ;
 ; Main functionality
 ; ======================================================================== ;
 
 main:
-	cli
-	cld
+    cli
+    cld
 
-	; save BIST result
-	mov	ebp, eax
+    ; save BIST result
+    mov ebp, eax
 
-	; disable TLB
-	xor	eax, eax
-	mov	cr3, eax
+    ; disable TLB
+    xor eax, eax
+    mov cr3, eax
 
-	; this macro is provided by drivers/dev/superio.asm
-	SUPERIO_INIT_MACRO
+    ; this macro is provided by drivers/dev/superio.asm
+    SUPERIO_INIT_MACRO
 
-	; this macro is provided by drivers/cpu/YOURCPU.asm
-%ifdef USE_CAR
-	INIT_CAR_IF_ENABLED
-%endif
+    ; this macro is provided by drivers/cpu/YOURCPU.asm
+    INIT_CAR
 
 ; ======================================================================== ;
 ; At this point, ram init is completed, we can go on with our boot process
 ;
 ; ======================================================================== ;
-	xor 	ax, ax
-	mov 	ss, ax
-	mov	sp, 0x7c00
+    push ebp         ; store ebp/BIST to stack
+    mov ebp, esp
 
-	push 	ebp 		; store ebp/BIST to stack
+    ; Proceed to initialise superio, need this before serial is a thing
+    ; 
+    call superio_init_entry    
 
-	mov	bp, sp
+    ; Show a simple bootsplash over serial port
+    mov si, msg_boot_early
+    call serial_print
 
-	; Show a simple bootsplash over serial port
-	mov	si, msg_boot_early
-	call	serial_print
-	call 	mm_heap_init
+    ; Try and enable main memory, if ram_init fails we don't return
+    call ram_init_entry
 
-	call 	cpuid_print_cpu_vendor
+    ; We've now got ram, no need to use cache for that anymore.
+    pop ebp
+    DISABLE_CAR
 
+    and esp, 0x0000FFFF
+    mov sp, STACK_RAM + 512
+    push ebp
+
+    ; Start random device init here
+    call mm_heap_init
+    call cpuid_print_cpu_vendor
+
+
+.hang:
+    mov ax, 0xdead
+    cli
+    hlt
+    jmp  $ - 2

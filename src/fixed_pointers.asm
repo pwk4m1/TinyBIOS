@@ -38,39 +38,44 @@ absolute 0
 
 ; Interrupt vector table
 ADDR_IVT:
-	resb 0x3ff
+    resb 0x3ff
 
 ; Bios data area
 ADDR_BDA:
-	resb 256
+    resb 256
 
 ; 29.75 KB of free memory
 ADDR_ATA_DISK_ADDR_LIST:
-	; up to 4 buses with up to 2 disks each.
-	resb 4 * 2 * 2
+    ; up to 4 buses with up to 2 disks each.
+    resb 4 * 2 * 2
 
 ADDR_KBDCTL_CONFIG:
-	resb 1
+    resb 1
 ADDR_KBDCTL_CURRENT_CONFIG:
-	resb 1
+    resb 1
 ADDR_KBDCTL_DUAL_CHANNEL_ENABLED:
-	resb 1
+    resb 1
 ADDR_KBDCTL_PS2_DEV_STATUS:
-	; bit 0: ps2 device 1 status: 1 ok, 0 error
-	; bit 1: ps2 device 2 status: 1 ok, 0 error
-	; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
-	; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
-	resb 1
+    ; bit 0: ps2 device 1 status: 1 ok, 0 error
+    ; bit 1: ps2 device 2 status: 1 ok, 0 error
+    ; bit 2: ps2 device 1 is initialised keyboard: 1, else 0
+    ; bit 3: ps2 device 2 is initialised keyboard: 1, else 0
+    resb 1
+
+; half a kilobyte of stack for us 
+absolute 0x7000
+STACK_RAM:
+    resb 512
 
 ; Bootloader sector
 absolute 0x7c00
 ADDR_MBR:
-	resb 0x200
+    resb 0x200
 
 ; 480 Kilobytes of free space
 ; reserve 33 kilobytes for heap
 ADDR_HEAP:
-	resb (0xffff - 0x7e00)
+    resb (0xffff - 0x7e00)
 
 section .text
 %endif
