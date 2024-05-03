@@ -49,7 +49,6 @@ entry:
 %include "src/fixed_pointers.asm"
 %include "src/mm.asm"
 
-%include "src/drivers/ram/ram_init_common_entry.asm"
 %include "src/drivers/serial.asm"
 
 %include "src/drivers/qemu/superio.asm"
@@ -95,14 +94,11 @@ main:
 
     ; Proceed to initialise superio, need this before serial is a thing
     ; 
-    call superio_init_entry    
+    SUPERIO_INIT_MACRO
 
     ; Show a simple bootsplash over serial port
     mov si, msg_boot_early
     call serial_print
-
-    ; Try and enable main memory, if ram_init fails we don't return
-    call ram_init_entry
 
     ; We've now got ram, no need to use cache for that anymore.
     pop ebp
