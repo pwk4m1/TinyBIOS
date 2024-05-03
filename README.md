@@ -9,11 +9,8 @@ want to try out that version, use old\_src source tree.
 
 Testing:
 
-  $: cd TinyBIOS
-  
-  $: mkdir bin
-  
-  $: make
-  
-  $: make test
-
+```sh
+$ cd TinyBIOS
+$ make
+$ make test
+```
