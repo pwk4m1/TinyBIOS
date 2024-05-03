@@ -1,7 +1,7 @@
 as=nasm
 aflags=-fbin -O0 
 
-all: clean build
+all: build
 
 clean:
 	rm -rf bin/bios
