@@ -1,5 +1,5 @@
 as=nasm
-aflags=-fbin -O0 
+aflags=-fbin -O0
 
 all: build
 
