@@ -7,9 +7,12 @@ find_program(clang NAMES clang clang16 HINTS /usr/bin /usr/local/bin /bin)
 set(target_mainboard "qemu" CACHE STRING "Currently we only support qemu for now")
 set(target_cpu "x86-64" CACHE STRING "We only support x86-64 cpus for now")
 set(CC clang)
+set(ASMFLAGS -m16)
 
 add_executable(tinybios 
-    src/reset.s
+    src/reset.S
+    src/cpu/cache.S
+    src/c_entry.c
 )
 
 # add_subdirectory(src/mainboards/${target_mainboard})
@@ -27,10 +30,11 @@ target_compile_options(tinybios PRIVATE
     -fno-builtin -nostdinc -nostdlib
     -masm=intel
     -march=${target_cpu}
+    ${ASMFLAGS}
 )
 
 target_link_options(tinybios PRIVATE
-    -nostdlib -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
+    -nostdlib -m16 -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
 )
 
 set_target_properties(tinybios PROPERTIES OUTPUT_NAME tinybios.elf)
