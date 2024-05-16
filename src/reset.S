@@ -44,6 +44,7 @@ entry:
     mov     cr3, eax
 
     #include "cpu/cache.S"
+
     // We now have stack, store bist results there
     push    ebp
     mov     ebp, esp

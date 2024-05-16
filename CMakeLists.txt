@@ -28,6 +28,7 @@ target_compile_options(tinybios PRIVATE
     -Wall -Wextra -Wpedantic 
     -ffreestanding -fno-stack-protector
     -fno-builtin -nostdinc -nostdlib
+    -I./src/include
     -masm=intel
     -march=${target_cpu}
     ${ASMFLAGS}
