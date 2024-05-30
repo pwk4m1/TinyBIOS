@@ -53,7 +53,7 @@
  * @param unsigned short port -- port to read status from
  * @return unsigned char status
  */
-inline unsigned char serial_get_line_status(unsigned short port) {
+static inline unsigned char serial_get_line_status(unsigned short port) {
     return inb(SERIAL_LSR(port));
 }
 
@@ -61,7 +61,7 @@ inline unsigned char serial_get_line_status(unsigned short port) {
  *
  * @param unsigned short port -- Device from which to disable interrupts from
  */
-inline void serial_interrupts_disable(unsigned short port) {
+static inline void serial_interrupts_disable(unsigned short port) {
     outb(SERIAL_IE(port), 0);
 }
 
@@ -69,7 +69,7 @@ inline void serial_interrupts_disable(unsigned short port) {
  *
  * @param unsigned short port -- Device from which to enable interrupts from
  */
-inline void serial_interrupts_enable(unsigned short port) {
+static inline void serial_interrupts_enable(unsigned short port) {
     outb(SERIAL_IE(port), 0);
 }
 
@@ -78,7 +78,7 @@ inline void serial_interrupts_enable(unsigned short port) {
  * @param unsigned short port -- port to read status from
  * @return unsigned char status
  */
-inline unsigned char serial_get_modem_status(unsigned short port) {
+static inline unsigned char serial_get_modem_status(unsigned short port) {
     return inb(SERIAL_MSR(port));
 }
 
@@ -86,7 +86,7 @@ inline unsigned char serial_get_modem_status(unsigned short port) {
  * 
  * @param unsigned short port -- on which device to set DLAB
  */
-inline void serial_dlab_set(unsigned short port) {
+static inline void serial_dlab_set(unsigned short port) {
     outb(SERIAL_FIFO_CTRL(port), 0x80);
 }
 
@@ -94,10 +94,10 @@ inline void serial_dlab_set(unsigned short port) {
  *
  * @param unsigned short port -- on which device to clear DLAB
  */
-inline void serial_dlab_clear(unsigned short port) {
+static inline void serial_dlab_clear(unsigned short port) {
     unsigned char stat = inb(SERIAL_FIFO_CTRL(port));
     stat &= ~(0x80);
-    outb(SERIAL_FIFO_CTRL(port), 0x80);
+    outb(SERIAL_FIFO_CTRL(port), stat);
 }
 
 /* Set baud rate for device
@@ -105,7 +105,7 @@ inline void serial_dlab_clear(unsigned short port) {
  * @param unsigned short port -- device to set baudrate for
  * @param unsigned short brd  -- baud rate divisor
  */
-inline void serial_set_baudrate(unsigned short port, unsigned short brd) {
+static inline void serial_set_baudrate(unsigned short port, unsigned short brd) {
     serial_dlab_set(port);
     outb(SERIAL_DATA(port), (unsigned char)(brd & 0x00FF));
     outb(SERIAL_IE(port), (unsigned char)(brd >> 8));
@@ -117,7 +117,7 @@ inline void serial_set_baudrate(unsigned short port, unsigned short brd) {
  * @param unsigned short port -- device to set lc for
  * @param unsigned char lcr   -- line control value
  */
-inline void serial_set_linecontrol(unsigned short port, unsigned char lcr) {
+static inline void serial_set_linecontrol(unsigned short port, unsigned char lcr) {
     outb(SERIAL_LCR(port), lcr);
 }
 
@@ -128,7 +128,7 @@ inline void serial_set_linecontrol(unsigned short port, unsigned char lcr) {
  * @param unsigned short port -- Device to test
  * @return non-zero if device is faulty
  */
-inline unsigned char serial_device_is_faulty(unsigned short port) {
+static inline unsigned char serial_device_is_faulty(unsigned short port) {
     outb(SERIAL_SCRATCH(port), 0xfa);
     return (inb(SERIAL_SCRATCH(port)) != 0xfa);
 }
@@ -153,18 +153,18 @@ unsigned char serial_init_device(unsigned short port);
  *
  * @param unsigned short port -- Device to write to
  * @param const unsigned char *msg  -- Absolute address to string to write
- * @param const ssize_t size -- size of message to print
+ * @param const size_t size -- size of message to print
  * @return amount of bytes transmitted
  */
-ssize_t serial_tx(unsigned short port, const unsigned char *msg, const ssize_t size);
+size_t serial_tx(unsigned short port, const char *msg, const size_t size);
 
 /* Receive a string over serial line
  *
  * @param unsigned short port -- Device to read from
  * @param unsigned char *dst -- Buffer to read to
- * @param const ssize_t size -- How many bytes to read
+ * @param const size_t size -- How many bytes to read
  * @return amount of bytes received 
  */
-ssize_t serial_rx(unsigned short port, unsigned char *dst, const ssize_t size);
+size_t serial_rx(unsigned short port, char *dst, const size_t size);
 
 #endif // __SERIAL_H__

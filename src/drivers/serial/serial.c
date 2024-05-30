@@ -63,11 +63,11 @@ unsigned char serial_init_device(unsigned short port) {
         return -1;
     }
     serial_interrupts_disable(port);
-    serial_set_baudrate(port);
-    serial_set_linecontrol(port, lcr);
+    serial_set_baudrate(port, 0x0003);
+    serial_set_linecontrol(port, 0x03);
 
     // Enable FIFO, clear with 14 byte treshold 
-    outb(SERIAL_FIFO_CTRL(port), 0xC7);
+    outb(0xC7, SERIAL_FIFO_CTRL(port));
     return 0;
 }
 
@@ -75,16 +75,17 @@ unsigned char serial_init_device(unsigned short port) {
  *
  * @param unsigned short port -- Device to write to
  * @param const unsigned char *msg  -- Absolute address to string to write
- * @param const ssize_t size -- size of message to print
+ * @param const size_t size -- size of message to print
  * @return amount of bytes transmitted
  */
-ssize_t serial_tx(unsigned short port, const unsigned char *msg, const ssize_t size) {
-    ssize_t i;
+size_t serial_tx(unsigned short port, const char *msg, const size_t size) {
+    size_t i;
+    asm volatile("hlt");
     for (i = 0; i < size; i++) {
-        if (serial_wait_for_tx_empty(port)) {
+        while (serial_wait_for_tx_empty(port) != 0) {
             continue;
         }
-        outb(SERIAL_DATA(port), msg[i]);
+        outb((unsigned char)msg[i], SERIAL_DATA(port));
     }
     return i;
 }
@@ -93,13 +94,13 @@ ssize_t serial_tx(unsigned short port, const unsigned char *msg, const ssize_t s
  *
  * @param unsigned short port -- Device to read from
  * @param unsigned char *dst -- Buffer to read to
- * @param const ssize_t size -- How many bytes to read
+ * @param const size_t size -- How many bytes to read
  * @return amount of bytes received 
  */
-ssize_t serial_rx(unsigned short port, unsigned char *dst, const ssize_t size) {
-    ssize_t i;
+size_t serial_rx(unsigned short port, char *dst, const size_t size) {
+    size_t i;
     for (i = 0; i < size; i++) {
-        if (serial_wait_for_tx_empty(port)) {
+        while (serial_wait_for_tx_empty(port) != 0) {
             continue;
         }
         dst[i] = inb(SERIAL_DATA(port));

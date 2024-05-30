@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2024, k4m1
+ Copyright (c) 2019, k4m1
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,25 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SYS_IO_H__
-#define __SYS_IO_H__
 
-// Basic cpu port i/o
-static inline unsigned char inb(unsigned short port) {
-    unsigned char ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
-
-static inline unsigned short inw(unsigned short port) {
-    unsigned short ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
-
-static inline unsigned short inl(unsigned short port) {
-    unsigned int ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
-
-static inline void outb(unsigned char v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-static inline void outw(unsigned short v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-static inline void outl(unsigned int v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-#endif
+.global gdt32
+gdt32:
+    .short  .gdt32_end - .gdt32_start
+    .int    .gdt32_start
+.gdt32_start:
+    .int    0
+    .int    0
+.code32:
+    .short  0xFFFF
+    .short  0x0000
+    .byte   0x00
+    .byte   0x9A
+    .byte   0xCF
+    .byte   0x00
+.data32:
+    .short  0xFFFF
+    .short  0x0000
+    .byte   0x92
+    .byte   0xCF
+    .byte   0x00
+.gdt32_end:

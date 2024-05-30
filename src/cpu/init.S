@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2024, k4m1
+ Copyright (c) 2019, k4m1
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,42 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SYS_IO_H__
-#define __SYS_IO_H__
 
-// Basic cpu port i/o
-static inline unsigned char inb(unsigned short port) {
-    unsigned char ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
+.global init_cpu
 
-static inline unsigned short inw(unsigned short port) {
-    unsigned short ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
+/* Workaround for compiler/clang issue, refer
+ * https://github.com/llvm/llvm-project/issues/49636
+ */
+#define LONGJMP(segment, target) \
+    .byte   0x66; \
+    .byte   0xEA; \
+    .int    target; \
+    .short  segment;
 
-static inline unsigned short inl(unsigned short port) {
-    unsigned int ret;
-    asm volatile("in %0, %1":"=a"(ret):"dN"(port));
-    return ret;
-}
+// We'll land here from reset.S, things we'll want to do next are 
+// to move to some more appropriate runmode which doesn't do segments and
+// 20-bit addressing, etc.
+//
+init_cpu:
+    // Start by moving to 32 bit protected mode
+    cld
+    mov     esp, 0x7c00
+    xor     eax, eax
+    push    eax              // Code segment 
+    mov     eax, offset next
+    push    eax
 
-static inline void outb(unsigned char v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-static inline void outw(unsigned short v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-static inline void outl(unsigned int v, unsigned short port) {
-    asm volatile("out %1, %0"::"a"(v),"dN"(port));
-}
-
-#endif
+    mov     eax, offset gdt32
+    lgdt    [eax]
+    xor     eax, eax
+    lidt    [eax]
+    mov     eax, cr0
+    or      al, 1
+    mov     cr0, eax
+    LONGJMP(0x0008, next)
+next:
+    mov     ax, 0x1234
+    cli
+    hlt
+    jmp     next
+    

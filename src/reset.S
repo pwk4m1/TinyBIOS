@@ -44,11 +44,42 @@ entry:
     mov     cr3, eax
 
     #include "cpu/cache.S"
+    xor     esi, esi
+    xor     edi, edi
 
     // We now have stack, store bist results there
     push    ebp
     mov     ebp, esp
-    call    c_main
+
+    // Handle string segments
+    // Handle main memory initialisation
+    call    main_memory_init
+
+    // Move stack from cache to ram, and move bist results
+    // as well
+    pop     ebp
+    mov     esp, 0x7c00
+    push    ebp
+
+    // Disable MTRR subsystem for now, we don't really have a need
+    // for it and I'd prefer to have the least amount possible running at
+    // this point. The less things that can randomly break, the better.
+    //
+    mov     ecx, MTRR_DEFTYPE_REG0
+    rdmsr
+    and     eax, ~MTRR_ENABLE
+    wrmsr
+
+    // We've now got actual memory going on, time to switch runmodes
+    // around so that we're not relying on segments / 20-bit addressing
+    //
+    call    init_cpu
+
+    mov     ax, 0xDEAD
+.hang:
+    cli
+    hlt
+    jmp     .hang
 
 .section .reset
 /* Reset at 0xFFFF0 */
