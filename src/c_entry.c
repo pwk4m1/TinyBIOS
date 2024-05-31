@@ -29,17 +29,23 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-
-
 #include <sys/io.h>
+
 #include <superio/superio.h>
 #include <serial/serial.h>
 
+/* The C entrypoint for early initialisation for {hard,soft}ware so
+ * that we can move to 64-bit long mode.
+ *
+ * This function should never return.
+ */
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
-    (void)serial_tx(0x03f8, "Hello\n", 6);
+    serial_tx(0x03f8, "C main\n");
 
+    asm volatile("cli":::"memory");
     for (;;) { }
 }
+
+
 
