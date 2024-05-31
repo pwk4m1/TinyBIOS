@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2019, k4m1
+ Copyright (c) 2024, k4m1
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -45,16 +45,11 @@
 // to move to some more appropriate runmode which doesn't do segments and
 // 20-bit addressing, etc.
 //
+.section .rom_text
 init_cpu:
+    .code16
     // Start by moving to 32 bit protected mode
-    cld
-    mov     esp, 0x7c00
-    xor     eax, eax
-    push    eax              // Code segment 
-    mov     eax, offset next
-    push    eax
-
-    mov     eax, offset gdt32
+    mov     eax, offset gdt
     lgdt    [eax]
     xor     eax, eax
     lidt    [eax]
@@ -63,8 +58,33 @@ init_cpu:
     mov     cr0, eax
     LONGJMP(0x0008, next)
 next:
-    mov     ax, 0x1234
+    .code32
+    // 32-bit protected mode now re; CS & cr0, set rest of segments
+    // and start moving towards 64 bit long mode
+    //
+    cli
+
+    // Start with switching to unreal mode / compability 16-bit mode
+    mov     bx, 0x08
+    mov     ds, bx
+    and     al, 0xFE
+    mov     cr0, eax
+    xor     ax, ax
+    mov     ds, ax
+
+    // Relocate our C code into ram
+    mov     esi, 0xE0000
+    mov     edi, 0x01000
+    mov     ecx, 0x0FFFF
+    rep     movsb
+    mov     esp, 0x00007c00
+    call    c_main
+
+    // should hopefully never be reached
+.hang:
+    mov     eax, 0xDEADCODE
     cli
     hlt
-    jmp     next
-    
+    jmp     .hang
+
+

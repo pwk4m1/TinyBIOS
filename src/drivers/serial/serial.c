@@ -42,8 +42,8 @@
  * @return 0 when line is empty, or non-zero if timed out.
  */
 unsigned char serial_wait_for_tx_empty(unsigned short port) {
-    for (int i = 0; i < 500; i++) {
-        if ((serial_get_line_status(port) & 0x20) == 0) {
+    for (int i = 0; i < 5000; i++) {
+        if ((serial_get_line_status(port) & 0x01) == 0) {
             return 0;
         }
         asm volatile("nop":::"memory");
@@ -80,12 +80,12 @@ unsigned char serial_init_device(unsigned short port) {
  */
 size_t serial_tx(unsigned short port, const char *msg, const size_t size) {
     size_t i;
-    asm volatile("hlt");
+
     for (i = 0; i < size; i++) {
         while (serial_wait_for_tx_empty(port) != 0) {
             continue;
-        }
-        outb((unsigned char)msg[i], SERIAL_DATA(port));
+        } 
+        outb(msg[i], port);
     }
     return i;
 }

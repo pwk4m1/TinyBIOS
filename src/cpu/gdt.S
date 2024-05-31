@@ -30,24 +30,36 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.global gdt32
-gdt32:
-    .short  .gdt32_end - .gdt32_start
-    .int    .gdt32_start
-.gdt32_start:
+.section .rom_text
+.global gdt
+.code32
+gdt:
+    .short  .gdt_end - .gdt_start
+    .int    .gdt_start
+.gdt_start:
     .int    0
     .int    0
-.code32:
+._gdt_code32:
     .short  0xFFFF
     .short  0x0000
     .byte   0x00
     .byte   0x9A
     .byte   0xCF
     .byte   0x00
-.data32:
+._gdt_code64:
     .short  0xFFFF
     .short  0x0000
-    .byte   0x92
-    .byte   0xCF
     .byte   0x00
-.gdt32_end:
+    .byte   0x9A
+    .byte   0xAF
+    .byte   0x00
+._gdt_data64:
+    .short  0xFFFF
+    .short  0x0000
+    .byte   0x00
+    .byte   0x92
+    .byte   0xAF
+    .byte   0x00
+.gdt_end:
+
+

@@ -29,13 +29,12 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __MEMORY_INIT_S__
-    #define __MEMORY_INIT_S__
     /* There's no need to perform memory initialisation on qemu but for
      * compability's sake let's have the entry and return here regardless.
      */
+.code16
 .global main_memory_init
+.section .rom_text
 main_memory_init:
     ret
 
-#endif // __MEMORY_INIT_S__

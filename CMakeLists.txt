@@ -7,13 +7,12 @@ find_program(clang NAMES clang clang16 HINTS /usr/bin /usr/local/bin /bin)
 set(target_mainboard "qemu" CACHE STRING "Currently we only support qemu for now")
 set(target_cpu "x86-64" CACHE STRING "We only support x86-64 cpus for now")
 set(CC clang)
-set(ASMFLAGS -m16)
 
 # These source files are used by _all_ versions of x86 bios of ours
 #
 add_executable(tinybios 
     src/reset.S
-    src/cpu/gdt32.S
+    src/cpu/gdt.S
     src/cpu/init.S
     src/c_entry.c
     src/drivers/serial/serial.c
@@ -27,7 +26,20 @@ add_custom_command(
     TARGET tinybios
     POST_BUILD
     COMMENT "Building BIOS Image from ELF file" 
-    COMMAND objcopy -j .data -j .text -j .reset -O binary tinybios.elf tinybios.bin
+    COMMAND objcopy -j .rom_text -j .data -j .text -j .reset -O binary tinybios.elf tinybios.bin
+)
+
+add_custom_target(run
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -serial stdio
+    DEPENDS tinybios.bin
+    USES_TERMINAL
+)
+
+add_custom_target(debug
+    COMMAND qemu-system-x86_64 -S --daemonize -s -bios tinybios.bin
+    COMMAND gdb -ix ${CMAKE_CURRENT_SOURCE_DIR}/gdbinit
+    DEPENDS tinybios.bin
+    USES_TERMINAL
 )
 
 target_include_directories(tinybios PUBLIC 
@@ -38,16 +50,16 @@ target_compile_options(tinybios PUBLIC
     -Wall -Wextra
     -fno-builtin -nostdinc -nostdlib
     -ffreestanding
-    -fno-stack-protector
     -masm=intel
-    -m16
+    -m32
+    -fno-pic
+    -std=gnu11
     -D TARGET_MAINBOARD=${target_mainboard}
     -march=${target_cpu}
-    ${ASMFLAGS}
 )
 
 target_link_options(tinybios PUBLIC 
-    -nostdlib -m16 -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
+    -nostdlib -m32 -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
 )
 
 set_target_properties(tinybios PROPERTIES OUTPUT_NAME tinybios.elf)

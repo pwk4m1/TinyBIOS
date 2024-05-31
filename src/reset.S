@@ -31,9 +31,10 @@
  
 */
     
-.section .text
+.section .rom_text
 /* Entry at 0xF0000 */
 
+.code16
 entry:
     cld
     // Bist result to ebp
