@@ -65,6 +65,7 @@ next:
     cli
 
     // Start with switching to unreal mode / compability 16-bit mode
+    //
     mov     bx, 0x08
     mov     ds, bx
     and     al, 0xFE
@@ -73,6 +74,7 @@ next:
     mov     ds, ax
 
     // Relocate our C code into ram
+    //
     mov     esi, 0xE0000
     mov     edi, 0x01000
     mov     ecx, 0x0FFFF
@@ -82,9 +84,8 @@ next:
 
     // should hopefully never be reached
 .hang:
-    mov     eax, 0xDEADCODE
+    mov     eax, 0xdeadc0de 
     cli
     hlt
     jmp     .hang
-
 
