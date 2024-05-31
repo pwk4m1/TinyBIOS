@@ -53,7 +53,7 @@ target_include_directories(tinybios PUBLIC
 
 target_compile_options(tinybios PUBLIC 
     -Wall -Wextra
-    -nostdinc -nostdlib
+    -nostdlib
     -ibuiltininc
     -ffreestanding
     -masm=intel
