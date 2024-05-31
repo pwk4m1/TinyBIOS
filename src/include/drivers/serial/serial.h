@@ -34,8 +34,12 @@
 #ifndef __SERIAL_H__
 #define __SERIAL_H__
 
-#include <sys/types.h>
+#include <stddef.h>
+#include <stdbool.h>
+
 #include <sys/io.h>
+
+#include <drivers/device.h>
 
 #define SERIAL_DATA(x)      (x)
 #define SERIAL_IE(x)        (x + 1)
@@ -45,6 +49,19 @@
 #define SERIAL_LSR(x)       (x + 5)
 #define SERIAL_MSR(x)       (x + 6)
 #define SERIAL_SCRATCH(x)   (x + 7)
+
+// Structure for serial/uart device related data
+//
+typedef struct {
+    // Which com-port is this?
+    unsigned short base_port;
+
+    // baud rate, LCR, and other configuration values
+    unsigned short baudrate_divisor;
+    unsigned char line_control;
+    unsigned char fifo_control;
+
+} serial_uart_device;
 
 /* Helper functions for serial devices */
 
@@ -129,8 +146,9 @@ static inline void serial_set_linecontrol(unsigned short port, unsigned char lcr
  * @return non-zero if device is faulty
  */
 static inline unsigned char serial_device_is_faulty(unsigned short port) {
-    outb(SERIAL_SCRATCH(port), 0xfa);
-    return (inb(SERIAL_SCRATCH(port)) != 0xfa);
+    outb(0x1e, SERIAL_MCR(port));
+    outb(0xae, SERIAL_DATA(port));
+    return (inb(SERIAL_DATA(port)) != 0xae);
 }
 
 /* Poll for serial port until line is empty.
@@ -147,7 +165,7 @@ unsigned char serial_wait_for_tx_empty(unsigned short port);
  * @param unsigned char  lcr  -- line control value
  * @return 0 on success or non-zero on error
  */
-unsigned char serial_init_device(unsigned short port);
+bool serial_init_device(pio_device *dev, unsigned short port, unsigned short brd, unsigned char lcr, char *name);
 
 /* Write a string over serial line
  *
@@ -156,7 +174,7 @@ unsigned char serial_init_device(unsigned short port);
  * @param const size_t size -- size of message to print
  * @return amount of bytes transmitted
  */
-size_t serial_tx(unsigned short port, const char *msg);
+size_t serial_tx(unsigned short port, const char *msg, size_t len);
 
 /* Receive a string over serial line
  *

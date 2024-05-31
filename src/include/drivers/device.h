@@ -30,50 +30,38 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
+#ifndef __DRIVER_DEVICE_GENERIC__
+#define __DRIVER_DEVICE_GENERIC__
+
 #include <stddef.h>
 
-#include <sys/io.h>
+// Generic status for all devices we have.
+enum DEVICE_STATUS {
+    unknown,        // We haven't started initialising device or can't determine it's state
+    initialised,    // Device initialisation completed and device is functional
+    not_present,    // There's no device plugged into this port 
+    faulty          // device initialisation incomplete and/or device is misbehaving
+};
 
-#include <superio/superio.h>
+enum DEVICE_TYPE {
+    device_serial,
+    device_ata,
+    device_parallel,
+    device_other
+};
 
-#include <drivers/device.h>
-#include <drivers/serial/serial.h>
-#include <drivers/kbdctl/8042.h>
+// This structure holds data related to processor-io controlled device.
+typedef struct {
+    // Printable name of the device
+    char *device_name;
 
-#include <console/console.h>
+    // Status of the device ( Unknown, initialised, faulty )
+    enum DEVICE_STATUS status;
+    enum DEVICE_TYPE type;
 
-pio_device primary_com_device;
-serial_uart_device sdev;
-console_device default_console_device;
-
-pio_device keyboard_controller_device;
-ps2_8042_status keyboard_controller_status;
-
-/* The C entrypoint for early initialisation for {hard,soft}ware so
- * that we can move to 64-bit long mode.
- *
- * This function should never return.
- */
- __attribute__ ((noreturn)) void c_main(void) {
-    superio_init();
-    primary_com_device.device_data = &sdev;
-    keyboard_controller_device.device_name = "8042\n";
-    keyboard_controller_device.device_data = &keyboard_controller_status;
-    default_console_device.pio_dev = &primary_com_device;
-    default_console_device.tx_func = &serial_tx;
-
-    (void)serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1");
-    blog("TinyBIOS 0.4\n");
-    blog("SuperIO initialised\n");
-    blog("UART 1 (0x03f8) set to be default output device\n");
-    int stat = kbdctl_set_default_init(&keyboard_controller_device);
-    if (stat) {
-        blog("kbdctl init failed\n");
-    }
-
-    asm volatile("cli":::"memory");
-    for (;;) { }
-}
+    // Device specific data
+    void *device_data;
+} pio_device;
 
 
+#endif // __DRIVER_DEVICE_GENERIC__

@@ -16,6 +16,8 @@ add_executable(tinybios
     src/cpu/init.S
     src/c_entry.c
     src/drivers/serial/serial.c
+    src/drivers/kbdctl/8042.c
+    src/console.c
 )
 
 # Helper stuff
@@ -51,12 +53,13 @@ target_include_directories(tinybios PUBLIC
 
 target_compile_options(tinybios PUBLIC 
     -Wall -Wextra
-    -fno-builtin -nostdinc -nostdlib
+    -nostdinc -nostdlib
+    -ibuiltininc
     -ffreestanding
     -masm=intel
     -m32
     -fno-pic
-    -std=gnu11
+    -std=gnu2x
     -D TARGET_MAINBOARD=${target_mainboard}
     -march=${target_cpu}
 )

@@ -31,12 +31,13 @@
 
  */
 
-#include <sys/types.h>
+#include <stddef.h>
 #include <sys/io.h>
 
-#include <serial/serial.h>
+#include <drivers/device.h>
+#include <drivers/serial/serial.h>
 
-#include <string.h>
+#include <stdbool.h>
 
 /* Poll for serial port until line is empty.
  *
@@ -60,17 +61,25 @@ unsigned char serial_wait_for_tx_empty(unsigned short port) {
  * @param unsigned char  lcr  -- line control value
  * @return 0 on success or non-zero on error
  */
-unsigned char serial_init_device(unsigned short port) {
-    if (serial_device_is_faulty(port)) {
-        return -1;
-    }
+bool serial_init_device(pio_device *dev, unsigned short port, unsigned short brd, unsigned char lcr, char *name) {
+    serial_uart_device *sdev = (serial_uart_device *)dev->device_data;
     serial_interrupts_disable(port);
-    serial_set_baudrate(port, 0x0003);
-    serial_set_linecontrol(port, 0x03);
+    serial_set_baudrate(port, brd);
+    serial_set_linecontrol(port, lcr);
+    if (serial_device_is_faulty(port)) {
+        return false;
+    }
+    outb(0x0F, SERIAL_MCR(port));
 
     // Enable FIFO, clear with 14 byte treshold 
     outb(0xC7, SERIAL_FIFO_CTRL(port));
-    return 0;
+
+    dev->status = initialised;
+    dev->device_name = name;
+    sdev->base_port = port;
+    sdev->baudrate_divisor = brd;
+    sdev->fifo_control = 0xC7;
+    return true;
 }
 
 /* Write a string over serial line
@@ -79,10 +88,10 @@ unsigned char serial_init_device(unsigned short port) {
  * @param const unsigned char *msg  -- Absolute address to string to write
  * @return amount of bytes transmitted
  */
-size_t serial_tx(unsigned short port, const char *msg) {
+size_t serial_tx(unsigned short port, const char *msg, size_t len) {
     size_t i;
 
-    for (i = 0; i < strlen(msg); i++) {
+    for (i = 0; i < len; i++) {
         while (serial_wait_for_tx_empty(port) != 0) {
             continue;
         } 

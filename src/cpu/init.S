@@ -82,7 +82,7 @@ next:
     mov     esp, 0x00007c00
     call    c_main
 
-    // should hopefully never be reached
+    // Never reached but better be overly careful 
 .hang:
     mov     eax, 0xdeadc0de 
     cli

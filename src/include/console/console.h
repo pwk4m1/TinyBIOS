@@ -30,50 +30,23 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
-#include <stddef.h>
-
-#include <sys/io.h>
-
-#include <superio/superio.h>
+#ifndef __CONSOLE_H__
+#define __CONSOLE_H__
 
 #include <drivers/device.h>
-#include <drivers/serial/serial.h>
-#include <drivers/kbdctl/8042.h>
 
-#include <console/console.h>
+typedef struct {
+    pio_device *pio_dev;
+    size_t (*tx_func)(unsigned short port, const char *msg, size_t len);
+} console_device;
 
-pio_device primary_com_device;
-serial_uart_device sdev;
-console_device default_console_device;
-
-pio_device keyboard_controller_device;
-ps2_8042_status keyboard_controller_status;
-
-/* The C entrypoint for early initialisation for {hard,soft}ware so
- * that we can move to 64-bit long mode.
+/* Write log message over default output device
  *
- * This function should never return.
+ * @param console_device *dev -- device to use for output
+ * @param char *msg -- message to print
+ *
  */
- __attribute__ ((noreturn)) void c_main(void) {
-    superio_init();
-    primary_com_device.device_data = &sdev;
-    keyboard_controller_device.device_name = "8042\n";
-    keyboard_controller_device.device_data = &keyboard_controller_status;
-    default_console_device.pio_dev = &primary_com_device;
-    default_console_device.tx_func = &serial_tx;
-
-    (void)serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1");
-    blog("TinyBIOS 0.4\n");
-    blog("SuperIO initialised\n");
-    blog("UART 1 (0x03f8) set to be default output device\n");
-    int stat = kbdctl_set_default_init(&keyboard_controller_device);
-    if (stat) {
-        blog("kbdctl init failed\n");
-    }
-
-    asm volatile("cli":::"memory");
-    for (;;) { }
-}
+void blog(char *msg);
 
 
+#endif // __CONSOLE_H__

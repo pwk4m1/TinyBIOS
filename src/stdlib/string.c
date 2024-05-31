@@ -30,50 +30,46 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
 #include <stddef.h>
 
-#include <sys/io.h>
-
-#include <superio/superio.h>
-
-#include <drivers/device.h>
-#include <drivers/serial/serial.h>
-#include <drivers/kbdctl/8042.h>
-
-#include <console/console.h>
-
-pio_device primary_com_device;
-serial_uart_device sdev;
-console_device default_console_device;
-
-pio_device keyboard_controller_device;
-ps2_8042_status keyboard_controller_status;
-
-/* The C entrypoint for early initialisation for {hard,soft}ware so
- * that we can move to 64-bit long mode.
+/* Get length of a null-terminated string
  *
- * This function should never return.
+ * @param const char *str -- string of which to count length for
+ * @return size_t string length
  */
- __attribute__ ((noreturn)) void c_main(void) {
-    superio_init();
-    primary_com_device.device_data = &sdev;
-    keyboard_controller_device.device_name = "8042\n";
-    keyboard_controller_device.device_data = &keyboard_controller_status;
-    default_console_device.pio_dev = &primary_com_device;
-    default_console_device.tx_func = &serial_tx;
-
-    (void)serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1");
-    blog("TinyBIOS 0.4\n");
-    blog("SuperIO initialised\n");
-    blog("UART 1 (0x03f8) set to be default output device\n");
-    int stat = kbdctl_set_default_init(&keyboard_controller_device);
-    if (stat) {
-        blog("kbdctl init failed\n");
+size_t strlen(const char *str) {
+    size_t i = 0;
+    while (str[i] != 0) {
+        i++;
     }
+    return i;
+}
 
-    asm volatile("cli":::"memory");
-    for (;;) { }
+/* Set memory range to specified byte
+ *
+ * @param void *dst -- start address
+ * @param unsigned char b -- what to set the memory to
+ * @param size_t len -- how many bytes to write
+ */
+void memset(const void *dst, unsigned char c, size_t len) {
+    unsigned char *cdst = (unsigned char *)dst;
+    for (size_t i = 0; i < len; i++) {
+        cdst[i] = c;
+    }
+}
+
+/* Copy len bytes of memory from region A to B
+ *
+ * @param void *src -- where to copy from
+ * @param void *dst -- where to copy to
+ * @param size_t len -- how many bytes to copy
+ */
+void memcpy(const void *src, const void *dst, size_t len) {
+    unsigned char *csrc = (unsigned char *)src;
+    unsigned char *cdst = (unsigned char *)dst;
+    for (size_t i = 0; i < len; i++) {
+        cdst[i] = csrc[i];
+    }
 }
 
 
