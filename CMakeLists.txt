@@ -18,6 +18,9 @@ add_executable(tinybios
     src/drivers/serial/serial.c
 )
 
+# Helper stuff
+add_subdirectory(src/stdlib)
+
 # These sources are mainboard dependant
 #
 add_subdirectory(src/mainboards/${target_mainboard})
