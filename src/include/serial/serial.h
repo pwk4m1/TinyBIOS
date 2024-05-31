@@ -156,7 +156,7 @@ unsigned char serial_init_device(unsigned short port);
  * @param const size_t size -- size of message to print
  * @return amount of bytes transmitted
  */
-size_t serial_tx(unsigned short port, const char *msg, const size_t size);
+size_t serial_tx(unsigned short port, const char *msg);
 
 /* Receive a string over serial line
  *
@@ -166,5 +166,14 @@ size_t serial_tx(unsigned short port, const char *msg, const size_t size);
  * @return amount of bytes received 
  */
 size_t serial_rx(unsigned short port, char *dst, const size_t size);
+
+/* printf() over serial line 
+ *
+ * @param unsigned short port -- Device to write to
+ * @param const unsigned char *msg  -- Absolute address to string to write
+ * @param const size_t size -- size of message to print
+ * @return amount of bytes transmitted
+ */
+int serprintf(const char *restrict format, ...);
 
 #endif // __SERIAL_H__

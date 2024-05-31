@@ -36,6 +36,8 @@
 
 #include <serial/serial.h>
 
+#include <string.h>
+
 /* Poll for serial port until line is empty.
  *
  * @param unsigned short port -- Port to wait for
@@ -75,13 +77,12 @@ unsigned char serial_init_device(unsigned short port) {
  *
  * @param unsigned short port -- Device to write to
  * @param const unsigned char *msg  -- Absolute address to string to write
- * @param const size_t size -- size of message to print
  * @return amount of bytes transmitted
  */
-size_t serial_tx(unsigned short port, const char *msg, const size_t size) {
+size_t serial_tx(unsigned short port, const char *msg) {
     size_t i;
 
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < strlen(msg); i++) {
         while (serial_wait_for_tx_empty(port) != 0) {
             continue;
         } 
