@@ -29,8 +29,6 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include <stddef.h>
 #include <stdbool.h>
 
 #include <sys/io.h>
@@ -70,7 +68,12 @@ ps2_8042_status keyboard_controller_status;
     int stat = kbdctl_set_default_init(&keyboard_controller_device);
     if (stat) {
         blog("kbdctl init failed\n");
+    } else {
+        blog("8042 initialisation completed\n");
     }
+
+    blogf("test: %s\n", "Hello");
+    blogf("test2: %%\n");
 
     asm volatile("cli":::"memory");
     for (;;) { }

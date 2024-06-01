@@ -31,6 +31,7 @@
  */
 
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include <sys/io.h>
 #include <superio/superio.h>
@@ -55,4 +56,99 @@ void blog(char *msg) {
     default_console_device.tx_func(udev->base_port, msg, strlen(msg));
 }
 
+/* Print a sinlge byte over default output device
+ *
+ * @param char c -- character to write
+ */
+static inline void bputchar(char c) {
+    serial_uart_device *udev = default_console_device.pio_dev->device_data;
+    default_console_device.tx_func(udev->base_port, &c, 1);
+}
+
+/* Print single inteer over default output device
+ *
+ * @param int d -- integer to print
+ */
+static inline void bputint(int d) {
+    serial_uart_device *udev = default_console_device.pio_dev->device_data;
+    default_console_device.tx_func(udev->base_port, (char *)&d, sizeof(int));
+}
+
+/* log messages, now with format string!
+ *
+ * @param const char *restrict format
+ * @param ... :3
+ * @return int bytes written
+ */
+int blogf(const char *restrict format, ...) {
+    va_list ap;
+    int written = 0;
+    int d;
+    char c;
+    char *s;
+    bool escaped = false;
+
+    va_start(ap, format);
+
+    do {
+        if (escaped) {
+            bputchar(*format);
+            escaped = false;
+        } else {
+            if (*format == '\\') {
+                escaped = true;
+            } else if (*format == '%') {
+                format++;
+                switch (*format) {
+                case 's':
+                    s = va_arg(ap, char *);
+                    blog(s);
+                    written += strlen(s);
+                    break;
+                case 'd':
+                    d = va_arg(ap, int);
+                    bputint(d);
+                    written += sizeof(int);
+                    break;
+                case 'c':
+                    c = (char) va_arg(ap, int);
+                    bputchar(c);
+                    written++;
+                    break;
+                default:
+                    format--;
+                    bputchar(*format);
+                    written++;
+                }
+            } else {
+                bputchar(*format);
+                written++;
+            }
+        }
+    } while (*format++);
+
+    /*
+    while (*format) {
+        switch(*format++) {
+        case 's':
+            s = va_arg(ap, char *);
+            blog(s);
+            break;
+        case 'd':
+            d = va_arg(ap, int);
+            bputint(d);
+            break;
+        case 'c':
+            c = va_arg(ap, int);
+            bputchar(c);
+            break;
+        default:
+            bputchar(*format);
+        }
+    }
+    */
+
+    va_end(ap);
+    return written;
+}
 

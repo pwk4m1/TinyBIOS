@@ -33,6 +33,7 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
+#include <stdarg.h>
 #include <drivers/device.h>
 
 typedef struct {
@@ -47,6 +48,14 @@ typedef struct {
  *
  */
 void blog(char *msg);
+
+/* log messages, now with format string!
+ *
+ * @param const char *restrict format
+ * @param ... :3
+ * @return int bytes written
+ */
+int blogf(const char *restrict format, ...);
 
 
 #endif // __CONSOLE_H__
