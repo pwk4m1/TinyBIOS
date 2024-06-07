@@ -35,6 +35,10 @@
 
 #include <superio/superio.h>
 
+#include <cpu/paging.h>
+
+#include <mm/slab.h>
+
 #include <drivers/device.h>
 #include <drivers/serial/serial.h>
 #include <drivers/kbdctl/8042.h>
@@ -48,6 +52,31 @@ console_device default_console_device;
 pio_device keyboard_controller_device;
 ps2_8042_status keyboard_controller_status;
 
+/* Helper to enable a20 line with keyboard controller
+ *
+ * @return true on success or false on error
+ */
+static bool enable_a20line(pio_device *dev) {
+    ps2_8042_status *stat = (ps2_8042_status *)dev->device_data;
+    stat->a20line_enabled = false;
+    if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
+        return false;
+    }
+    if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
+        return false;
+    }
+    volatile unsigned int *first     = (unsigned int *)0x012345;
+    volatile unsigned int *second    = (unsigned int *)0x112345;
+    *first  = 0x012345;
+    *second = 0x112345;
+
+    if (*first == *second) {
+        return false;
+    }
+    stat->a20line_enabled = true;
+    return true;
+}
+
 /* The C entrypoint for early initialisation for {hard,soft}ware so
  * that we can move to 64-bit long mode.
  *
@@ -60,21 +89,24 @@ ps2_8042_status keyboard_controller_status;
     keyboard_controller_device.device_data = &keyboard_controller_status;
     default_console_device.pio_dev = &primary_com_device;
     default_console_device.tx_func = &serial_tx;
-
-    (void)serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1");
-    blog("TinyBIOS 0.4\n");
-    blog("SuperIO initialised\n");
-    blog("UART 1 (0x03f8) set to be default output device\n");
-    int stat = kbdctl_set_default_init(&keyboard_controller_device);
-    if (stat) {
-        blog("kbdctl init failed\n");
-    } else {
-        blog("8042 initialisation completed\n");
+    if (serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1") == false) {
+        goto hang;
     }
 
-    blogf("test: %s\n", "Hello");
-    blogf("test2: %%\n");
+    blog("TinyBIOS 0.4\n");
+    blog("SuperIO initialised\n");
+    blog("UART 1 (0x03f8 @ 38400 baud) set to be default output device\n");
+    if (kbdctl_set_default_init(&keyboard_controller_device) != 0) {
+        blog("Failed to initialise 8042 ps2 controller\n");
+    }
+    if (enable_a20line(&keyboard_controller_device) == false) {
+        blog("Failed to toggle A20 Line, continuing with limited memory capacity\n");
+    }
+    blog("Early chipset initialisation done\n");
+    init_slab(0x10000, 0x9ffff, 0x1000);
+    blog("Slab from 0x10000 to 0x9FFFF\n");
 
+hang:
     asm volatile("cli":::"memory");
     for (;;) { }
 }

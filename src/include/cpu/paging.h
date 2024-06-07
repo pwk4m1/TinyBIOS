@@ -30,63 +30,47 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.global init_cpu
+#ifndef __PAGING_H__
+#define __PAGING_H__
 
-/* Workaround for compiler/clang issue, refer
- * https://github.com/llvm/llvm-project/issues/49636
+#include <stdint.h>
+
+/* Helper structures, definitions, & co shamelessly copied from
+ * https://praios.lf-net.org/littlefox/lf-os_amd64/ :3
  */
-#define LONGJMP(segment, target) \
-    .byte   0x66; \
-    .byte   0xEA; \
-    .int    target; \
-    .short  segment;
+// Page table entry
+struct page_table_entry {
+    unsigned int present            : 1;
+    unsigned int writeable          : 1;
+    unsigned int userspace          : 1;
+    unsigned int pat0               : 1;
+    unsigned int pat1               : 1;
+    unsigned int accessed           : 1;
+    unsigned int dirty              : 1;
+    unsigned int huge               : 1;
+    unsigned int global             : 1;
+    unsigned int available          : 3;
+    uint64_t next_base              : 40;
+    unsigned int available2         : 11;
+    unsigned int nx                 : 1;
+} __attribute__((packed));
 
-// We'll land here from reset.S, things we'll want to do next are 
-// to move to some more appropriate runmode which doesn't do segments and
-// 20-bit addressing, etc.
-//
-.section .rom_text
-init_cpu:
-    .code16
-    // Start by moving to 32 bit protected mode
-    mov     eax, offset gdt
-    lgdt    [eax]
-    xor     eax, eax
-    lidt    [eax]
-    mov     eax, cr0
-    or      al, 1
-    mov     cr0, eax
-    LONGJMP(0x0008, next)
-next:
-    .code32
-    // 16-bit compability mode now re; CS & cr0, set rest of segments
-    // and start moving towards 64 bit long mode
-    //
-    cli
+struct page_descriptor {
+    unsigned int flags              : 30;
+    unsigned char size              : 2;
+    unsigned int refcount;
+};
 
-    // Start with switching to unreal mode / compability 16-bit mode
-    //
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
+#define BASE_TO_PHYS(x)             ((char *)(x << 12))
+#define PML4_INDEX(x)               (((x) >> 39) & 0x1FF)
+#define PDP_INDEX(x)                (((x) >> 30) & 0x1FF)
+#define PD_INDEX(x)                 (((x) >> 21) & 0x1FF)
+#define PT_INDEX(x)                 (((x) >> 12) & 0x1FF)
 
-    // Relocate our C code into ram
-    //
-    mov     esi, 0xE0000
-    xor     edi, edi
-    mov     ecx, 0x0FFFF
-    rep     movsb
-    mov     esp, 0x00007c00
-    mov     ebp, esp
-    call    c_main
+#define LM_MSR 0xC0000080
+#define ENABLE_PAGING 0x80000000
+#define ENABLE_LM 0x100
 
-    // Never reached but better be overly careful 
-.hang:
-    mov     eax, 0xdeadc0de 
-    cli
-    hlt
-    jmp     .hang
+void enable_paging(void);
 
+#endif // __PAGING_H__

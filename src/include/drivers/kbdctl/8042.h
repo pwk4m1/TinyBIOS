@@ -96,9 +96,9 @@
 // 	Note: Sends next byte to second ps/2 port)
 //
 #define KBDCTL_CMD_READ_CONFIG 		    0x20
-#define KBDCTL_CMD_READBN(x) 		   (0x20 + x)
+#define KBDCTL_CMD_READBN(x) 		    (0x20 + x)
 #define KBDCTL_CMD_WRITE_CONFIG 	    0x60
-#define KBDCTL_CMD_WRITEBN(x) 		   (0x60 + x)
+#define KBDCTL_CMD_WRITEBN(x) 		    (0x60 + x)
 #define KBDCTL_CMD_DISABLE_P2 		    0xA7
 #define KBDCTL_CMD_ENABLE_P2 		    0xA8
 #define KBDCTL_CMD_TEST_P2 		        0xA9
@@ -115,6 +115,7 @@
 #define KBDCTL_CMD_WRITENEXT_P1OUTBUF 	0xD2
 #define KBDCTL_CMD_WRITENEXT_P2OUTBUF 	0xD3
 #define KBDCTL_CMD_WRITENEXT_P2INBUF 	0xD4
+#define KBDCTL_CMD_ENABLE_A20           0xDF
 #define KBDCTL_CMD_PULSE_OUT_LOW(x) 	(0xF0 | x)
 #define KBDCTL_CMD_CPU_HARD_RESET 	    0xFE
 #define KBDCTL_CMD_RST_DEVICE           0xFF
@@ -137,6 +138,9 @@ typedef struct {
 
     // devices initialised
     int devices_initialised;
+
+    // A20 line status for memory access :3
+    bool a20line_enabled;
 
 } ps2_8042_status;
 

@@ -63,5 +63,4 @@ typedef struct {
     void *device_data;
 } pio_device;
 
-
 #endif // __DRIVER_DEVICE_GENERIC__

@@ -45,31 +45,11 @@ size_t strlen(const char *str) {
     return i;
 }
 
-/* Set memory range to specified byte
- *
- * @param void *dst -- start address
- * @param unsigned char b -- what to set the memory to
- * @param size_t len -- how many bytes to write
- */
-void memset(const void *dst, unsigned char c, size_t len) {
-    unsigned char *cdst = (unsigned char *)dst;
-    for (size_t i = 0; i < len; i++) {
-        cdst[i] = c;
+void *memset(void *s, int c, size_t n) {
+    unsigned char *dst = (unsigned char *)s;
+    for (size_t i = 0; i < n; i++) {
+        dst[i] = (unsigned char)c;
     }
+    return dst;
 }
-
-/* Copy len bytes of memory from region A to B
- *
- * @param void *src -- where to copy from
- * @param void *dst -- where to copy to
- * @param size_t len -- how many bytes to copy
- */
-void memcpy(const void *src, const void *dst, size_t len) {
-    unsigned char *csrc = (unsigned char *)src;
-    unsigned char *cdst = (unsigned char *)dst;
-    for (size_t i = 0; i < len; i++) {
-        cdst[i] = csrc[i];
-    }
-}
-
 

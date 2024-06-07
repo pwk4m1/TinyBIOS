@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 project(tinybios LANGUAGES C ASM VERSION 0.5)
 
 find_program(dd NAMES dd HINTS /usr/bin /usr/local/bin /bin)
@@ -14,6 +14,8 @@ add_executable(tinybios
     src/reset.S
     src/cpu/gdt.S
     src/cpu/init.S
+    src/cpu/paging.c
+    src/mm/slab.c
     src/c_entry.c
     src/drivers/serial/serial.c
     src/drivers/kbdctl/8042.c
@@ -40,6 +42,19 @@ add_custom_target(run
     USES_TERMINAL
 )
 
+add_custom_target(log-int
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -d int
+    DEPENDS tinybios.bin
+    USES_TERMINAL
+)
+
+add_custom_target(log-asm
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -d in_asm
+    DEPENDS tinybios.bin
+    USES_TERMINAL
+)
+
+
 add_custom_target(debug
     COMMAND qemu-system-x86_64 -S --daemonize -s -bios tinybios.bin
     COMMAND gdb -ix ${CMAKE_CURRENT_SOURCE_DIR}/gdbinit
@@ -47,8 +62,8 @@ add_custom_target(debug
     USES_TERMINAL
 )
 
-target_include_directories(tinybios PUBLIC 
-    src/include
+target_include_directories(tinybios SYSTEM PUBLIC 
+    "src/include"
 )
 
 target_compile_options(tinybios PUBLIC 

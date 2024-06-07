@@ -42,6 +42,7 @@
 #include <console/console.h>
 
 #include <string.h>
+#include <itoa.h>
 
 extern console_device default_console_device;
 
@@ -70,8 +71,10 @@ static inline void bputchar(char c) {
  * @param int d -- integer to print
  */
 static inline void bputint(int d) {
-    serial_uart_device *udev = default_console_device.pio_dev->device_data;
-    default_console_device.tx_func(udev->base_port, (char *)&d, sizeof(int));
+    char tmp[10] = {0};
+    itoah(d, tmp);
+    blog(tmp);
+    return;
 }
 
 /* log messages, now with format string!
@@ -105,7 +108,7 @@ int blogf(const char *restrict format, ...) {
                     blog(s);
                     written += strlen(s);
                     break;
-                case 'd':
+                case 'x':
                     d = va_arg(ap, int);
                     bputint(d);
                     written += sizeof(int);

@@ -30,63 +30,28 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.global init_cpu
+#include <itoa.h>
 
-/* Workaround for compiler/clang issue, refer
- * https://github.com/llvm/llvm-project/issues/49636
+/* Convert unsigned 32-bit integer to ascii characters
+ *
+ * @param unsigned int d -- number to parse
+ * @param char *dst -- where to write our ascii to, We assume this to be
+ *                     9-byte memory buffer that's initialised to 0
  */
-#define LONGJMP(segment, target) \
-    .byte   0x66; \
-    .byte   0xEA; \
-    .int    target; \
-    .short  segment;
+void itoah(unsigned int d, char *dst) {
+    char nibble;
 
-// We'll land here from reset.S, things we'll want to do next are 
-// to move to some more appropriate runmode which doesn't do segments and
-// 20-bit addressing, etc.
-//
-.section .rom_text
-init_cpu:
-    .code16
-    // Start by moving to 32 bit protected mode
-    mov     eax, offset gdt
-    lgdt    [eax]
-    xor     eax, eax
-    lidt    [eax]
-    mov     eax, cr0
-    or      al, 1
-    mov     cr0, eax
-    LONGJMP(0x0008, next)
-next:
-    .code32
-    // 16-bit compability mode now re; CS & cr0, set rest of segments
-    // and start moving towards 64 bit long mode
-    //
-    cli
+    for (unsigned int i = 0; i < (2 * sizeof(int)); i++) {
+        nibble = (d & 0x0000000F);
+        d >>= 4;
+        if (nibble < 10) {
+            nibble |= 0x30;
+        } else {
+            nibble -= 0x0A;
+            nibble += 0x41;
+        }
+        dst[(2*sizeof(int)) - i - 1] = nibble;
+    }
+}
 
-    // Start with switching to unreal mode / compability 16-bit mode
-    //
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
-
-    // Relocate our C code into ram
-    //
-    mov     esi, 0xE0000
-    xor     edi, edi
-    mov     ecx, 0x0FFFF
-    rep     movsb
-    mov     esp, 0x00007c00
-    mov     ebp, esp
-    call    c_main
-
-    // Never reached but better be overly careful 
-.hang:
-    mov     eax, 0xdeadc0de 
-    cli
-    hlt
-    jmp     .hang
 

@@ -29,64 +29,63 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef __CPU_INST_COMMON_H__
+#define __CPU_INST_COMMON_H__
 
-.global init_cpu
+#include <stdint.h>
+#include <sys/io.h>
 
-/* Workaround for compiler/clang issue, refer
- * https://github.com/llvm/llvm-project/issues/49636
- */
-#define LONGJMP(segment, target) \
-    .byte   0x66; \
-    .byte   0xEA; \
-    .int    target; \
-    .short  segment;
+static inline uint64_t get_cr0(void) {
+    uint64_t r;
+    asm volatile("mov   %0, cr0":"=r"(r));
+    return r;
+}
 
-// We'll land here from reset.S, things we'll want to do next are 
-// to move to some more appropriate runmode which doesn't do segments and
-// 20-bit addressing, etc.
-//
-.section .rom_text
-init_cpu:
-    .code16
-    // Start by moving to 32 bit protected mode
-    mov     eax, offset gdt
-    lgdt    [eax]
-    xor     eax, eax
-    lidt    [eax]
-    mov     eax, cr0
-    or      al, 1
-    mov     cr0, eax
-    LONGJMP(0x0008, next)
-next:
-    .code32
-    // 16-bit compability mode now re; CS & cr0, set rest of segments
-    // and start moving towards 64 bit long mode
-    //
-    cli
+static inline void set_cr0(uint64_t v) {
+    asm volatile("mov   cr0, %0"::"r"(v));
+}
 
-    // Start with switching to unreal mode / compability 16-bit mode
-    //
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
+static inline uint64_t get_cr3(void) {
+    uint64_t r;
+    asm volatile("mov   %0, cr3":"=r"(r));
+    return r;
+}
 
-    // Relocate our C code into ram
-    //
-    mov     esi, 0xE0000
-    xor     edi, edi
-    mov     ecx, 0x0FFFF
-    rep     movsb
-    mov     esp, 0x00007c00
-    mov     ebp, esp
-    call    c_main
+static inline void set_cr3(uint64_t v) {
+    asm volatile("mov   cr3, %0"::"r"(v));
+}
 
-    // Never reached but better be overly careful 
-.hang:
-    mov     eax, 0xdeadc0de 
-    cli
-    hlt
-    jmp     .hang
+static inline uint64_t get_cr4(void) {
+    uint64_t r;
+    asm volatile("mov   %0, cr4":"=r"(r));
+    return r;
+}
 
+static inline void set_cr4(uint64_t v) {
+    asm volatile("mov   cr4, %0"::"r"(v));
+}
+
+static inline uint64_t rdmsr(uint64_t msr) {
+    uint64_t ret;
+    asm volatile(
+            "mov   ecx, %0;"
+            "rdmsr;"
+            "mov   %1, eax;"
+            :"=r"(ret)
+            :"r"(msr)
+            :"eax","ecx"
+    );
+    return ret;
+}
+
+static inline void wrmsr(uint64_t msr, uint64_t val) {
+    asm volatile(
+            "mov    ecx, %0;"
+            "mov    eax, %1;"
+            "wrmsr;"
+            ::"r"(msr),"r"(val)
+            :"eax","ecx"
+    );
+}
+
+#endif // __CPU_INST_COMMON_H__

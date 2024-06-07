@@ -30,63 +30,47 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.global init_cpu
+#include <cpu/paging.h>
+#include <cpu/common.h>
 
-/* Workaround for compiler/clang issue, refer
- * https://github.com/llvm/llvm-project/issues/49636
- */
-#define LONGJMP(segment, target) \
-    .byte   0x66; \
-    .byte   0xEA; \
-    .int    target; \
-    .short  segment;
+#include <console/console.h>
 
-// We'll land here from reset.S, things we'll want to do next are 
-// to move to some more appropriate runmode which doesn't do segments and
-// 20-bit addressing, etc.
-//
-.section .rom_text
-init_cpu:
-    .code16
-    // Start by moving to 32 bit protected mode
-    mov     eax, offset gdt
-    lgdt    [eax]
-    xor     eax, eax
-    lidt    [eax]
-    mov     eax, cr0
-    or      al, 1
-    mov     cr0, eax
-    LONGJMP(0x0008, next)
-next:
-    .code32
-    // 16-bit compability mode now re; CS & cr0, set rest of segments
-    // and start moving towards 64 bit long mode
-    //
-    cli
+#include <string.h>
 
-    // Start with switching to unreal mode / compability 16-bit mode
-    //
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
+struct vm_table {
+    struct page_table_entry entries[512];
+} __attribute__((packed));
 
-    // Relocate our C code into ram
-    //
-    mov     esi, 0xE0000
-    xor     edi, edi
-    mov     ecx, 0x0FFFF
-    rep     movsb
-    mov     esp, 0x00007c00
-    mov     ebp, esp
-    call    c_main
+#define paging_sym_pdt 0x10000
 
-    // Never reached but better be overly careful 
-.hang:
-    mov     eax, 0xdeadc0de 
-    cli
-    hlt
-    jmp     .hang
+void enable_paging(void) {
+    struct page_table_entry *pdpt = (struct page_table_entry *)paging_sym_pdt;
+    struct vm_table *pde;
+    struct vm_table *pt;
+    memset((void *)paging_sym_pdt, 0, 0x1000);
+    blogf("PDPT at 0x%x\n", pdpt);
+
+    pdpt->present = 1;
+    pdpt->writeable = 1;
+    pdpt->next_base = (uint64_t)paging_sym_pdt + 0x1000;
+    blogf("pdpt->next: 0x%x\n", (uint64_t)pdpt->next_base);
+    pde = (struct vm_table *)pdpt->next_base;
+    memset(pde, 0, sizeof(struct vm_table));
+    
+
+    set_cr3(paging_sym_pdt);
+    uint64_t cr4 = get_cr4();
+    cr4 |= 0x20;
+    set_cr4(cr4);
+
+    uint64_t LM = rdmsr(LM_MSR);
+    LM |= ENABLE_LM;
+    wrmsr(LM_MSR, LM);
+
+    volatile uint64_t cr0 = get_cr0();
+    cr0 |= ENABLE_PAGING;
+    // set_cr0(cr0);
+    asm volatile("cli");
+    asm volatile("hlt");
+}
 

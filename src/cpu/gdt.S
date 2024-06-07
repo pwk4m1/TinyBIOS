@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2019, k4m1
+ Copyright (c) 2024, k4m1
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
