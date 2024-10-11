@@ -81,6 +81,8 @@ next:
     rep     movsb
     mov     esp, 0x00007c00
     mov     ebp, esp
+    xor     ax, ax
+    mov     ds, ax
     call    c_main
 
     // Never reached but better be overly careful 

@@ -13,7 +13,7 @@ void init_slab(uint32_t mem_start, uint32_t mem_end, size_t allocation_size) {
 
     num_entries -= (overhead + allocation_size) / allocation_size;
 
-    SlabHeader* header = (SlabHeader*)mem_start;
+    SlabHeader* header      = (SlabHeader*)mem_start;
     header->allocation_size = allocation_size;
     header->num_entries     = num_entries;
     header->bitmap_size     = bitmap_size(num_entries);

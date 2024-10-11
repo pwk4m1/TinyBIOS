@@ -50,6 +50,13 @@
 #define SERIAL_MSR(x)       (x + 6)
 #define SERIAL_SCRATCH(x)   (x + 7)
 
+// Primary serial console port
+#define SERIAL_COM_PRIMARY  0x03F8
+// default baud rate divisor for 38400 brate
+#define COM_DEFAULT_BRD     0x0003
+// default line control value
+#define COM_DEFAULT_LINE_CTL 0x03 
+
 // Structure for serial/uart device related data
 //
 typedef struct {

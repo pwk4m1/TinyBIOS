@@ -35,8 +35,6 @@
 
 #include <superio/superio.h>
 
-#include <cpu/paging.h>
-
 #include <mm/slab.h>
 
 #include <drivers/device.h>
@@ -77,8 +75,7 @@ static bool enable_a20line(pio_device *dev) {
     return true;
 }
 
-/* The C entrypoint for early initialisation for {hard,soft}ware so
- * that we can move to 64-bit long mode.
+/* The C entrypoint for early initialisation for {hard,soft}ware
  *
  * This function should never return.
  */
@@ -89,7 +86,7 @@ static bool enable_a20line(pio_device *dev) {
     keyboard_controller_device.device_data = &keyboard_controller_status;
     default_console_device.pio_dev = &primary_com_device;
     default_console_device.tx_func = &serial_tx;
-    if (serial_init_device(&primary_com_device, 0x03f8, 0x0003, 0x03, "UART 1") == false) {
+    if (serial_init_device(&primary_com_device, SERIAL_COM_PRIMARY, COM_DEFAULT_BRD, COM_DEFAULT_LINE_CTL, "UART 1") == false) {
         goto hang;
     }
 
@@ -103,10 +100,9 @@ static bool enable_a20line(pio_device *dev) {
         blog("Failed to toggle A20 Line, continuing with limited memory capacity\n");
     }
     blog("Early chipset initialisation done\n");
-    init_slab(0x10000, 0x9ffff, 0x1000);
-    blog("Slab from 0x10000 to 0x9FFFF\n");
 
 hang:
+    blog("Unexpected return from c_main()\n");
     asm volatile("cli":::"memory");
     for (;;) { }
 }
