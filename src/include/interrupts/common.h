@@ -30,31 +30,13 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __CONSOLE_H__
-#define __CONSOLE_H__
+#ifndef __INTERRUPTS_COMMON_H__
+#define __INTERRUPTS_COMMON_H__
 
-#include <stdarg.h>
-#include <drivers/device.h>
+#define PRIMARY_PIC_PORT 0x20
+#define SECONDARY_PIC_PORT 0xA0
 
-typedef struct {
-    pio_device *pio_dev;
-    size_t (*tx_func)(unsigned short port, const char *msg, size_t len);
-} console_device;
+#define INTERRUPT_PRIMARY 1
+#define INTERRUPT_SECONDARY 0
 
-/* Write log message over default output device
- *
- * @param console_device *dev -- device to use for output
- * @param char *msg -- message to print
- *
- */
-void blog(char *msg);
-
-/* log messages, now with format string!
- *
- * @param const char *restrict format
- * @param ... :3
- * @return int bytes written
- */
-int blogf(const char *restrict format, ...);
-
-#endif // __CONSOLE_H__
+#endif

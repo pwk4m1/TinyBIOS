@@ -30,7 +30,25 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+.section .rom_text
 .global init_cpu
+.global switch_to_unreal
+
+/* Helper function for switching to unreal mode, this is used during early boot
+ * as well as by interrupt handlers.
+ *
+ */
+switch_to_unreal:
+    mov     eax, offset gdt
+    lgdt    [eax]
+    mov     eax, cr0
+    mov     bx, 0x08
+    mov     ds, bx
+    and     al, 0xFE
+    mov     cr0, eax
+    xor     ax, ax
+    mov     ds, ax
+    ret
 
 /* Workaround for compiler/clang issue, refer
  * https://github.com/llvm/llvm-project/issues/49636
@@ -45,7 +63,6 @@
 // to move to some more appropriate runmode which doesn't do segments and
 // 20-bit addressing, etc.
 //
-.section .rom_text
 init_cpu:
     .code16
     // Start by moving to 32 bit protected mode
@@ -64,19 +81,12 @@ next:
     //
     cli
 
-    // Start with switching to unreal mode / compability 16-bit mode
-    //
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
+    call    switch_to_unreal
 
     // Relocate our C code into ram
     //
     mov     esi, 0xE0000
-    xor     edi, edi
+    mov     edi, 0x200
     mov     ecx, 0x0FFFF
     rep     movsb
     mov     esp, 0x00007c00
