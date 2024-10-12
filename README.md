@@ -5,15 +5,19 @@ A minimalist open source BIOS project for fun
 
 # NOTE
 The above screenshot is form BEFORE current rewrite idea occured, if you
-want to try out that version, use old\_src source tree.
+want to try out that version, use legacy branch. 
 
 Testing:
 
-  $: cd TinyBIOS
+  $: git clone 
   
-  $: mkdir bin
+  $: mkdir build 
   
-  $: make
+  $: cd build
+ 
+  $: cmake ..
   
-  $: make test
+  $: make 
+
+  $ make run
 
