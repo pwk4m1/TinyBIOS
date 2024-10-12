@@ -1,4 +1,4 @@
-# TinyBIOS
+# TinyBIOS -- OLD / Pre-rewrite version
 A minimalist open source BIOS project for fun
 
 ![Alt text](/screenshot.png?raw=true)
