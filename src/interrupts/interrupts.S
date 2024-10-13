@@ -47,12 +47,14 @@
  * 5.) iret
  *
  * @param cx -- offset to appropriate interrupt handler
+ * @param dx -- Primary or secondary interrupt identifier
  * 
  * NOTE: We expect handler at IVT entry to have done;
  *       cli
  *       pusha
  *       mov cx, main_int_handler_offset
  *       mov dx, INT_PRIMARY ? INT_SECONDARY
+ *       mov si, handler_argument_structure_ptr
  *       jmp common_int_handler
  * 
  */
