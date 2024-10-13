@@ -86,7 +86,7 @@ next:
     // Relocate our C code into ram
     //
     mov     esi, 0xE0000
-    mov     edi, 0x200
+    mov     edi, 0x7E00 
     mov     ecx, 0x0FFFF
     rep     movsb
     mov     esp, 0x00007c00
