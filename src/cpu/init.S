@@ -37,6 +37,7 @@
 /* Helper function for switching to unreal mode, this is used during early boot
  * as well as by interrupt handlers.
  *
+ * Clobbers eax, bx, ds
  */
 switch_to_unreal:
     mov     eax, offset gdt
@@ -79,8 +80,6 @@ next:
     // 16-bit compability mode now re; CS & cr0, set rest of segments
     // and start moving towards 64 bit long mode
     //
-    cli
-
     call    switch_to_unreal
 
     // Relocate our C code into ram

@@ -40,29 +40,37 @@
  * predicting the runmode bootloader has set up so far. We'll unify things
  * from here. 
  *
- * 1.) Switch to unreal mode
- * 2.) Call appropriate interrupt handler
- * 3.) Switch back to initial CPU state
- * 4.) Send EOI
- * 5.) iret
+ * We assume initial landing from interrupt to have done:
+ * cli
+ * push handler
+ * jmp common_int_handler
  *
- * @param cx -- offset to appropriate interrupt handler
- * @param dx -- Primary or secondary interrupt identifier
- * 
- * NOTE: We expect handler at IVT entry to have done;
- *       cli
- *       pusha
- *       mov cx, main_int_handler_offset
- *       mov dx, INT_PRIMARY ? INT_SECONDARY
- *       mov si, handler_argument_structure_ptr
- *       jmp common_int_handler
- * 
+ * Here we'll do:
+ *   1.) Set argument structure for interrupt handler
+ *   2.) Switch to unreal mode
+ *   3.) Call appropriate interrupt handler
+ *   4.) Switch back to initial CPU state
+ *   5.) Send EOI
+ *   6.) iret
+ *
  */
 common_int_handler:
-    mov     eax, cr0
+    push    bp
+    push    ax
+    mov     bp, sp
+    add     sp, 4
+    pop     ax // pop handler
+    mov     sp, bda_ihandler_arg_structure - 18 // handler: 2 bytes, pusha: 16
+    push    ax // push it into int handler arg structure
+    pusha
+    mov     sp, bp
+    pop     ax
+    pop     bp
+
     // See if we're too far in runmode changes that we can't safely just
     // 'pop cr0, ret' anymore. If we are, set error and return.
     //
+    mov     eax, cr0
     test    eax, (1 << 31)
     jnz     .err
 
@@ -91,13 +99,21 @@ common_int_handler:
     sub     esp, 6
     sgdt    [esp]
     dec     esp
+    push    eax
+    push    bx
+    push    ds
     call    switch_to_unreal
+.code32
     call    cx
+    pop     cx
+    pop     bx
+    pop     eax
     inc     esp
     lgdt    [esp]
+    mov     ds, bx
     add     esp, 6
-    pop     eax
     mov     cr0, eax
+.code16
 .ret:
     mov     al, 0x20
     cmp     dx, INTERRUPT_PRIMARY

@@ -39,6 +39,13 @@
 
 #include <stdbool.h>
 
+/* interrupt handler for serial port driver
+ *
+ */
+void __attribute__((section(".rom_int_handler"))) serial_int_handler(void) {
+
+}
+
 /* Poll for serial port until line is empty.
  *
  * @param unsigned short port -- Port to wait for

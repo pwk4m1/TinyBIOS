@@ -57,10 +57,25 @@
 // default line control value
 #define COM_DEFAULT_LINE_CTL 0x03 
 
-// Structure for serial/uart device related data
-//
+/* Structure for interrupt identification values
+ *
+ */
+typedef struct __attribute__((packed)) {
+    unsigned int interrupt_pending   : 1;
+    unsigned int interrupt_state     : 2;
+    unsigned int timeout_int_pending : 1;
+    unsigned int reserved            : 2;
+    unsigned int fifo_buffer_state   : 2;
+} serial_int_id_register;
+
+/* Structure for serial/uart device related data
+ *
+ * @member unsigned short base_port        -- which com-port is this
+ * @member unsigned short baudrate_divisor -- divisor value for set baud rate
+ * @member unsigned char line_control      -- line control settings
+ * @member unsigned char fifo_control      -- fifo control settings 
+ */
 typedef struct {
-    // Which com-port is this?
     unsigned short base_port;
 
     // baud rate, LCR, and other configuration values

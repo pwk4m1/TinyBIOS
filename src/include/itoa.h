@@ -30,6 +30,9 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef __itoa_h__
+#define __itoa_h__
+
 /* Convert unsigned 32-bit integer to ascii characters
  *
  * @param unsigned int d -- number to parse
@@ -37,3 +40,5 @@
  *                     9-byte memory buffer that's initialised to 0
  */
 void itoah(unsigned int d, char *dst);
+
+#endif
