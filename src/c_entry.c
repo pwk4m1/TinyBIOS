@@ -70,7 +70,6 @@ static inline void init_uart1(console_device *default_console_device) {
     }
 }
 
-
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
  * This function should never return.
@@ -93,10 +92,11 @@ static inline void init_uart1(console_device *default_console_device) {
     }
     blog("Early chipset initialisation done\n");
 
-hang:
     blog("Unexpected return from c_main()\n");
-    asm volatile("cli":::"memory");
-    for (;;) { }
+    for (;;) { 
+        asm volatile("cli");
+        asm volatile("hlt");
+    }
 }
 
 
