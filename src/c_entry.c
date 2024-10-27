@@ -70,6 +70,21 @@ static inline void init_uart1(console_device *default_console_device) {
     }
 }
 
+/* Wrapper for calling various PIO device initialisation routines
+ *
+ * @param bool (*init)(pio_device *dev) -- pointer to device initialisation routine
+ * @param pio_device *dev -- pio device structure for this device
+ * @param char *name -- device name
+ */
+static void init_device(bool (*init)(pio_device *dev), pio_device *dev, char *name) {
+    blogf("Initialising %s... ", name);
+    if (init(dev) == true) {
+        blog("ok\n");
+    } else {
+        blog(" failed\n");
+    }
+} 
+
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
  * This function should never return.
@@ -77,19 +92,14 @@ static inline void init_uart1(console_device *default_console_device) {
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
     primary_com_device.device_data = &sdev;
-
     init_uart1(&default_console_device);
 
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
     blog("UART 1 (0x03f8 @ 38400 baud) set to be default output device\n");
 
-    if (kbdctl_set_default_init(&keyboard_controller_device) != 0) {
-        blog("Failed to initialise 8042 ps2 controller\n");
-    }
-    if (enable_a20line(&keyboard_controller_device) == false) {
-        blog("Failed to toggle A20 Line, continuing with limited memory capacity\n");
-    }
+    init_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller");
+    init_device(enable_a20line, &keyboard_controller_device, "high memory");
     blog("Early chipset initialisation done\n");
 
     blog("Unexpected return from c_main()\n");

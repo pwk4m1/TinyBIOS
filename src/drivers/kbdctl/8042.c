@@ -172,9 +172,9 @@ bool kbdctl_reset_device(int which) {
 // interrupts and translation layer disabled
 //
 // @param pio_device *dev -- a pointer to pio_device structure to populate
-// @return 0 on success, -1 on error, or -2 if we bricked the device
+// @return bool true on success or false on error
 //
-int kbdctl_set_default_init(pio_device *dev) { 
+bool kbdctl_set_default_init(pio_device *dev) { 
     ps2_8042_status *status = &keyboard_controller_status;
     dev->device_name = "8042\n";
 
@@ -183,27 +183,28 @@ int kbdctl_set_default_init(pio_device *dev) {
     unsigned char initial_config = kbdctl_read_config();
     if (initial_config == 0xff) {
         blog("Failed to get initial config\n");
-        return -1;
+        return false;
     }
     unsigned char new_config = initial_config & KBDCTL_DEFAULT_CONFIG_MASK;
     if (kbdctl_write_config(new_config) == false) {
         // Writing new configuration failed
-        return -1;
+        return false;
     }
     if (kbdctl_do_self_test() == false) {
         // Device failed self-test after our new configuration, fallback to old
         if (kbdctl_write_config(initial_config) == false) {
             // Can't write old configuration back anymore... 
-            return -2;
+            blog("8042 keyboard controller became unresponsive, hard reboot required.\n");
+            do {} while (1);
         }
-        return -1;
+        return false;
     }
     dev->status = initialised;
     if (initial_config & KBDCTL_CTL_PS2_CLKE) {
         status->dual_channel = true;
     }
     status->current_configuration = new_config;
-    return 0;
+    return true;
 }
 
 // Perform keyboard controller self test.

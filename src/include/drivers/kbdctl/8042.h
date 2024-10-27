@@ -173,9 +173,9 @@ int kbdctl_disable_ports(void);
 // Set keyboard controller byte with default config mask with 
 // interrupts and translation layer disabled
 //
-// @return 0 on success, -1 on error, or -2 if we bricked the device
+// @return bool true on success or false on error
 //
-int kbdctl_set_default_init(pio_device *dev);
+bool kbdctl_set_default_init(pio_device *dev);
 
 // Perform keyboard controller self test.
 // 
