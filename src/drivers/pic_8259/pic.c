@@ -30,12 +30,12 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
 #include <sys/io.h>
 
 #include <drivers/device.h>
 #include <drivers/pic_8259/pic.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 
 pic_ocw2 pic_current_ocw2 = {0};
@@ -46,6 +46,8 @@ pic_icw2 pic_current_icw2 = {0};
 pic_icw3_primary pic_picw3 = {0};
 pic_icw3_secondary pic_sicw3 = {0};
 pic_icw4 pic_current_icw4 = {0};
+
+pic_full_configuration *pic_config;
 
 /* Helper to send control words to interrupt controller(s)
  *
@@ -79,11 +81,11 @@ void pic_send_eoi(uint8_t irq) {
 }
 
 /* Initialise the programmable interrupt controller.
- * We don't take any parameters as there shouldn't be need
- * for multiple configurations.
- *
+ * 
+ * @param pio_device *dev -- pio_device structure for pic
+ * @return bool true on success, false on error.
  */
-pio_device *pic_initialise(void) {
+bool pic_initialise(pio_device *dev) {
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
 
@@ -112,10 +114,25 @@ pio_device *pic_initialise(void) {
 
     // Mask away all interrupts for now, each handler should unmask
     // corresponding line.
+    //
     uint8_t data = 0xff;
     pic_send_data(PIC_PRIMARY_PORT, &data);
     pic_send_data(PIC_SECONDARY_PORT, &data);
 
+    pic_config->icw1 = &pic_current_icw1;
+    pic_config->icw2 = &pic_current_icw2;
+    pic_config->icw3_primary = &pic_picw3;
+    pic_config->icw3_secondary = &pic_sicw3;
+    pic_config->icw4 = &pic_current_icw4;
+    pic_config->ocw2 = &pic_current_ocw2;
+    pic_config->ocw3 = &pic_current_ocw3;
+
+    dev->device_name = "8259 programmable interrupt controller";
+    dev->device_data = &pic_config;
+    dev->status = initialised;
+    dev->type = device_other;
+    
+    return true;
 }
 
 /* Read irq register from the programmable interrupt controller.

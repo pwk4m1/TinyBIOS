@@ -19,6 +19,7 @@ add_executable(tinybios
 
     src/drivers/serial/serial.c
     src/drivers/kbdctl/8042.c
+    src/drivers/pic_8259/pic.c
 
     src/mm/slab.c
 

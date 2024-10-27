@@ -32,11 +32,9 @@
 #ifndef __PIC_H__
 #define __PIC_H__
 
-#include <sys/types.h>
 #include <drivers/device.h>
 
 #include <stdint.h>
-
 
 #define PIC_EOI_MSG 0x20
 #define PIC_PRIMARY_PORT 0x20
@@ -166,6 +164,16 @@ typedef struct __attribute__((packed)) {
     unsigned nop_b5        : 1;
     unsigned zero          : 1;
 } pic_ocw3;
+
+typedef struct {
+    pic_ocw2 *ocw2;
+    pic_ocw3 *ocw3;
+    pic_icw1 *icw1;
+    pic_icw2 *icw2;
+    pic_icw3_primary *icw3_primary;
+    pic_icw3_secondary * icw3_secondary;
+    pic_icw4 *icw4;
+} pic_full_configuration;
 
 /* Send end of interrupt message to the programmable interrupt controller.
  *

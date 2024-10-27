@@ -39,6 +39,7 @@
 #include <drivers/device.h>
 #include <drivers/serial/serial.h>
 #include <drivers/kbdctl/8042.h>
+#include <drivers/pic_8259/pic.h>
 
 #include <console/console.h>
 
@@ -100,6 +101,8 @@ static void init_device(bool (*init)(pio_device *dev), pio_device *dev, char *na
 
     init_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller");
     init_device(enable_a20line, &keyboard_controller_device, "high memory");
+    init_device(pic_initialise, &programmable_interrupt_controller, "8259 PIC");
+
     blog("Early chipset initialisation done\n");
 
     blog("Unexpected return from c_main()\n");
