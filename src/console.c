@@ -53,6 +53,9 @@ extern console_device default_console_device;
  *
  */
 void blog(char *msg) {
+    if (default_console_device.enabled == false) {
+        return;
+    }
     serial_uart_device *udev = default_console_device.pio_dev->device_data;
     default_console_device.tx_func(udev->base_port, msg, strlen(msg));
 }
@@ -62,6 +65,10 @@ void blog(char *msg) {
  * @param char c -- character to write
  */
 static inline void bputchar(char c) {
+    if (default_console_device.enabled == false) {
+        return;
+    }
+
     serial_uart_device *udev = default_console_device.pio_dev->device_data;
     default_console_device.tx_func(udev->base_port, &c, 1);
 }
@@ -84,6 +91,10 @@ static inline void bputint(int d) {
  * @return int bytes written
  */
 int blogf(const char *restrict format, ...) {
+    if (default_console_device.enabled == false) {
+        return 0;
+    }
+
     va_list ap;
     int written = 0;
     int d;
@@ -129,27 +140,6 @@ int blogf(const char *restrict format, ...) {
             }
         }
     } while (*format++);
-
-    /*
-    while (*format) {
-        switch(*format++) {
-        case 's':
-            s = va_arg(ap, char *);
-            blog(s);
-            break;
-        case 'd':
-            d = va_arg(ap, int);
-            bputint(d);
-            break;
-        case 'c':
-            c = va_arg(ap, int);
-            bputchar(c);
-            break;
-        default:
-            bputchar(*format);
-        }
-    }
-    */
 
     va_end(ap);
     return written;

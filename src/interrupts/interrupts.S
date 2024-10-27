@@ -115,12 +115,6 @@ common_int_handler:
     mov     cr0, eax
 .code16
 .ret:
-    mov     al, 0x20
-    cmp     dx, INTERRUPT_PRIMARY
-    je      .ret_final
-    out     SECONDARY_PIC_PORT, al
-.ret_final:
-    out     PRIMARY_PIC_PORT, al
     popa
     iret
 .err:

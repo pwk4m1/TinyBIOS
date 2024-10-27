@@ -203,4 +203,10 @@ unsigned char kbdctl_enable_devices(pio_device *dev);
 //
 bool kbdctl_reset_device(int which);
 
+/* Helper to enable a20 line with keyboard controller
+ *
+ * @return true on success or false on error
+ */
+bool enable_a20line(pio_device *dev);
+
 #endif // __8042_KBDCTL_H__ 

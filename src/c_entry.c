@@ -32,7 +32,6 @@
 #include <stdbool.h>
 
 #include <sys/io.h>
-
 #include <superio/superio.h>
 
 #include <mm/slab.h>
@@ -43,37 +42,34 @@
 
 #include <console/console.h>
 
+#include <interrupts/ivt.h>
+
 pio_device primary_com_device;
 serial_uart_device sdev;
 console_device default_console_device;
 
 pio_device keyboard_controller_device;
-ps2_8042_status keyboard_controller_status;
+pio_device programmable_interrupt_controller;
 
-/* Helper to enable a20 line with keyboard controller
+/* Helper to initialise uart 1 for us.
  *
- * @return true on success or false on error
+ * @param console_device *default_console_device -- default console device structure
  */
-static bool enable_a20line(pio_device *dev) {
-    ps2_8042_status *stat = (ps2_8042_status *)dev->device_data;
-    stat->a20line_enabled = false;
-    if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
-        return false;
+static inline void init_uart1(console_device *default_console_device) {
+    default_console_device->pio_dev = &primary_com_device;
+    default_console_device->tx_func = &serial_tx;
+    if (serial_init_device(&primary_com_device, 
+                SERIAL_COM_PRIMARY, 
+                COM_DEFAULT_BRD, 
+                COM_DEFAULT_LINE_CTL, 
+                "UART 1") == false) 
+    {
+        default_console_device->enabled = false;
+    } else {
+        default_console_device->enabled = true;
     }
-    if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
-        return false;
-    }
-    volatile unsigned int *first     = (unsigned int *)0x012345;
-    volatile unsigned int *second    = (unsigned int *)0x112345;
-    *first  = 0x012345;
-    *second = 0x112345;
-
-    if (*first == *second) {
-        return false;
-    }
-    stat->a20line_enabled = true;
-    return true;
 }
+
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -82,17 +78,13 @@ static bool enable_a20line(pio_device *dev) {
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
     primary_com_device.device_data = &sdev;
-    keyboard_controller_device.device_name = "8042\n";
-    keyboard_controller_device.device_data = &keyboard_controller_status;
-    default_console_device.pio_dev = &primary_com_device;
-    default_console_device.tx_func = &serial_tx;
-    if (serial_init_device(&primary_com_device, SERIAL_COM_PRIMARY, COM_DEFAULT_BRD, COM_DEFAULT_LINE_CTL, "UART 1") == false) {
-        goto hang;
-    }
+
+    init_uart1(&default_console_device);
 
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
     blog("UART 1 (0x03f8 @ 38400 baud) set to be default output device\n");
+
     if (kbdctl_set_default_init(&keyboard_controller_device) != 0) {
         blog("Failed to initialise 8042 ps2 controller\n");
     }

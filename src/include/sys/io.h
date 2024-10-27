@@ -32,6 +32,19 @@
 #ifndef __SYS_IO_H__
 #define __SYS_IO_H__
 
+// i/o delay so that we don't have to implement it separately for
+// all pio devices.
+//
+// @param unsigned short time -- how many NOPs should we execute
+//
+// NOTE: This function should only be used for delays until the point
+// we have working sleep() / interrupts and programmamble interrupt timer
+// initialised.
+//
+static inline void iodelay(unsigned short time) {
+    do { asm volatile("nop"); } while (time--);
+}
+
 // Basic cpu port i/o
 static inline unsigned char inb(unsigned short port) {
     unsigned char ret;

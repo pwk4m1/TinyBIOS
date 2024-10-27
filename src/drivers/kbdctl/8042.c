@@ -42,6 +42,8 @@
 #define WAITFOR_READ KBDCTL_STAT_OUT_BUF
 #define WAITFOR_WRITE 0
 
+ps2_8042_status keyboard_controller_status;
+
 // Wait until keyboard controller input buffer status is empty
 // 
 // @return int waitfor -- are we waiting for empty or non-empty status (read or write)
@@ -173,7 +175,8 @@ bool kbdctl_reset_device(int which) {
 // @return 0 on success, -1 on error, or -2 if we bricked the device
 //
 int kbdctl_set_default_init(pio_device *dev) { 
-    ps2_8042_status *status = dev->device_data;
+    ps2_8042_status *status = &keyboard_controller_status;
+    dev->device_name = "8042\n";
 
     // Start by reading inital configuration
     //
@@ -247,4 +250,30 @@ unsigned char kbdctl_enable_devices(pio_device *dev) {
     }
     return 1;
 }
+
+/* Helper to enable a20 line with keyboard controller
+ *
+ * @return true on success or false on error
+ */
+bool enable_a20line(pio_device *dev) {
+    ps2_8042_status *stat = (ps2_8042_status *)dev->device_data;
+    stat->a20line_enabled = false;
+    if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
+        return false;
+    }
+    if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
+        return false;
+    }
+    volatile unsigned int *first     = (unsigned int *)0x012345;
+    volatile unsigned int *second    = (unsigned int *)0x112345;
+    *first  = 0x012345;
+    *second = 0x112345;
+
+    if (*first == *second) {
+        return false;
+    }
+    stat->a20line_enabled = true;
+    return true;
+}
+
 

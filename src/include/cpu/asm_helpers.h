@@ -29,34 +29,26 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef __ASM_HELPERS_H__
+#define __ASM_HELPERS_H__
 
-#ifndef __CONSOLE_H__
-#define __CONSOLE_H__
+/* Workaround for compiler/clang issue, refer
+ * https://github.com/llvm/llvm-project/issues/49636
+ */
+#define LONGJMP(segment, target) \
+    .byte   0x66; \
+    .byte   0xEA; \
+    .int    target; \
+    .short  segment;
 
-#include <stdarg.h>
-#include <stdbool.h>
-#include <drivers/device.h>
-
-typedef struct {
-    pio_device *pio_dev;
-    size_t (*tx_func)(unsigned short port, const char *msg, size_t len);
-    bool enabled;
-} console_device;
-
-/* Write log message over default output device
- *
- * @param console_device *dev -- device to use for output
- * @param char *msg -- message to print
+/* Helper for generating entries for interrupt handlers.
  *
  */
-void blog(char *msg);
+#define INT_HANDLER_ENTRY(handler, type) \
+    cli \
+    pusha \
+    push    type \
+    push    handler \
+    jmp     common_int_handler
 
-/* log messages, now with format string!
- *
- * @param const char *restrict format
- * @param ... :3
- * @return int bytes written
- */
-int blogf(const char *restrict format, ...);
-
-#endif // __CONSOLE_H__
+#endif // __ASM_HELPERS_H__

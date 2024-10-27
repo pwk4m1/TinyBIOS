@@ -182,7 +182,8 @@ unsigned char serial_wait_for_tx_empty(unsigned short port);
 
 /* Initialise a serial port for comms
  *
- * @param unsigned short port -- Device to initialise
+ * @param pio_device *dev     -- pointer to pio_device structure
+ * @param unsigned short port -- port of the device to initialise
  * @param unsigned short brd  -- baud rate divisor
  * @param unsigned char  lcr  -- line control value
  * @return 0 on success or non-zero on error
