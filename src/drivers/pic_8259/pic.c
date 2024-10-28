@@ -83,9 +83,10 @@ void pic_send_eoi(uint8_t irq) {
 /* Initialise the programmable interrupt controller.
  * 
  * @param pio_device *dev -- pio_device structure for pic
+ * @param char *name      -- name of this device
  * @return bool true on success, false on error.
  */
-bool pic_initialise(pio_device *dev) {
+bool pic_initialise(pio_device *dev, char *name) {
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
 
@@ -127,7 +128,7 @@ bool pic_initialise(pio_device *dev) {
     pic_config->ocw2 = &pic_current_ocw2;
     pic_config->ocw3 = &pic_current_ocw3;
 
-    dev->device_name = "8259 programmable interrupt controller";
+    dev->device_name = name;
     dev->device_data = &pic_config;
     dev->status = initialised;
     dev->type = device_other;
@@ -137,18 +138,37 @@ bool pic_initialise(pio_device *dev) {
 
 /* Read irq register from the programmable interrupt controller.
  *
+ * @param pic_ocw3 *ocw -- command byte to send
+ * @return uint16_t irq
  */
-uint16_t pic_read_irq(pic_ocw3 *ocw);
+uint16_t pic_read_irq(pic_ocw3 *ocw) {
+    pic_send_cmd(PIC_PRIMARY_PORT, (uint8_t *)ocw);
+    pic_send_cmd(PIC_SECONDARY_PORT, (uint8_t *)ocw);
+    uint16_t ret = inb(PIC_SECONDARY_PORT) << 8;
+    ret |= inb(PIC_PRIMARY_PORT);
+    return ret;
+}
 
 /* Get in-service register value (Which irqs are served)
  *
  * @return uint16_t isr in form of SECONDARY << 8 | PRIMARY
  */
-uint16_t pic_read_isr(void);
+uint16_t pic_read_isr(void) {
+    pic_ocw3 ocw = {0}; 
+    ocw.nop_b0 = 1;
+    ocw.ident = 2;
+    return pic_read_irq(&ocw);
+}
 
 /* Get interrupt request register value (Which interrupts have been raised)
  *
  * @return uint16_t irr in form of SECONDARY << 8 | PRIMARY
  */
-uint16_t pic_read_irr(void);
+uint16_t pic_read_irr(void) {
+    pic_ocw3 ocw = {0};
+    ocw.next = 1;
+    ocw.nop_b0 = 1;
+    ocw.ident = 2;
+    return pic_read_irq(&ocw);
+}
 

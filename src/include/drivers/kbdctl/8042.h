@@ -174,8 +174,9 @@ int kbdctl_disable_ports(void);
 // interrupts and translation layer disabled
 //
 // @return bool true on success or false on error
+// @param char *name      -- name of this device
 //
-bool kbdctl_set_default_init(pio_device *dev);
+bool kbdctl_set_default_init(pio_device *dev, char *name);
 
 // Perform keyboard controller self test.
 // 
@@ -206,7 +207,8 @@ bool kbdctl_reset_device(int which);
 /* Helper to enable a20 line with keyboard controller
  *
  * @return true on success or false on error
+ * @param char *name      -- name of this device
  */
-bool enable_a20line(pio_device *dev);
+bool enable_a20line(pio_device *dev, char *name);
 
 #endif // __8042_KBDCTL_H__ 

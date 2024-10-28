@@ -172,11 +172,12 @@ bool kbdctl_reset_device(int which) {
 // interrupts and translation layer disabled
 //
 // @param pio_device *dev -- a pointer to pio_device structure to populate
+// @param char *name      -- name of this device
 // @return bool true on success or false on error
 //
-bool kbdctl_set_default_init(pio_device *dev) { 
+bool kbdctl_set_default_init(pio_device *dev, char *name) { 
     ps2_8042_status *status = &keyboard_controller_status;
-    dev->device_name = "8042\n";
+    dev->device_name = name;
 
     // Start by reading inital configuration
     //
@@ -254,9 +255,11 @@ unsigned char kbdctl_enable_devices(pio_device *dev) {
 
 /* Helper to enable a20 line with keyboard controller
  *
+ * @param pio_device *dev -- device to initialise
+ * @param char *name      -- name of this device
  * @return true on success or false on error
  */
-bool enable_a20line(pio_device *dev) {
+bool enable_a20line(pio_device *dev, char *name __attribute__((unused))) {
     ps2_8042_status *stat = (ps2_8042_status *)dev->device_data;
     stat->a20line_enabled = false;
     if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
