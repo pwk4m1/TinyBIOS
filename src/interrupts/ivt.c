@@ -33,13 +33,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <drivers/pic_8259/pic.h>
+
 #include <interrupts/ivt.h>
+
 
 /* Dummy/default interrupt handler.
  *
  */
 static void __attribute__((section(".rom_int_handler"))) default_int_handler(void) {
-    
+    // pic_send_eoi();
 }
 
 /* Initialise interrupt vector table to only contain
