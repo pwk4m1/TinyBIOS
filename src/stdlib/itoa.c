@@ -35,13 +35,37 @@
 /* Convert unsigned 32-bit integer to ascii characters
  *
  * @param unsigned int d -- number to parse
+ * @param char *dst -- where to write our ascii to
+ */
+void itoa(unsigned int d, char *dst) {
+    unsigned int carry = 0;
+
+    for (unsigned int i = 0; i < (2 * sizeof(unsigned int)); i++) {
+        char nibble = (d & 0x0000000F);
+        d >>= 4;
+        if (carry) {
+            nibble += carry;
+            carry = 0;
+        }
+        if (nibble > 0x09) {
+            carry = 1;
+            nibble -= 0x0A;
+        }
+        nibble |= 0x30;
+        dst[(2 * sizeof(unsigned int)) - i - 1] = nibble;
+    }
+}
+
+/* Convert unsigned 32-bit integer to ascii hex characters
+ *
+ * @param unsigned int d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
- *                     9-byte memory buffer that's initialised to 0
+ *                     at least 9-byte memory buffer that's initialised to 0
  */
 void itoah(unsigned int d, char *dst) {
     char nibble;
 
-    for (unsigned int i = 0; i < (2 * sizeof(int)); i++) {
+    for (unsigned int i = 0; i < (2 * sizeof(unsigned int)); i++) {
         nibble = (d & 0x0000000F);
         d >>= 4;
         if (nibble < 10) {

@@ -73,15 +73,28 @@ static inline void bputchar(char c) {
     default_console_device.tx_func(udev->base_port, &c, 1);
 }
 
-/* Print single inteer over default output device
+/* Print single integer over default output device
  *
  * @param int d -- integer to print
+ * @param int base -- base number
  */
-static inline void bputint(int d) {
-    char tmp[10] = {0};
-    itoah(d, tmp);
-    blog(tmp);
-    return;
+static inline void bputint(int d, int base) {
+    char tmp[17];
+    memset(tmp, 0, 17);
+
+    if (base == 16) {
+        itoah(d, tmp);
+    } else {
+        itoa(d, tmp);
+    }
+
+    char *start = tmp;
+    for (int i = 0; i < 10; i++) {
+        if (*start != 0x30)
+            break;
+        start++;
+    }
+    blog(start);
 }
 
 /* log messages, now with format string!
@@ -121,7 +134,12 @@ int blogf(const char *restrict format, ...) {
                     break;
                 case 'x':
                     d = va_arg(ap, int);
-                    bputint(d);
+                    bputint(d, 16);
+                    written += sizeof(int);
+                    break;
+                case 'd':
+                    d = va_arg(ap, int);
+                    bputint(d, 10);
                     written += sizeof(int);
                     break;
                 case 'c':
