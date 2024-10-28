@@ -77,9 +77,9 @@ static inline void init_uart1(console_device *default_console_device) {
  * @param pio_device *dev -- pio device structure for this device
  * @param char *name -- device name
  */
-static void init_device(bool (*init)(pio_device *dev), pio_device *dev, char *name) {
+static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *dev, char *name) {
     blogf("Initialising %s... ", name);
-    if (init(dev) == true) {
+    if (init(dev, name) == true) {
         blog("ok\n");
     } else {
         blog(" failed\n");
@@ -97,7 +97,9 @@ static void init_device(bool (*init)(pio_device *dev), pio_device *dev, char *na
 
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
-    blog("UART 1 (0x03f8 @ 38400 baud) set to be default output device\n");
+
+    blogf("Default output device: %s at %xh with %d baudrate\n", primary_com_device.device_name,
+            sdev.base_port, (115200 / sdev.baudrate_divisor)); 
 
     init_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller");
     init_device(enable_a20line, &keyboard_controller_device, "high memory");
