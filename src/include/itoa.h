@@ -36,6 +36,13 @@
 /* Convert unsigned 32-bit integer to ascii characters
  *
  * @param unsigned int d -- number to parse
+ * @param char *dst -- where to write our ascii to
+ */
+void itoa(unsigned int d, char *dst);
+
+/* Convert unsigned 32-bit integer to ascii characters
+ *
+ * @param unsigned int d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
  *                     9-byte memory buffer that's initialised to 0
  */
