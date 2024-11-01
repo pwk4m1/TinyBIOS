@@ -31,93 +31,34 @@
  */
 .section .rom_text
 .code16
-.global common_int_handler
+.extern int_handler_scrt
 
-#include <interrupts/common.h>
 
-/* 
- * function common_int_handler exists because we've no way of
- * predicting the runmode bootloader has set up so far. We'll unify things
- * from here. 
- *
- * We assume initial landing from interrupt to have done:
- * cli
- * push handler
- * jmp common_int_handler
- *
- * Here we'll do:
- *   1.) Set argument structure for interrupt handler
- *   2.) Switch to unreal mode
- *   3.) Call appropriate interrupt handler
- *   4.) Switch back to initial CPU state
- *   5.) Send EOI
- *   6.) iret
- *
- */
-common_int_handler:
+/* Generic interrupt handler entry */
+int_handler_generic:
+    // Disable interrupts
+    cli
+
+    // Set our parameters into int handler structure
     push    bp
-    push    ax
     mov     bp, sp
-    add     sp, 4
-    pop     ax // pop handler
-    mov     sp, bda_ihandler_arg_structure - 18 // handler: 2 bytes, pusha: 16
-    push    ax // push it into int handler arg structure
+    mov     sp, bda_int_handler_cpu_state_end
     pusha
     mov     sp, bp
-    pop     ax
     pop     bp
 
-    // See if we're too far in runmode changes that we can't safely just
-    // 'pop cr0, ret' anymore. If we are, set error and return.
-    //
-    mov     eax, cr0
-    test    eax, (1 << 31)
-    jnz     .err
+    // Get our interrupt identifier 
+    xor     eax, eax
+    pop     ax
 
-    // See if we are already in unreal or protected mode.
-    //
-    test    eax, 1
-    jnz     .not_in_unreal_yet
+    // Get corresponding interrupt handler entry-offset
+    add     si, ax
+    mov     ax, word ptr [si]
+    or      eax, 0xF0000
 
-    // Check if we're in protected mode instead of unreal mode.
-    // If we are, return with error.
-    //
-    mov     bx, ds
-    test    bx, bx
-    jnz     .err
-
-    // we're already in unreal mode, don't switch around
-    //
-    call    cx
-    jmp     .ret
-
-.not_in_unreal_yet:
-    // Store cr0 content to stack, switch to unreal mode, and
-    // execute interrupt handler of ours.
-    //
+    // Set our interrupt handler as return address for int_handler_scrt()
     push    eax
-    sub     esp, 6
-    sgdt    [esp]
-    dec     esp
-    push    eax
-    push    bx
-    push    ds
-    call    switch_to_unreal
-.code32
-    call    cx
-    pop     cx
-    pop     bx
-    pop     eax
-    inc     esp
-    lgdt    [esp]
-    mov     ds, bx
-    add     esp, 6
-    mov     cr0, eax
-.code16
-.ret:
-    popa
+    jmp     int_handler_scrt
+
     iret
-.err:
-    stc
-    jmp     .ret
 
