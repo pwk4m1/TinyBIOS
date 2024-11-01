@@ -33,23 +33,7 @@
 .section .rom_text
 .global init_cpu
 .global switch_to_unreal
-
-/* Helper function for switching to unreal mode, this is used during early boot
- * as well as by interrupt handlers.
- *
- * Clobbers eax, bx, ds
- */
-switch_to_unreal:
-    mov     eax, offset gdt
-    lgdt    [eax]
-    mov     eax, cr0
-    mov     bx, 0x08
-    mov     ds, bx
-    and     al, 0xFE
-    mov     cr0, eax
-    xor     ax, ax
-    mov     ds, ax
-    ret
+.global switch_to_protected
 
 /* Workaround for compiler/clang issue, refer
  * https://github.com/llvm/llvm-project/issues/49636
@@ -60,13 +44,13 @@ switch_to_unreal:
     .int    target; \
     .short  segment;
 
-// We'll land here from reset.S, things we'll want to do next are 
-// to move to some more appropriate runmode which doesn't do segments and
-// 20-bit addressing, etc.
-//
-init_cpu:
-    .code16
-    // Start by moving to 32 bit protected mode
+/* Helper function for switching to protected mode, this is used during early boot
+ * as well as by interrupt handlers.
+ *
+ * Clobbers cs, eax
+ */
+switch_to_protected:
+.code16
     mov     eax, offset gdt
     lgdt    [eax]
     xor     eax, eax
@@ -76,10 +60,48 @@ init_cpu:
     mov     cr0, eax
     LONGJMP(0x0008, next)
 next:
+.code32
+    pop     eax
+    or      eax, 0xf0000
+    jmp     eax
+.code16    
+
+/* Helper function for switching to unreal mode, this is used during early boot
+ * as well as by interrupt handlers.
+ *
+ * Clobbers ds
+ */
+switch_to_unreal:
+.code32
+    push    eax
+    push    bx
+    mov     eax, offset gdt
+    lgdt    [eax]
+    mov     eax, cr0
+    mov     bx, 0x08
+    mov     ds, bx
+    and     al, 0xFE
+    mov     cr0, eax
+    xor     ax, ax
+    mov     ds, ax
+    pop     bx
+    pop     eax
+    ret
+.code16
+
+// We'll land here from reset.S, things we'll want to do next are 
+// to move to some more appropriate runmode which doesn't do segments and
+// 20-bit addressing, etc.
+//
+init_cpu:
+    .code16
+
+    // Start by moving to 32 bit protected mode
+    push    eax
+    call    switch_to_protected
     .code32
-    // 16-bit compability mode now re; CS & cr0, set rest of segments
-    // and start moving towards 64 bit long mode
-    //
+    pop     eax
+    mov     esp, 0x00007c00
     call    switch_to_unreal
 
     // Relocate our C code into ram
@@ -92,6 +114,7 @@ next:
     mov     ebp, esp
     xor     ax, ax
     mov     ds, ax
+
     call    c_main
 
     // Never reached but better be overly careful 
