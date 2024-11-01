@@ -15,6 +15,7 @@ add_executable(tinybios
     src/cpu/init.S
 
     src/interrupts/interrupts.S
+    src/interrupts/interrupts.c
     src/interrupts/ivt.c
 
     src/drivers/serial/serial.c
