@@ -41,6 +41,15 @@
  */
 size_t strlen(const char *str);
 
+/* Compare two strings
+ *
+ * @param unsigned char *s1 -- String 1
+ * @param unsigned char *s2 -- String 2
+ * @param unsigned int n    -- Only compare up to n bytes
+ * @return amount of bytes that differ
+ */
+size_t strncmp(unsigned char *s1, unsigned char *s2, unsigned int n);
+
 /* Set memory range to specified byte
  *
  * @param const void *dst -- start address

@@ -45,6 +45,26 @@ size_t strlen(const char *str) {
     return i;
 }
 
+/* Compare two strings
+ *
+ * @param unsigned char *s1 -- String 1
+ * @param unsigned char *s2 -- String 2
+ * @param unsigned int n    -- Only compare up to n bytes
+ * @return amount of bytes that differ
+ */
+size_t strncmp(unsigned char *s1, unsigned char *s2, unsigned int n) {
+    size_t ret = 0;
+    for (unsigned int i = 0; i < n; i++) {
+        if ((s1[i] == 0) || (s2[i] == 0)) {
+            break;
+        }
+        if (s1[i] != s2[i]) {
+            ret++;
+        }
+    }
+    return ret;
+}
+
 void *memset(void *s, int c, size_t n) {
     unsigned char *dst = (unsigned char *)s;
     for (size_t i = 0; i < n; i++) {
