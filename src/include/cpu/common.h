@@ -62,7 +62,6 @@ enum CR0_SETTING {
     CR0_PG = ( 1 << 31 )
 };
 
-
 /* Helper structure for tracking cpu state in 16-bit mode. 
  * The register order matches pusha/popa when we have downwards growing stack.
  *
@@ -93,38 +92,38 @@ typedef struct {
     uint32_t eax;
 } cpu_state_32b;
 
-static inline uint64_t get_cr0(void) {
-    uint64_t r;
+static inline uint32_t __attribute__((always_inline)) get_cr0(void) {
+    uint32_t r;
     asm volatile("mov   %0, cr0":"=r"(r));
     return r;
 }
 
-static inline void set_cr0(uint64_t v) {
+static inline void __attribute__((always_inline)) set_cr0(uint32_t v) {
     asm volatile("mov   cr0, %0"::"r"(v));
 }
 
-static inline uint64_t get_cr3(void) {
-    uint64_t r;
+static inline uint32_t __attribute__((always_inline)) get_cr3(void) {
+    uint32_t r;
     asm volatile("mov   %0, cr3":"=r"(r));
     return r;
 }
 
-static inline void set_cr3(uint64_t v) {
+static inline void __attribute__((always_inline)) set_cr3(uint32_t v) {
     asm volatile("mov   cr3, %0"::"r"(v));
 }
 
-static inline uint64_t get_cr4(void) {
-    uint64_t r;
+static inline uint32_t __attribute__((always_inline)) get_cr4(void) {
+    uint32_t r;
     asm volatile("mov   %0, cr4":"=r"(r));
     return r;
 }
 
-static inline void set_cr4(uint64_t v) {
+static inline void __attribute__((always_inline)) set_cr4(uint32_t v) {
     asm volatile("mov   cr4, %0"::"r"(v));
 }
 
-static inline uint64_t rdmsr(uint64_t msr) {
-    uint64_t ret;
+static inline uint32_t __attribute__((always_inline)) rdmsr(uint32_t msr) {
+    uint32_t ret;
     asm volatile(
             "mov   ecx, %0;"
             "rdmsr;"
@@ -136,7 +135,7 @@ static inline uint64_t rdmsr(uint64_t msr) {
     return ret;
 }
 
-static inline void wrmsr(uint64_t msr, uint64_t val) {
+static inline void __attribute__((always_inline)) wrmsr(uint32_t msr, uint32_t val) {
     asm volatile(
             "mov    ecx, %0;"
             "mov    eax, %1;"
