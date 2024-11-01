@@ -31,7 +31,7 @@
  */
 
 #include <sys/io.h>
-#include <sys/cpu.h>
+#include <cpu/common.h>
 #include <stdint.h>
 
 extern void switch_to_protected(void);
@@ -48,7 +48,7 @@ extern void switch_to_unreal(void);
  * Then, jump around until we're in unreal mode.
  */
 void __attribute__((section(".rom_int_handler"))) int_handler_scrt(void) {
-    uint32_t cr0 = read_cr0();
+    uint32_t cr0 = get_cr0();
     uint16_t ds = read_ds();
 
     if ((cr0 & CR0_PE) || (ds == 8)) {
