@@ -29,36 +29,37 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 .section .rom_text
+.global interrupt_handler_init_runtime
+.extern bda_int_handler_gdtr
+
+/* This function is used by all other interrupt handlers after they have
+ * disabled interrupts, and stored cpu state to an appropriate location.
+ *
+ * We'll store GDTR, cr0, and segments here, but all other registers
+ * should be saved by initial interrupt handler entry.
+ *
+ * @param bx -- offset to actual interrupt handler
+ * Clobbers high half of ebx
+ *
+ * NOTE: This function is supposed to be Jumped to, not called. We'll
+ *       perform IRET at the end of our operations.
+ */
 .code16
-.extern int_handler_scrt
-
-
-/* Generic interrupt handler entry */
-int_handler_generic:
-    // Disable interrupts
-    cli
-
-    // Set our parameters into int handler structure
-    push    bp
-    mov     bp, sp
-    mov     sp, bda_int_handler_cpu_state_end
-    pusha
-    mov     sp, bp
-    pop     bp
-
-    // Get our interrupt identifier 
-    xor     eax, eax
-    pop     ax
-
-    // Get corresponding interrupt handler entry-offset
-    add     si, ax
-    mov     ax, word ptr [si]
-    or      eax, 0xF0000
-
-    // Set our interrupt handler as return address for int_handler_scrt()
+interrupt_handler_init_runtime:
+    sgdt    [bda_int_handler_gdtr]
+    push    cs
     push    eax
-    jmp     int_handler_scrt
-
+    call    switch_to_protected
+.code32
+    pop     eax
+    push    ds
+    call    switch_to_unreal
+    and     ebx, 0x0000FFFF
+    or      ebx, 0x000F0000
+    call    ebx
+    pop     ds
+    lgdt    [bda_int_handler_gdtr]
     iret
 

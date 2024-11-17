@@ -161,7 +161,6 @@ static inline void __attribute((always_inline)) write_gdtr(void *src) {
     asm volatile("lgdt %0" :: "m"(src));
 }
 
-
 /* Read code segment register
 *
 * @return uint16_t cs

@@ -37,26 +37,12 @@
 
 #include <interrupts/ivt.h>
 
-
-/* Dummy/default interrupt handler.
- *
- */
-static void __attribute__((section(".rom_int_handler"))) default_int_handler(void) {
-    // pic_send_eoi();
-}
-
 /* Initialise interrupt vector table to only contain
  * dummy handlers that send EOI and return.
  *
  */
 void init_ivt(void) {
-    uint32_t default_entry = 0xFFFF0000 | ((uint16_t)((uint32_t)default_int_handler) & 0x0000FFFF);
-
-    for (uint32_t *ivt_entry = 0; ivt_entry < 0x200; ivt_entry++) {
-        *ivt_entry = default_entry;
-    }
 }
-
 
 
 

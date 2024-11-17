@@ -32,31 +32,17 @@
 
 #include <sys/io.h>
 #include <cpu/common.h>
+#include <drivers/pic_8259/pic.h>
 #include <stdint.h>
 
-extern void switch_to_protected(void);
-extern void switch_to_unreal(void);
-
-/* Setup suitable environment for our interrupt handler. We expect that 
- * interrupts have been disabled at this point already, 
- * and necessary registers have been stored.
- * XXX: Necessary registers include gdtr and all but code segment.
+/* Dummy/default interrupt handler.
  *
- * start by checking if we're in protected or unreal mode already, if we are
- * there's nothing for us to do.
- *
- * Then, jump around until we're in unreal mode.
  */
-void __attribute__((section(".rom_int_handler"))) int_handler_scrt(void) {
-    uint32_t cr0 = get_cr0();
-    uint16_t ds = read_ds();
+void __attribute__((section(".rom_int_handler"))) default_int_handler(void) {
+    uint16_t irr = pic_read_irr();
+    /* Handle interrupt here */
 
-    if ((cr0 & CR0_PE) || (ds == 8)) {
-        return;
-    }
-
-    switch_to_protected();
-    switch_to_unreal();
-
+    pic_send_eoi(irr);
 }
+
 

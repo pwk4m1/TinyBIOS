@@ -41,14 +41,4 @@
     .int    target; \
     .short  segment;
 
-/* Helper for generating entries for interrupt handlers.
- *
- */
-#define INT_HANDLER_ENTRY(handler, type) \
-    cli \
-    pusha \
-    push    type \
-    push    handler \
-    jmp     common_int_handler
-
 #endif // __ASM_HELPERS_H__

@@ -35,19 +35,12 @@
 .global switch_to_unreal
 .global switch_to_protected
 
-/* Workaround for compiler/clang issue, refer
- * https://github.com/llvm/llvm-project/issues/49636
- */
-#define LONGJMP(segment, target) \
-    .byte   0x66; \
-    .byte   0xEA; \
-    .int    target; \
-    .short  segment;
+#include <cpu/asm_helpers.h>
 
 /* Helper function for switching to protected mode, this is used during early boot
  * as well as by interrupt handlers.
  *
- * Clobbers cs, eax
+ * Clobbers cs, eax, gdtr
  */
 switch_to_protected:
 .code16
@@ -69,7 +62,7 @@ next:
 /* Helper function for switching to unreal mode, this is used during early boot
  * as well as by interrupt handlers.
  *
- * Clobbers ds
+ * Clobbers ds, gdtr
  */
 switch_to_unreal:
 .code32
@@ -114,6 +107,13 @@ init_cpu:
     mov     ebp, esp
     xor     ax, ax
     mov     ds, ax
+
+    mov     edi, 0
+    mov     ax, 0x3ff
+    stosw
+    xor     eax, eax
+    stosd
+    lidt    [0]
 
     call    c_main
 

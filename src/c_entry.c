@@ -43,7 +43,10 @@
 
 #include <console/console.h>
 
+#include <interrupts/interrupts.h>
 #include <interrupts/ivt.h>
+
+extern void interrupt_handler_init_runtime(void);
 
 pio_device primary_com_device;
 serial_uart_device sdev;
@@ -104,7 +107,6 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
     init_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller");
     init_device(enable_a20line, &keyboard_controller_device, "high memory");
     init_device(pic_initialise, &programmable_interrupt_controller, "8259 PIC");
-
     blog("Early chipset initialisation done\n");
 
     blog("Unexpected return from c_main()\n");
