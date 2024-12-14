@@ -35,7 +35,7 @@
 .global switch_to_unreal
 .global switch_to_protected
 
-#include <cpu/asm_helpers.h>
+#include <asm/cpu/longjmp.h>
 
 /* Helper function for switching to protected mode, this is used during early boot
  * as well as by interrupt handlers.
