@@ -94,6 +94,9 @@ static inline void bputint(int d, int base) {
             break;
         start++;
     }
+    if (strlen(start) == 0) {
+        start--;
+    }
     blog(start);
 }
 
