@@ -99,9 +99,11 @@ size_t serial_tx(unsigned short port, const char *msg, size_t len) {
     size_t i;
 
     for (i = 0; i < len; i++) {
-        while (serial_wait_for_tx_empty(port) != 0) {
-            continue;
-        } 
+        do { } while (serial_wait_for_tx_empty(port));
+        if (msg[i] == '\n') {
+            outb('\r', port);
+            do { } while (serial_wait_for_tx_empty(port));
+        }
         outb(msg[i], port);
     }
     return i;
