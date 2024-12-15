@@ -32,16 +32,20 @@
 #ifndef __ASM_INT_HELPERS__
 #define __ASM_INT_HELPERS__
 
-/* Helper macro for registering new interrupt handlers */
-#define IVT_INT_HANDLER_ENTRY(handler_entry) \
-    cli \
-    push    sp \
-    mov     bp, sp \
-    mov     sp, bpa_int_handler_cpu_state_end \
-    pusha \
-    mov     sp, mem_ebda \
-    mov     bx, handler_entry \
-    jmp     interrupt_handler_init_runtime \
-
+/* Helper macro for registering new interrupt handlers 
+ *
+ * Note, that preboot and boot-services must use different IVT entries, as
+ * different segment value is needed.
+ *
+ */
+#define IVT_INT_HANDLER_ENTRY_PRE_BOOTSERVICES(handler_entry) \
+    cli ; \
+    push    sp ; \
+    mov     bp, sp ; \
+    mov     sp, bda_int_handler_cpu_state_end ; \
+    pusha ; \
+    mov     sp, mem_ebda ; \
+    mov     bx, handler_entry ; \
+    jmp     interrupt_handler_init_runtime ; \
 
 #endif // __ASM_INT_HELPERS__
