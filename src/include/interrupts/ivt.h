@@ -38,14 +38,30 @@
 /* Helper to register interrupt handler for a driver or other bit of
  * software that wants to listen to interrupts.
  *
+ * Note, that preboot and boot-services must use different IVT entries, as
+ * different segment value is needed.
+ *
  * @param uint16_t segment -- what CS value should we have upon jump to handler
  * @param uint16_t offset  -- where in that segment our handler is at? 
  * @param uint16_t entry   -- which interrupt are we handling
  */
 static inline void register_int_handler(uint16_t segment, uint16_t offset, uint16_t entry) {
-    uint16_t *ptr = (uint16_t *)(entry * 4);
-    *ptr = segment;
-    *ptr++ = offset;
+    uint16_t *ptr = (uint16_t *)((entry * 4));
+    ptr[0] = segment;
+    ptr[1] = offset;
 }
+
+/* Helper to get currently registered interrupt handler at IVT
+ *
+ * @param uint32_t entry -- Which interrupt are we handling 
+ */
+static inline uint32_t get_ivt_handler(uint16_t entry) {
+    uint16_t *ptr = (uint16_t *)((entry * 4));
+    uint32_t ret;
+    ret = ptr[0] << 16;
+    ret |= ptr[1];
+    return ret;
+}
+
 
 #endif // __IVT_H__
