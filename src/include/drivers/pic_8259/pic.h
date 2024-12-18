@@ -82,7 +82,7 @@ typedef struct __attribute__((packed)) {
     unsigned iv_size        : 1;
     unsigned trigger_mode   : 1;
     unsigned icw_1          : 1;
-    unsigned pc_system      : 1;
+    unsigned pc_system      : 3;
 } pic_icw1;
 
 /* programmable interrupt controller initialisation command word 2
@@ -175,6 +175,18 @@ typedef struct {
     pic_icw4 *icw4;
 } pic_full_configuration;
 
+/* Mask irq line
+ *
+ * @param uint8_t line -- line to mask 
+ */
+void pic_mask_irq(uint8_t line);
+
+/* Unmask irq line
+ *
+ * @param uint8_t line -- line to mask 
+ */
+void pic_unmask_irq(uint8_t line);
+
 /* Send end of interrupt message to the programmable interrupt controller.
  *
  * @param uint8_t irq -- number of interrupt we're dealing with
@@ -187,7 +199,7 @@ void pic_send_eoi(uint8_t irq);
  * @param char *name      -- name of the device
  * @return bool true on success or false on error.
  */
-bool pic_initialise(pio_device *dev, char *name);
+bool pic_initialize(pio_device *dev, char *name);
 
 /* Read irq register from the programmable interrupt controller.
  *

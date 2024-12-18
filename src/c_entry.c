@@ -40,6 +40,7 @@
 #include <drivers/serial/serial.h>
 #include <drivers/kbdctl/8042.h>
 #include <drivers/pic_8259/pic.h>
+#include <drivers/pit/pit.h>
 
 #include <console/console.h>
 
@@ -54,6 +55,7 @@ console_device default_console_device;
 
 pio_device keyboard_controller_device;
 pio_device programmable_interrupt_controller;
+pio_device programmable_interrupt_timer;
 
 /* Helper to initialise uart 1 for us.
  *
@@ -87,7 +89,7 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
     } else {
         blog(" failed\n");
     }
-} 
+}
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -101,17 +103,22 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
 
-    blogf("Default output device: %s at %xh with %d baudrate\n", primary_com_device.device_name,
+    blogf("Default output device: %s at %xh with %d baudrate\n", 
+            primary_com_device.device_name,
             sdev.base_port, (115200 / sdev.baudrate_divisor)); 
 
-    init_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller");
+    init_device(pic_initialize, &programmable_interrupt_controller, "8259 PIC");
+
+    init_device(kbdctl_set_default_init, 
+            &keyboard_controller_device, 
+            "8042 ps2 controller");
+
     init_device(enable_a20line, &keyboard_controller_device, "high memory");
-    init_device(pic_initialise, &programmable_interrupt_controller, "8259 PIC");
+    init_device(pit_initialize, &programmable_interrupt_timer, "825X PIT");
     blog("Early chipset initialisation done\n");
 
-    blog("Unexpected return from c_main()\n");
+    asm volatile("sti");
     for (;;) { 
-        asm volatile("cli");
         asm volatile("hlt");
     }
 }

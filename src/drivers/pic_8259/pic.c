@@ -69,6 +69,15 @@ static inline void pic_send_data(uint16_t port, uint8_t *ow) {
     iodelay(50);
 }
 
+/* Read data (mask) from programmable_interrupt_controller
+ *
+ * @param uint16_t port -- which pic we're talking to
+ * @return uint8_t mask
+ */
+static inline uint8_t pic_get_mask(uint16_t port) {
+    return inb(port+1);
+}
+
 /* Send end of interrupt message to the programmable interrupt controller.
  *
  * @param uint8_t irq -- number of interrupt we're dealing with
@@ -86,7 +95,8 @@ void pic_send_eoi(uint8_t irq) {
  * @param char *name      -- name of this device
  * @return bool true on success, false on error.
  */
-bool pic_initialise(pio_device *dev, char *name) {
+bool pic_initialize(pio_device *dev, char *name) {
+
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
 
@@ -94,9 +104,13 @@ bool pic_initialise(pio_device *dev, char *name) {
     pic_send_cmd(PIC_PRIMARY_PORT, (uint8_t*)&pic_current_icw1);
     pic_send_cmd(PIC_SECONDARY_PORT, (uint8_t*)&pic_current_icw1);
 
-    // Send interrupt vector offsets (0, 0)
-    pic_send_data(PIC_PRIMARY_PORT, (uint8_t *)&pic_current_ocw2);
-    pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_ocw2);
+    // Send interrupt vector offsets (0, 8)
+    //
+    uint8_t v = 0x20;
+    pic_send_data(PIC_PRIMARY_PORT, &v);
+    //pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_ocw2);
+    v = 0x28;
+    pic_send_data(PIC_SECONDARY_PORT, &v);
 
     // Send device cascading config (irq2 => secondary PIC, cascading identity to
     // secondary PIC)
@@ -113,10 +127,10 @@ bool pic_initialise(pio_device *dev, char *name) {
     pic_send_data(PIC_PRIMARY_PORT, (uint8_t *)&pic_current_icw4);
     pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_icw4);
 
-    // Mask away all interrupts for now, each handler should unmask
+    // Mask away all ISA interrupts for now, each handler should unmask
     // corresponding line.
     //
-    uint8_t data = 0xff;
+    uint8_t data = 0x0F & ~(1 << 2);
     pic_send_data(PIC_PRIMARY_PORT, &data);
     pic_send_data(PIC_SECONDARY_PORT, &data);
 
@@ -135,6 +149,33 @@ bool pic_initialise(pio_device *dev, char *name) {
     
     return true;
 }
+
+/* Mask irq line
+ *
+ * @param uint8_t line -- line to mask 
+ */
+void pic_mask_irq(uint8_t line) {
+    uint16_t port = (line < 8) ? PIC_PRIMARY_PORT : PIC_SECONDARY_PORT;
+    line = line ? (line - 8) : (port == PIC_PRIMARY_PORT);
+
+    uint8_t v = pic_get_mask(line);
+    v |= (1 << line);
+    outb(v, port);
+}
+
+/* Unmask irq line
+ *
+ * @param uint8_t line -- line to mask 
+ */
+void pic_unmask_irq(uint8_t line) {
+    uint16_t port = (line < 8) ? PIC_PRIMARY_PORT : PIC_SECONDARY_PORT;
+    line = (line < 8) ? line : line-8;
+
+    uint8_t v = pic_get_mask(port);
+    v &= ~(1 << line);
+    pic_send_data(port, &v);
+}
+
 
 /* Read irq register from the programmable interrupt controller.
  *
