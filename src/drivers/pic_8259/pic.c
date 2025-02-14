@@ -130,7 +130,8 @@ bool pic_initialize(pio_device *dev, char *name) {
     // Mask away all ISA interrupts for now, each handler should unmask
     // corresponding line.
     //
-    uint8_t data = 0x0F & ~(1 << 2);
+    //uint8_t data = 0x0F & ~(1 << 2);
+    uint8_t data = 0x00;
     pic_send_data(PIC_PRIMARY_PORT, &data);
     pic_send_data(PIC_SECONDARY_PORT, &data);
 

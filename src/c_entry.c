@@ -114,13 +114,19 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
             "8042 ps2 controller");
 
     init_device(enable_a20line, &keyboard_controller_device, "high memory");
-    init_device(pit_initialize, &programmable_interrupt_timer, "825X PIT");
+    init_device(pit_init, &programmable_interrupt_timer, "825X PIT");
     blog("Early chipset initialisation done\n");
 
     asm volatile("sti");
+
     for (;;) { 
-        asm volatile("hlt");
+        for (int i = 0; i < 0xffffff; i++) { asm volatile("nop"); }
+        uint8_t irr = pic_read_irr();
+        uint8_t isr = pic_read_isr();
+
+        blogf("irr: %x, isr: %x\n", irr, isr);
+        uint16_t cnt = pit_read_count(pit_channel_0_port);
+        blogf("pit count: %x\n", cnt);
     }
 }
-
 
