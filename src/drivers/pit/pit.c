@@ -1,7 +1,7 @@
-/*
+/*  
  BSD 3-Clause License
  
- Copyright (c) 2024, k4m1
+ Copyright (c) 2025, k4m1 <me@k4m1.net>
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,13 @@ bool pit_init(pio_device *dev, char *name) {
     return true;
 }
 
-
-
+/* PIT Interrupt handler 
+ *
+ */
+void __attribute__((section(".rom_int_handler"))) pit_int_handler(void) {
+    asm volatile("mov eax, 0x12345678");
+    asm volatile("cli");
+    asm volatile("hlt");
+    do {} while (1);
+}
 

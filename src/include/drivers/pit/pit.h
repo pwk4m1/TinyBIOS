@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2024, k4m1
+ Copyright (c) 2025, k4m1 <me@k4m1.net>
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,15 @@ enum pit_binary_mode {
 };
 
 /* Supported pit operating modes
+ *
+ * 0 0 0 = Mode 0 (interrupt on terminal count)
+ * 0 0 1 = Mode 1 (hardware re-triggerable one-shot)
+ * 0 1 0 = Mode 2 (rate generator)
+ * 0 1 1 = Mode 3 (square wave generator)
+ * 1 0 0 = Mode 4 (software triggered strobe)
+ * 1 0 1 = Mode 5 (hardware triggered strobe)
+ * 1 1 0 = Mode 2 (rate generator, same as 010b)
+ * 1 1 1 = Mode 3 (square wave generator, same as 011b)
  *
  * @member int_on_terminal_count
  * @member hardware_retriggerable_single_shot
@@ -206,5 +215,4 @@ uint8_t pit_get_channel_mode(uint8_t channel);
  * @return bool true on success, false on error. 
  */
 bool pit_init(pio_device *dev, char *name);
-
 #endif
