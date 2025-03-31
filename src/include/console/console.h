@@ -38,7 +38,7 @@
 #include <drivers/device.h>
 
 typedef struct {
-    pio_device *pio_dev;
+    device *dev;
     size_t (*tx_func)(unsigned short port, const char *msg, size_t len);
     bool enabled;
 } console_device;

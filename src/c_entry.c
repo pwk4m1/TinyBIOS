@@ -49,47 +49,13 @@
 
 extern void interrupt_handler_init_runtime(void);
 
-pio_device primary_com_device;
+device primary_com_device;
 serial_uart_device sdev;
 console_device default_console_device;
 
-pio_device keyboard_controller_device;
-pio_device programmable_interrupt_controller;
-pio_device programmable_interrupt_timer;
-
-/* Helper to initialise uart 1 for us.
- *
- * @param console_device *default_console_device -- default console device structure
- */
-static inline void init_uart1(console_device *default_console_device) {
-    default_console_device->pio_dev = &primary_com_device;
-    default_console_device->tx_func = &serial_tx;
-    if (serial_init_device(&primary_com_device, 
-                SERIAL_COM_PRIMARY, 
-                COM_DEFAULT_BRD, 
-                COM_DEFAULT_LINE_CTL, 
-                "UART 1") == false) 
-    {
-        default_console_device->enabled = false;
-    } else {
-        default_console_device->enabled = true;
-    }
-}
-
-/* Wrapper for calling various PIO device initialisation routines
- *
- * @param bool (*init)(pio_device *dev) -- pointer to device initialisation routine
- * @param pio_device *dev -- pio device structure for this device
- * @param char *name -- device name
- */
-static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *dev, char *name) {
-    blogf("Initialising %s... ", name);
-    if (init(dev, name) == true) {
-        blog("ok\n");
-    } else {
-        blog(" failed\n");
-    }
-}
+device keyboard_controller_device;
+device programmable_interrupt_controller;
+device programmable_interrupt_timer;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -98,7 +64,10 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
     primary_com_device.device_data = &sdev;
-    init_uart1(&default_console_device);
+    initialize_device(serial_init_device, &primary_com_device, "UART 1", false);
+    default_console_device.enabled = (primary_com_device.status == status_initialised);
+    default_console_device.dev = &primary_com_device;
+    default_console_device.tx_func = serial_tx;
 
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
@@ -107,26 +76,13 @@ static void init_device(bool (*init)(pio_device *dev, char *name), pio_device *d
             primary_com_device.device_name,
             sdev.base_port, (115200 / sdev.baudrate_divisor)); 
 
-    init_device(pic_initialize, &programmable_interrupt_controller, "8259 PIC");
+    initialize_device(pic_initialize, &programmable_interrupt_controller, "8259 PIC", false);
+    initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller", false);
+    initialize_device(pit_init, &programmable_interrupt_timer, "825X PIT", false);
 
-    init_device(kbdctl_set_default_init, 
-            &keyboard_controller_device, 
-            "8042 ps2 controller");
-
-    init_device(enable_a20line, &keyboard_controller_device, "high memory");
-    init_device(pit_init, &programmable_interrupt_timer, "825X PIT");
     blog("Early chipset initialisation done\n");
 
-    asm volatile("sti");
-
     for (;;) { 
-        for (int i = 0; i < 0xffffff; i++) { asm volatile("nop"); }
-        uint8_t irr = pic_read_irr();
-        uint8_t isr = pic_read_isr();
-
-        blogf("irr: %x, isr: %x\n", irr, isr);
-        uint16_t cnt = pit_read_count(pit_channel_0_port);
-        blogf("pit count: %x\n", cnt);
     }
 }
 

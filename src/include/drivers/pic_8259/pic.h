@@ -195,11 +195,10 @@ void pic_send_eoi(uint8_t irq);
 
 /* Initialise the programmable interrupt controller.
  *
- * @param pio_device *dev -- pointer to pio_device structure for PIC
- * @param char *name      -- name of the device
+ * @param device *dev -- pointer to device structure for PIC
  * @return bool true on success or false on error.
  */
-bool pic_initialize(pio_device *dev, char *name);
+enum DEVICE_STATUS pic_initialize(device *dev);
 
 /* Read irq register from the programmable interrupt controller.
  *

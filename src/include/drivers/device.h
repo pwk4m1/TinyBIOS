@@ -37,30 +37,39 @@
 
 // Generic status for all devices we have.
 enum DEVICE_STATUS {
-    unknown,        // We haven't started initialising device or can't determine it's state
-    initialised,    // Device initialisation completed and device is functional
-    not_present,    // There's no device plugged into this port 
-    faulty          // device initialisation incomplete and/or device is misbehaving
+    status_unknown,        // We haven't started initialising device or can't determine it's state
+    status_initialised,    // Device initialisation completed and device is functional
+    status_not_present,    // There's no device plugged into this port 
+    status_faulty          // device initialisation incomplete and/or device is misbehaving
 };
 
 enum DEVICE_TYPE {
-    device_serial,
-    device_ata,
-    device_parallel,
-    device_other
+    device_access_pio,      // This device is accessed primarily over pio
+    device_access_mmio      // This device is accessed primarily over mmio
 };
 
-// This structure holds data related to processor-io controlled device.
+// This structure holds data related to a given device.
 typedef struct {
     // Printable name of the device
     char *device_name;
 
-    // Status of the device ( Unknown, initialised, faulty )
     enum DEVICE_STATUS status;
     enum DEVICE_TYPE type;
 
     // Device specific data
     void *device_data;
-} pio_device;
+} device;
+
+/* Typedef for all processor IO device initialization functions */
+typedef enum DEVICE_STATUS (*device_init_function)(device *dev);
+
+/* Initialize a given device 
+ *
+ * @param device_init_function init -- device initialisation function to use
+ * @param device *dev -- device structure for this device
+ * @param char *name -- device name
+ * @param bool critical -- Do we fail to boot if we lack this device
+ */
+void initialize_device(device_init_function init, device *dev, char *name, bool critical);
 
 #endif // __DRIVER_DEVICE_GENERIC__

@@ -173,10 +173,9 @@ int kbdctl_disable_ports(void);
 // Set keyboard controller byte with default config mask with 
 // interrupts and translation layer disabled
 //
-// @return bool true on success or false on error
-// @param char *name      -- name of this device
+// @return enum DEVICE_STATUS status of device
 //
-bool kbdctl_set_default_init(pio_device *dev, char *name);
+enum DEVICE_STATUS kbdctl_set_default_init(device *dev);
 
 // Perform keyboard controller self test.
 // 
@@ -195,7 +194,7 @@ unsigned char kbdctl_test_device(unsigned char dev_cmd);
 //
 // @return unsigned char devices initialised
 //
-unsigned char kbdctl_enable_devices(pio_device *dev);
+unsigned char kbdctl_enable_devices(device *dev);
 
 // Reset a specific device
 //
@@ -203,12 +202,5 @@ unsigned char kbdctl_enable_devices(pio_device *dev);
 // @return bool true on success or false on error
 //
 bool kbdctl_reset_device(int which);
-
-/* Helper to enable a20 line with keyboard controller
- *
- * @return true on success or false on error
- * @param char *name      -- name of this device
- */
-bool enable_a20line(pio_device *dev, char *name);
 
 #endif // __8042_KBDCTL_H__ 

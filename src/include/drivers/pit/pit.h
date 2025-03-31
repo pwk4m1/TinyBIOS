@@ -210,9 +210,9 @@ uint8_t pit_get_channel_mode(uint8_t channel);
 
 /* Setup PIT with default init.
  *
- * @param pio_device *dev -- Device info structure
- * @param char *name      -- Name of this device
+ * @param device *dev -- Device info structure
  * @return bool true on success, false on error. 
  */
-bool pit_init(pio_device *dev, char *name);
+enum DEVICE_STATUS pit_init(device *dev);
+
 #endif

@@ -91,11 +91,10 @@ void pic_send_eoi(uint8_t irq) {
 
 /* Initialise the programmable interrupt controller.
  * 
- * @param pio_device *dev -- pio_device structure for pic
- * @param char *name      -- name of this device
+ * @param device *dev -- device structure for pic
  * @return bool true on success, false on error.
  */
-bool pic_initialize(pio_device *dev, char *name) {
+enum DEVICE_STATUS pic_initialize(device *dev) {
 
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
@@ -143,12 +142,9 @@ bool pic_initialize(pio_device *dev, char *name) {
     pic_config->ocw2 = &pic_current_ocw2;
     pic_config->ocw3 = &pic_current_ocw3;
 
-    dev->device_name = name;
     dev->device_data = &pic_config;
-    dev->status = initialised;
-    dev->type = device_other;
     
-    return true;
+    return status_initialised;
 }
 
 /* Mask irq line

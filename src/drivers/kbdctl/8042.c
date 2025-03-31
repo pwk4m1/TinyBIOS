@@ -168,28 +168,50 @@ bool kbdctl_reset_device(int which) {
     return true;
 }
 
+/* Helper to enable a20 line with keyboard controller
+ *
+ * @return true on success or false on error
+ */
+bool enable_a20line(void) {
+    if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
+        return false;
+    }
+    if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
+        return false;
+    }
+    volatile unsigned int *first     = (unsigned int *)0x012345;
+    volatile unsigned int *second    = (unsigned int *)0x112345;
+    *first  = 0x012345;
+    *second = 0x112345;
+
+    if (*first == *second) {
+        return false;
+    }
+    return true;
+}
+
+
 // Set keyboard controller byte with default config mask with 
 // interrupts and translation layer disabled
 //
-// @param pio_device *dev -- a pointer to pio_device structure to populate
+// @param device *dev -- a pointer to device structure to populate
 // @param char *name      -- name of this device
 // @return bool true on success or false on error
 //
-bool kbdctl_set_default_init(pio_device *dev, char *name) { 
+enum DEVICE_STATUS kbdctl_set_default_init(device *dev __attribute__((unused))) { 
     ps2_8042_status *status = &keyboard_controller_status;
-    dev->device_name = name;
 
     // Start by reading inital configuration
     //
     unsigned char initial_config = kbdctl_read_config();
     if (initial_config == 0xff) {
         blog("Failed to get initial config\n");
-        return false;
+        return status_unknown;
     }
     unsigned char new_config = initial_config & KBDCTL_DEFAULT_CONFIG_MASK;
     if (kbdctl_write_config(new_config) == false) {
         // Writing new configuration failed
-        return false;
+        return status_faulty;
     }
     if (kbdctl_do_self_test() == false) {
         // Device failed self-test after our new configuration, fallback to old
@@ -198,14 +220,14 @@ bool kbdctl_set_default_init(pio_device *dev, char *name) {
             blog("8042 keyboard controller became unresponsive, hard reboot required.\n");
             do {} while (1);
         }
-        return false;
+        return status_faulty;
     }
-    dev->status = initialised;
     if (initial_config & KBDCTL_CTL_PS2_CLKE) {
         status->dual_channel = true;
     }
+    status->a20line_enabled = enable_a20line();
     status->current_configuration = new_config;
-    return true;
+    return status_initialised; 
 }
 
 // Perform keyboard controller self test.
@@ -239,7 +261,7 @@ unsigned char kbdctl_test_device(unsigned char dev_cmd) {
 //
 // @return unsigned char devices initialised
 //
-unsigned char kbdctl_enable_devices(pio_device *dev) { 
+unsigned char kbdctl_enable_devices(device *dev) { 
     ps2_8042_status *stat = dev->device_data;
     if (kbdctl_send_cmd(KBDCTL_CMD_ENABLE_P1) == false) {
         return 0;
@@ -252,32 +274,4 @@ unsigned char kbdctl_enable_devices(pio_device *dev) {
     }
     return 1;
 }
-
-/* Helper to enable a20 line with keyboard controller
- *
- * @param pio_device *dev -- device to initialise
- * @param char *name      -- name of this device
- * @return true on success or false on error
- */
-bool enable_a20line(pio_device *dev, char *name __attribute__((unused))) {
-    ps2_8042_status *stat = (ps2_8042_status *)dev->device_data;
-    stat->a20line_enabled = false;
-    if (kbdctl_send_cmd(KBDCTL_CMD_WRITENEXT_CTL_OUT) == false) {
-        return false;
-    }
-    if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
-        return false;
-    }
-    volatile unsigned int *first     = (unsigned int *)0x012345;
-    volatile unsigned int *second    = (unsigned int *)0x112345;
-    *first  = 0x012345;
-    *second = 0x112345;
-
-    if (*first == *second) {
-        return false;
-    }
-    stat->a20line_enabled = true;
-    return true;
-}
-
 

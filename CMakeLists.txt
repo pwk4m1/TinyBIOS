@@ -18,6 +18,7 @@ add_executable(tinybios
     src/interrupts/interrupts.c
     src/interrupts/ivt.c
 
+    src/drivers/device.c
     src/drivers/serial/serial.c
     src/drivers/kbdctl/8042.c
     src/drivers/pic_8259/pic.c
@@ -27,6 +28,7 @@ add_executable(tinybios
     src/mm/slab.c
 
     src/c_entry.c
+    src/panic.c
     src/console.c
     src/reset.S
 )

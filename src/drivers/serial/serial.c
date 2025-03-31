@@ -63,30 +63,28 @@ unsigned char serial_wait_for_tx_empty(unsigned short port) {
 
 /* Initialise a serial port for comms
  *
- * @param unsigned short port -- Device to initialise
- * @param unsigned short brd  -- baud rate divisor
- * @param unsigned char  lcr  -- line control value
+ * @param device *dev -- Pointer to device structure
  * @return 0 on success or non-zero on error
  */
-bool serial_init_device(pio_device *dev, unsigned short port, unsigned short brd, unsigned char lcr, char *name) {
+enum DEVICE_STATUS serial_init_device(device *dev) {
+    unsigned short port = SERIAL_COM_PRIMARY;
+
     serial_uart_device *sdev = (serial_uart_device *)dev->device_data;
     serial_interrupts_disable(port);
-    serial_set_baudrate(port, brd);
-    serial_set_linecontrol(port, lcr);
+    serial_set_baudrate(port, COM_DEFAULT_BRD);
+    serial_set_linecontrol(port, COM_DEFAULT_LINE_CTL);
     if (serial_device_is_faulty(port)) {
-        return false;
+        return status_faulty;
     }
     outb(0x0F, SERIAL_MCR(port));
 
     // Enable FIFO, clear with 14 byte treshold 
     outb(0xC7, SERIAL_FIFO_CTRL(port));
 
-    dev->status = initialised;
-    dev->device_name = name;
     sdev->base_port = port;
-    sdev->baudrate_divisor = brd;
+    sdev->baudrate_divisor = COM_DEFAULT_BRD;
     sdev->fifo_control = 0xC7;
-    return true;
+    return status_initialised;
 }
 
 /* Write a string over serial line

@@ -1,7 +1,7 @@
-/*  
+/*
  BSD 3-Clause License
  
- Copyright (c) 2025, k4m1 <me@k4m1.net>
+ Copyright (c) 2024, k4m1
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -29,47 +29,30 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <sys/io.h>
-
 #include <stdbool.h>
-#include <stdint.h>
 
+#include <panic.h>
 #include <drivers/device.h>
-#include <drivers/pit/pit.h>
+#include <console/console.h>
 
-/* Read pit status for a given channel
+/* Wrapper for calling various device initialisation routines
  *
- * @param uint8_t channel -- channel to read
- * @return uint8_t status of the channel
+ * @param pio_device_init init -- pio device initialisation function to use
+ * @param pio_device *dev -- pio device structure for this device
+ * @param bool critical -- Do we fail to boot if we lack this device
+ * @param char *name -- device name
  */
+void initialize_device(device_init_function init, device *dev, char *name, bool critical) {
+    blogf("Initializing %s... ", name);
 
-/* Setup PIT with default init.
- *
- * @param device *dev -- Device info structure
- * @return bool true on success, false on error. 
- */
-enum DEVICE_STATUS pit_init(device *dev __attribute__((unused))) { 
-    pit_command cmd;
-
-    cmd.access_mode      = lo_and_hi_byte;
-    cmd.binary_mode      = binary;
-    cmd.operating_mode   = rate_generator;
-    cmd.selected_channel = channel_0;
-
-    pit_write_command(&cmd);
-    outb(0x00, 0x40);
-    outb(0x10, 0x40);
-
-    return status_initialised;
-}
-
-/* PIT Interrupt handler 
- *
- */
-void __attribute__((section(".rom_int_handler"))) pit_int_handler(void) {
-    asm volatile("mov eax, 0x12345678");
-    asm volatile("cli");
-    asm volatile("hlt");
-    do {} while (1);
+    dev->status = init(dev);
+    dev->device_name = name;
+    if (dev->status != status_initialised) {
+        blog("failed\n");
+        if (critical) {
+            panic("Unable to initialize a critical component");
+        }
+    }
+    blog("ok\n");
 }
 
