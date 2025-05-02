@@ -24,6 +24,8 @@ add_executable(tinybios
     src/drivers/pic_8259/pic.c
     src/drivers/pit/pit.c
     src/drivers/pit/pit_handler.S
+    src/drivers/pci/pci.c
+    src/drivers/pci/pci_util.c
 
     src/mm/slab.c
 
