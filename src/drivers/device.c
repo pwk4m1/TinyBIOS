@@ -35,6 +35,26 @@
 #include <drivers/device.h>
 #include <console/console.h>
 
+/* Print why initilaisation failed, if possible.
+ *
+ */
+static inline char *status_to_str(enum DEVICE_STATUS status) {
+    switch (status) {
+    case (status_present):
+        return "device is present";
+    case (status_not_present):
+        return "device is not present";
+    case (status_unknown):
+        return "unable to determine device state";
+    case (status_faulty):
+        return "device is misbehaving";
+    case (status_initialised):
+        return "device initialisation completed";
+    default:
+        return "unknown device status";
+    }
+}
+
 /* Wrapper for calling various device initialisation routines
  *
  * @param pio_device_init init -- pio device initialisation function to use
@@ -48,11 +68,12 @@ void initialize_device(device_init_function init, device *dev, char *name, bool 
     dev->status = init(dev);
     dev->device_name = name;
     if (dev->status != status_initialised) {
-        blog("failed\n");
+        blogf("Failed, reason: %s\n", status_to_str(dev->status));
         if (critical) {
             panic("Unable to initialize a critical component");
         }
+    } else {
+        blog("ok\n");
     }
-    blog("ok\n");
 }
 

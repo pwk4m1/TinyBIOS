@@ -38,23 +38,25 @@
 // Generic status for all devices we have.
 enum DEVICE_STATUS {
     status_unknown,        // We haven't started initialising device or can't determine it's state
-    status_initialised,    // Device initialisation completed and device is functional
     status_not_present,    // There's no device plugged into this port 
-    status_faulty          // device initialisation incomplete and/or device is misbehaving
+    status_present,        // We know the device is plugged in, but we haven't tried to initialize it yet.
+    status_faulty,         // device initialisation incomplete and/or device is misbehaving
+    status_initialised,    // Device initialisation completed and device is functional
 };
 
 enum DEVICE_TYPE {
     device_access_pio,      // This device is accessed primarily over pio
-    device_access_mmio      // This device is accessed primarily over mmio
+    device_access_mmio,     // This device is accessed primarily over mmio
+    device_bridge           // This device provides connectivity to other devices
 };
 
 // This structure holds data related to a given device.
-typedef struct {
+typedef struct __attribute__((packed)) {
     // Printable name of the device
     char *device_name;
 
-    enum DEVICE_STATUS status;
-    enum DEVICE_TYPE type;
+    enum DEVICE_STATUS status : 5;
+    enum DEVICE_TYPE type     : 3;
 
     // Device specific data
     void *device_data;

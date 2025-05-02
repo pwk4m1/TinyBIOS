@@ -261,5 +261,12 @@ static inline void __attribute__((always_inline)) write_gs(uint32_t gs) {
    asm volatile("mov gs, %0" :: "r"(gs));
 }
 
+/* Hang the cpu */
+static inline void __attribute__((always_inline, noreturn)) hang(void) {
+    do {
+        asm volatile("cli");
+        asm volatile("hlt");
+    } while (1);
+}
 
 #endif // __CPU_INST_COMMON_H__

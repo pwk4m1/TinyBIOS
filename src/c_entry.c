@@ -32,6 +32,8 @@
 #include <stdbool.h>
 
 #include <sys/io.h>
+
+#include <cpu/common.h>
 #include <superio/superio.h>
 
 #include <mm/slab.h>
@@ -41,6 +43,7 @@
 #include <drivers/kbdctl/8042.h>
 #include <drivers/pic_8259/pic.h>
 #include <drivers/pit/pit.h>
+#include <drivers/pci/pci.h>
 
 #include <console/console.h>
 
@@ -56,6 +59,8 @@ console_device default_console_device;
 device keyboard_controller_device;
 device programmable_interrupt_controller;
 device programmable_interrupt_timer;
+device pci_device_array[24];
+device ata_ide;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -71,18 +76,19 @@ device programmable_interrupt_timer;
 
     blog("TinyBIOS 0.4\n");
     blog("SuperIO initialised\n");
-
     blogf("Default output device: %s at %xh with %d baudrate\n", 
             primary_com_device.device_name,
             sdev.base_port, (115200 / sdev.baudrate_divisor)); 
 
-    initialize_device(pic_initialize, &programmable_interrupt_controller, "8259 PIC", false);
-    initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042 ps2 controller", false);
-    initialize_device(pit_init, &programmable_interrupt_timer, "825X PIT", false);
+    initialize_device(pic_initialize, &programmable_interrupt_controller, "8259/PIC", false);
+    initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042/PS2", false);
+    initialize_device(pit_init, &programmable_interrupt_timer, "825X/PIT", false);
+    uint8_t devcnt = enumerate_pci_buses(pci_device_array);
 
-    blog("Early chipset initialisation done\n");
 
+    blog("Early chipset initialisation done, halt\n");
     for (;;) { 
+        hang();
     }
 }
 

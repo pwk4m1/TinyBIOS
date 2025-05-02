@@ -30,14 +30,11 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cpu/common.h>
 #include <console/console.h>
 
 void __attribute__((noreturn)) panic(char *msg) {
     blogf("Panic, unable to boot: %s\n", msg);
-
-    do { 
-        asm volatile("cli");
-        asm volatile("hlt");
-    } while (1);
+    hang();
 } 
 

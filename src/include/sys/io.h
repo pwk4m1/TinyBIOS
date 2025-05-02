@@ -32,6 +32,8 @@
 #ifndef __SYS_IO_H__
 #define __SYS_IO_H__
 
+#include <stdint.h>
+
 // i/o delay so that we don't have to implement it separately for
 // all pio devices.
 //
@@ -43,6 +45,21 @@
 //
 static inline void iodelay(unsigned short time) {
     do { asm volatile("nop"); } while (time--);
+}
+
+// Very basic helpers to convert device data structures into
+// types we can work with when using {in,out}{b,w,l}
+//
+static inline uint8_t to_uint8_t(void *data) {
+    return (uint8_t)(*((uint8_t *)data));
+}
+
+static inline uint16_t to_uint16_t(void *data) {
+    return (uint16_t)(*((uint16_t *)data));
+}
+
+static inline uint32_t to_uint32_t(void *data) {
+    return (uint32_t)(*((uint32_t *)data));
 }
 
 // Basic cpu port i/o
