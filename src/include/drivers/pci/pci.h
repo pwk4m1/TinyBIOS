@@ -207,16 +207,14 @@ enum pci_header_type {
 /* PCI BIST register definition
  *
  */
-typedef struct __attribute__((packed)) {
-    unsigned completion_code : 4;
-    unsigned reserved : 2;
-    unsigned start_bist : 1;
-    unsigned bist_capable : 1;
-} pci_bist_register_fields;
-
 typedef union {
     uint8_t register_raw;
-    pci_bist_register_fields fields;
+    struct __attribute__((packed)) {
+        unsigned completion_code : 4;
+        unsigned reserved : 2;
+        unsigned start_bist : 1;
+        unsigned bist_capable : 1;
+    } fields;
 } pci_bist_register;
 
 /* PIO addresses for PCI configuration and data.
