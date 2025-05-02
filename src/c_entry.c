@@ -60,7 +60,10 @@ device keyboard_controller_device;
 device programmable_interrupt_controller;
 device programmable_interrupt_timer;
 device pci_device_array[24];
-device ata_ide;
+
+extern const uint32_t mem_mbr;
+extern const uint32_t mem_slab;
+SlabHeader *slab;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *

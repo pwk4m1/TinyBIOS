@@ -95,12 +95,12 @@ init_cpu:
     .code32
     pop     eax
     mov     esp, 0x00007c00
-    call    switch_to_unreal
+    // call    switch_to_unreal
 
     // Relocate our C code into ram
     //
     mov     esi, 0xE0000
-    mov     edi, 0x7E00 
+    mov     edi, 0x70000 
     mov     ecx, 0x0FFFF
     rep     movsb
     mov     esp, 0x00007c00
@@ -115,6 +115,8 @@ init_cpu:
     stosd
     lidt    [0]
 
+    xor     edi, edi
+    xor     esi, esi
     call    c_main
 
     // Never reached but better be overly careful 
