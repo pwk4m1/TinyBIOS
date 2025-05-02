@@ -75,7 +75,7 @@ static inline unsigned short inw(unsigned short port) {
     return ret;
 }
 
-static inline unsigned short inl(unsigned short port) {
+static inline unsigned int inl(unsigned short port) {
     unsigned int ret;
     asm volatile("in %0, %1":"=a"(ret):"dN"(port));
     return ret;
