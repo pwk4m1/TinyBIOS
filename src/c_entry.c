@@ -82,6 +82,7 @@ device pci_device_array[24];
     initialize_device(pic_initialize, &programmable_interrupt_controller, "8259/PIC", false);
     initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042/PS2", false);
     initialize_device(pit_init, &programmable_interrupt_timer, "825X/PIT", false);
+    uint8_t devcnt = enumerate_pci_buses(&pci_device_array);
 
     blog("Early chipset initialisation done, halt\n");
     for (;;) { 
