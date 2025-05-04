@@ -28,7 +28,6 @@ add_executable(tinybios
     src/drivers/pci/pci_util.c
 
     src/mm/slab.c
-    src/mm/paging.c
 
     src/c_entry.c
     src/panic.c
