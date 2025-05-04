@@ -37,7 +37,6 @@
 #include <superio/superio.h>
 
 #include <mm/slab.h>
-#include <mm/paging.h>
 
 #include <drivers/device.h>
 #include <drivers/serial/serial.h>
