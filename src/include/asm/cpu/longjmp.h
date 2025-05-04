@@ -41,4 +41,9 @@
     .int    target; \
     .short  segment;
 
+#define LONGJMP32(segment, target) \
+    .byte   0xEA; \
+    .int    target; \
+    .short  segment;
+
 #endif // __ASM_HELPERS_H__

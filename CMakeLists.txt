@@ -28,6 +28,7 @@ add_executable(tinybios
     src/drivers/pci/pci_util.c
 
     src/mm/slab.c
+    src/mm/paging.c
 
     src/c_entry.c
     src/panic.c
@@ -85,7 +86,6 @@ target_compile_options(tinybios PUBLIC
     -ibuiltininc
     -ffreestanding
     -masm=intel
-    -m32
     -fno-pic
     -std=gnu2x
     -D TARGET_MAINBOARD=${target_mainboard}
@@ -93,7 +93,7 @@ target_compile_options(tinybios PUBLIC
 )
 
 target_link_options(tinybios PUBLIC 
-    -nostdlib -m32 -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
+    -nostdlib -no-pie -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
 )
 
 set_target_properties(tinybios PROPERTIES OUTPUT_NAME tinybios.elf)

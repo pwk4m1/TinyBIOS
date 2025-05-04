@@ -82,6 +82,75 @@ switch_to_unreal:
     ret
 .code16
 
+setup_paging:
+.code32
+    pusha
+    mov     ecx, ((2048 + 512) * 2)
+    xor     eax, eax
+    xor     edi, edi
+    rep     stosd
+
+    mov     eax, 3
+    xor     edi, edi
+    xor     ebx, ebx
+    mov     ecx, 1024
+    .loop_pt:
+        stosd
+        xchg    ebx, eax
+        stosd
+        xchg    ebx, eax
+        add     eax, 0x1000
+        loop    .loop_pt
+
+    // pd 
+    mov     ecx, 1024
+    mov     eax, 3
+    push    edi
+    .loop_pd:
+        stosd
+        xchg    ebx, eax
+        stosd
+        xchg    ebx, eax
+        loop    .loop_pd
+
+    // pml4 
+    pop     eax
+    and     eax, 0xFFFFF000
+    or      eax, 3
+    stosd
+    xchg    ebx, eax
+    stosd
+
+    mov     eax, edi
+    sub     eax, 8
+    mov     cr3, eax
+
+    mov     ecx, 0xC0000080
+    rdmsr
+    or      eax, (1 << 8)
+    wrmsr
+
+    mov     eax, cr4
+    or      eax, (1 << 5)
+    mov     cr4, eax
+
+    mov     eax, cr0
+    or      eax, ((1 << 31) | (1 << 0))
+    mov     cr0, eax
+
+    mov     ax, 0x18
+    mov     ds, ax
+    mov     es, ax
+    mov     gs, ax
+    mov     fs, ax
+    mov     ss, ax
+    LONGJMP32(0x0010, .next_64)
+
+.next_64:
+.code64
+    jmp     continue_entry_prep
+.code16
+
 // We'll land here from reset.S, things we'll want to do next are 
 // to move to some more appropriate runmode which doesn't do segments and
 // 20-bit addressing, etc.
@@ -96,32 +165,26 @@ init_cpu:
     pop     eax
     mov     esp, 0x00007c00
     // call    switch_to_unreal
+    call    setup_paging
 
+.code64
+continue_entry_prep:
     // Relocate our C code into ram
     //
-    mov     esi, 0xE0000
-    mov     edi, 0x70000 
-    mov     ecx, 0x0FFFF
+    mov     rsi, 0xE0000
+    mov     rdi, 0x70000 
+    mov     rcx, 0x0FFFF
     rep     movsb
-    mov     esp, 0x00007c00
-    mov     ebp, esp
-    xor     ax, ax
-    mov     ds, ax
+    mov     rsp, 0x00007c00
+    mov     rbp, rsp
 
-    mov     edi, 0
-    mov     ax, 0x3ff
-    stosw
-    xor     eax, eax
-    stosd
-    lidt    [0]
-
-    xor     edi, edi
-    xor     esi, esi
+    xor     rdi, rdi
+    xor     rsi, rsi
     call    c_main
 
     // Never reached but better be overly careful 
 .hang:
-    mov     eax, 0xdeadc0de 
+    mov     rax, 0xdeadc0de 
     cli
     hlt
     jmp     .hang

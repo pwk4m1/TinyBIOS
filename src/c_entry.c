@@ -37,6 +37,7 @@
 #include <superio/superio.h>
 
 #include <mm/slab.h>
+#include <mm/paging.h>
 
 #include <drivers/device.h>
 #include <drivers/serial/serial.h>
@@ -46,11 +47,10 @@
 #include <drivers/pci/pci.h>
 
 #include <console/console.h>
-
 #include <interrupts/interrupts.h>
-#include <interrupts/ivt.h>
 
 extern void interrupt_handler_init_runtime(void);
+extern const uint32_t mem_paging_slab;
 
 device primary_com_device;
 serial_uart_device sdev;
@@ -60,10 +60,6 @@ device keyboard_controller_device;
 device programmable_interrupt_controller;
 device programmable_interrupt_timer;
 device pci_device_array[24];
-
-extern const uint32_t mem_mbr;
-extern const uint32_t mem_slab;
-SlabHeader *slab;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -86,12 +82,9 @@ SlabHeader *slab;
     initialize_device(pic_initialize, &programmable_interrupt_controller, "8259/PIC", false);
     initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042/PS2", false);
     initialize_device(pit_init, &programmable_interrupt_timer, "825X/PIT", false);
-    uint8_t devcnt = enumerate_pci_buses(pci_device_array);
-
 
     blog("Early chipset initialisation done, halt\n");
     for (;;) { 
-        hang();
     }
 }
 

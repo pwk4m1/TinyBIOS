@@ -179,14 +179,6 @@ bool enable_a20line(void) {
     if (kbdctl_send_data_poll(KBDCTL_CMD_ENABLE_A20) == false) {
         return false;
     }
-    volatile unsigned int *first     = (unsigned int *)0x012345;
-    volatile unsigned int *second    = (unsigned int *)0x112345;
-    *first  = 0x012345;
-    *second = 0x112345;
-
-    if (*first == *second) {
-        return false;
-    }
     return true;
 }
 
@@ -222,6 +214,7 @@ enum DEVICE_STATUS kbdctl_set_default_init(device *dev __attribute__((unused))) 
         }
         return status_faulty;
     }
+    return status_initialised;
     if (initial_config & KBDCTL_CTL_PS2_CLKE) {
         status->dual_channel = true;
     }
