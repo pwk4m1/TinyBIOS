@@ -30,13 +30,13 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include <sys/io.h>
 
 #include <cpu/common.h>
 #include <superio/superio.h>
-
-#include <mm/slab.h>
 
 #include <drivers/device.h>
 #include <drivers/serial/serial.h>
@@ -49,7 +49,8 @@
 #include <interrupts/interrupts.h>
 
 extern void interrupt_handler_init_runtime(void);
-extern const uint32_t mem_paging_slab;
+
+heap_start *heap = (heap_start *)0x8000;
 
 device primary_com_device;
 serial_uart_device sdev;
@@ -66,6 +67,8 @@ device pci_device_array[24];
  */
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
+    heap_init((uint64_t)heap, (0x70000 - 0x8000));
+
     primary_com_device.device_data = &sdev;
     initialize_device(serial_init_device, &primary_com_device, "UART 1", false);
     default_console_device.enabled = (primary_com_device.status == status_initialised);

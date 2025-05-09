@@ -28,6 +28,7 @@ add_executable(tinybios
     src/drivers/pci/pci_util.c
 
     src/mm/slab.c
+    src/mm/malloc.c
 
     src/c_entry.c
     src/panic.c
