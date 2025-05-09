@@ -126,6 +126,9 @@ uint8_t enumerate_pci_buses(device **pci_device_array) {
         multibus_system = true;
     }
     pci_device_array[0] = calloc(1, sizeof(device));
+    if (!pci_device_array[0]) {
+        panic("enumerate_pci_buses(): out of memory\n");
+    }
     dev_cnt += pci_add_devices_from_bus(pci_device_array[0], 0, &addr);
 
     if (multibus_system) {
@@ -137,6 +140,9 @@ uint8_t enumerate_pci_buses(device **pci_device_array) {
             }
             current_addr.bus = addr.function;
             pci_device_array[addr.bus] = calloc(1, sizeof(device));
+            if (!pci_device_array[addr.bus]) {
+                panic("enumerate_pci_buses(): out of memory\n");
+            }
             dev_cnt += pci_add_devices_from_bus(pci_device_array[addr.bus], dev_cnt, &current_addr);
         } while (addr.function < 8);
     }
