@@ -55,10 +55,9 @@ static void add_device_class(pci_device_data *dev, pci_config_address *addr) {
  * @param pci_config_address *addr -- Pointer to current pci_config_address to use
  * @return bool true if device data was added, false if no device is plugged in
  */
-static bool pci_add_device_data(pci_device_data *dev, pci_config_address *addr) {
+static inline void pci_add_device_data(pci_device_data *dev, pci_config_address *addr) {
     add_device_class(dev, addr);
     dev->bist_executed = pci_start_selftest(dev);
-    return true;
 }
 
 /* populate device structures for all devices in a given PCI bus
@@ -68,7 +67,7 @@ static bool pci_add_device_data(pci_device_data *dev, pci_config_address *addr) 
  * @param pci_config_address *addr -- Pointer to current pci_config_address to use
  * @return uint8_t amount of devices added
  */
-static uint8_t pci_add_devices_from_bus(device *pci_device_array, uint8_t offset, pci_config_address *addr) {
+static uint8_t pci_add_devices_from_bus(device **pci_device_array, uint8_t offset, pci_config_address *addr) {
     uint8_t count = 0;
 
     for (unsigned i = 0; i < 31; i++) {
@@ -77,28 +76,26 @@ static uint8_t pci_add_devices_from_bus(device *pci_device_array, uint8_t offset
         if (reg == 0xFFFFFFFF) {
             continue;
         }
-        pci_device_array->device_data = (pci_device_data *)calloc(1, sizeof(pci_device_data));
-        if (!pci_device_array->device_data) {
-            panic("pci_add_devices_from_bus(): Out of memory\n");
+        pci_device_array[offset] = calloc(1, sizeof(device));
+        pci_device_data *dev     = calloc(1, sizeof(pci_device_data));
+        if (!dev || !pci_device_array[offset]) {
+            panic("%s: pci_add_devices_from_bus: out of memory\n", __FILE__);
         }
-        pci_device_data *dev = (pci_device_data *)pci_device_array[offset].device_data;
+        pci_device_array[offset]->device_data = (void *)dev;
         dev->vendor_id = pci_vid(reg);
         dev->device_id = pci_did(reg);
         add_device_class(dev, addr);
+        pci_add_device_data(dev, addr);
         dev->bist_executed = pci_start_selftest(dev);
-        pci_device_array[offset].status = status_present;
+        dev->address = *addr;
+        pci_device_array[offset]->status = status_present;
         if (pci_dev_is_bridge(addr)) {
-            pci_device_array[offset].type = device_bridge;
+            pci_device_array[offset]->type = device_bridge;
         } else {
-            pci_device_array[offset].type = device_access_mmio;
+            pci_device_array[offset]->type = device_access_mmio;
         }
         count++;
-        blogf("PCI @ %x:%x:%x %x:%x", addr->bus, addr->device, addr->function,
-                dev->device_id, dev->vendor_id);
-        if (dev->bist_executed) {
-            blog(". Self-test started");
-        }
-        blog("\n");
+        offset++;
     }
     return count;
 }
@@ -125,11 +122,7 @@ uint8_t enumerate_pci_buses(device **pci_device_array) {
     if (get_hdr_type(&addr) & pci_mf_hdr) {
         multibus_system = true;
     }
-    pci_device_array[0] = calloc(1, sizeof(device));
-    if (!pci_device_array[0]) {
-        panic("enumerate_pci_buses(): out of memory\n");
-    }
-    dev_cnt += pci_add_devices_from_bus(pci_device_array[0], 0, &addr);
+    dev_cnt += pci_add_devices_from_bus(pci_device_array, 0, &addr);
 
     if (multibus_system) {
         pci_config_address current_addr = addr;
@@ -139,11 +132,7 @@ uint8_t enumerate_pci_buses(device **pci_device_array) {
                 break;
             }
             current_addr.bus = addr.function;
-            pci_device_array[addr.bus] = calloc(1, sizeof(device));
-            if (!pci_device_array[addr.bus]) {
-                panic("enumerate_pci_buses(): out of memory\n");
-            }
-            dev_cnt += pci_add_devices_from_bus(pci_device_array[addr.bus], dev_cnt, &current_addr);
+            dev_cnt += pci_add_devices_from_bus(pci_device_array, dev_cnt, &current_addr);
         } while (addr.function < 8);
     }
 

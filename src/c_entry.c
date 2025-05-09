@@ -63,6 +63,20 @@ device programmable_interrupt_controller;
 device programmable_interrupt_timer;
 device **pci_device_array;
 
+void print_pci_info(int count) {
+    for (int i = 0; i < count; i++) {
+        device *dev = pci_device_array[i];
+        pci_device_data *pci_data = (pci_device_data *)dev->device_data;
+        blogf("PCI @ %04x:%04x:%04x %02x:%02x", pci_data->address.bus, 
+                pci_data->address.device, pci_data->address.function,
+                pci_data->device_id, pci_data->vendor_id);
+        if (pci_data->bist_executed) {
+            blog(". Self-test started");
+        }
+        blog("\n");
+    }
+}
+
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
  * This function should never return.
@@ -87,9 +101,10 @@ device **pci_device_array;
     initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042/PS2", false);
     initialize_device(pit_init, &programmable_interrupt_timer, "825X/PIT", false);
 
-    pci_device_array = malloc(sizeof(device **));
+    pci_device_array = malloc(sizeof(device *) * 24);
     uint8_t devcnt = enumerate_pci_buses(pci_device_array);
     blogf("%d PCI Devices found\n", devcnt);
+    print_pci_info(devcnt);
 
     blogf("Early chipset initialisation done, halt\n");
     for (;;) { 
