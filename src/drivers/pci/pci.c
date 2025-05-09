@@ -44,7 +44,7 @@
 #include <panic.h>
 
 static void add_device_class(pci_device_data *dev, pci_config_address *addr) {
-    uint32_t reg = pci_read_config(addr, 4);
+    uint32_t reg = pci_read_config(addr, 8);
     dev->class_code = pci_class(reg);
     dev->subclass = pci_subclass(reg);
 }
