@@ -78,8 +78,8 @@ static uint8_t pci_add_devices_from_bus(device *pci_device_array, uint8_t offset
             continue;
         }
         pci_device_array->device_data = (pci_device_data *)calloc(1, sizeof(pci_device_data));
-        if (pci_device_array->device_data) {
-            panic("pci_add_devices_from_bus(): %x %s\n", reg, "hellorld");
+        if (!pci_device_array->device_data) {
+            panic("pci_add_devices_from_bus(): Out of memory\n");
         }
         pci_device_data *dev = (pci_device_data *)pci_device_array[offset].device_data;
         dev->vendor_id = pci_vid(reg);
