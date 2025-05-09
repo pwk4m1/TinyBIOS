@@ -59,4 +59,12 @@ void blog(char *msg);
  */
 int blogf(const char *restrict format, ...);
 
+/* log messages, now with format string from panic() and co! 
+ *
+ * @param const char *restrict format
+ * @param va_list ap :3
+ * @return int bytes written
+ */
+int vfblogf(const char *restrict format, va_list ap);
+
 #endif // __CONSOLE_H__

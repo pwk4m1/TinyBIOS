@@ -100,25 +100,22 @@ static inline void bputint(int d, int base) {
     blog(start);
 }
 
-/* log messages, now with format string!
+/* log messages, now with format string from panic() and co! 
  *
  * @param const char *restrict format
- * @param ... :3
+ * @param va_list ap :3
  * @return int bytes written
  */
-int blogf(const char *restrict format, ...) {
+int vfblogf(const char *restrict format, va_list ap) {
     if (default_console_device.enabled == false) {
         return 0;
     }
 
-    va_list ap;
     int written = 0;
     int d;
     char c;
     char *s;
     bool escaped = false;
-
-    va_start(ap, format);
 
     do {
         if (escaped) {
@@ -161,7 +158,21 @@ int blogf(const char *restrict format, ...) {
             }
         }
     } while (*format++);
+    return written;
+}
 
+/* log messages, now with format string!
+ *
+ * @param const char *restrict format
+ * @param ... :3
+ * @return int bytes written
+ */
+int blogf(const char *restrict format, ...) {
+    va_list ap;
+    int written = 0;
+
+    va_start(ap, format);
+    written = vfblogf(format, ap);
     va_end(ap);
     return written;
 }
