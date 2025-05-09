@@ -35,6 +35,8 @@
 #include <stdint.h>
 #include <sys/io.h>
 
+#define get_gpr(reg) get_##reg()
+
 /* Command register 0 settings 
  *
  * @member CR0_PE -- Paging enabled
@@ -91,6 +93,73 @@ typedef struct {
     uint32_t ecx;
     uint32_t eax;
 } cpu_state_32b;
+
+typedef struct {
+    uint64_t r15;
+    uint16_t r14;
+    uint64_t r13;
+    uint64_t r12;
+    uint64_t r11;
+    uint64_t r10;
+    uint64_t r9;
+    uint64_t r8;
+    uint64_t rsp;
+    uint64_t rbp;
+    uint64_t rdi;
+    uint64_t rsi;
+    uint64_t rdx;
+    uint64_t rcx;
+    uint64_t rbx;
+    uint64_t rax;
+} cpu_state_64b;
+
+static inline uint64_t __attribute__((always_inline)) get_rdi(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rdi":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rsi(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rsi":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rbp(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rbp":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rsp(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rsp":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rbx(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rbx":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rcx(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rcx":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rdx(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rdx":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_rax(void) {
+    uint64_t r;
+    asm volatile("mov   %0, rax":"=r"(r));
+    return r;
+}
 
 static inline uint32_t __attribute__((always_inline)) get_cr0(void) {
     uint32_t r;
@@ -149,7 +218,7 @@ static inline void __attribute__((always_inline)) wrmsr(uint32_t msr, uint32_t v
  *
  * @param void *dst -- where to read gdtr to
  */
-static inline void __attribute__((always_inline)) read_gdtr(void *dst) {
+static inline void __attribute__((always_inline)) get_gdtr(void *dst) {
     asm volatile("sgdt %0" : "=m"(dst));
 }
 

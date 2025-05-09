@@ -75,12 +75,13 @@ static inline void bputchar(char c) {
 
 /* Print single integer over default output device
  *
+ * @param int leading_zeros -- Amount of leading 0's to print
  * @param int d -- integer to print
  * @param int base -- base number
  */
-static inline void bputint(int d, int base) {
-    char tmp[17];
-    memset(tmp, 0, 17);
+static inline void bputint(int leading_zeros, int d, int base) {
+    char tmp[33];
+    memset(tmp, 0, 33);
 
     if (base == 16) {
         itoah(d, tmp);
@@ -89,13 +90,19 @@ static inline void bputint(int d, int base) {
     }
 
     char *start = tmp;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 32; i++) {
         if (*start != 0x30)
             break;
         start++;
     }
     if (strlen(start) == 0) {
         start--;
+    }
+    if (leading_zeros) {
+        if (strlen(start) < (unsigned long)leading_zeros) {
+            int count = leading_zeros - strlen(start);
+            start = (char *)((uint64_t)start - count);
+        }
     }
     blog(start);
 }
@@ -126,6 +133,18 @@ int vfblogf(const char *restrict format, va_list ap) {
                 escaped = true;
             } else if (*format == '%') {
                 format++;
+                int lc = 0;
+                if (*format == '0') {
+                    format++;
+                    while (*format <= 0x39) {
+                        if (*(format + 1) <= 0x39) {
+                            lc += 10 * ((int)(*format & 0x0F));
+                        } else {
+                            lc += (int)(*format & 0x0F);
+                        }
+                        format++;
+                    }
+                }
                 switch (*format) {
                 case 's':
                     s = va_arg(ap, char *);
@@ -134,13 +153,15 @@ int vfblogf(const char *restrict format, va_list ap) {
                     break;
                 case 'x':
                     d = va_arg(ap, int);
-                    bputint(d, 16);
+                    bputint(lc, d, 16);
                     written += sizeof(int);
+                    written += lc;
                     break;
                 case 'd':
                     d = va_arg(ap, int);
-                    bputint(d, 10);
+                    bputint(lc, d, 10);
                     written += sizeof(int);
+                    written += lc;
                     break;
                 case 'c':
                     c = (char) va_arg(ap, int);

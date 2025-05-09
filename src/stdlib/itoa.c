@@ -32,15 +32,15 @@
 
 #include <itoa.h>
 
-/* Convert unsigned 32-bit integer to ascii characters
+/* Convert unsigned 32-bit longeger to ascii characters
  *
- * @param unsigned int d -- number to parse
+ * @param unsigned long d -- number to parse
  * @param char *dst -- where to write our ascii to
  */
-void itoa(unsigned int d, char *dst) {
-    unsigned int carry = 0;
+void itoa(unsigned long d, char *dst) {
+    unsigned long carry = 0;
 
-    for (unsigned int i = 0; i < (2 * sizeof(unsigned int)); i++) {
+    for (unsigned long i = 0; i < (2 * sizeof(unsigned long)); i++) {
         char nibble = (d & 0x0000000F);
         d >>= 4;
         if (carry) {
@@ -52,20 +52,20 @@ void itoa(unsigned int d, char *dst) {
             nibble -= 0x0A;
         }
         nibble |= 0x30;
-        dst[(2 * sizeof(unsigned int)) - i - 1] = nibble;
+        dst[(2 * sizeof(unsigned long)) - i - 1] = nibble;
     }
 }
 
-/* Convert unsigned 32-bit integer to ascii hex characters
+/* Convert unsigned 32-bit longeger to ascii hex characters
  *
- * @param unsigned int d -- number to parse
+ * @param unsigned long d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
  *                     at least 9-byte memory buffer that's initialised to 0
  */
-void itoah(unsigned int d, char *dst) {
+void itoah(unsigned long d, char *dst) {
     char nibble;
 
-    for (unsigned int i = 0; i < (2 * sizeof(unsigned int)); i++) {
+    for (unsigned long i = 0; i < (2 * sizeof(unsigned long)); i++) {
         nibble = (d & 0x0000000F);
         d >>= 4;
         if (nibble < 10) {
@@ -74,7 +74,7 @@ void itoah(unsigned int d, char *dst) {
             nibble -= 0x0A;
             nibble += 0x41;
         }
-        dst[(2*sizeof(int)) - i - 1] = nibble;
+        dst[(2*sizeof(long)) - i - 1] = nibble;
     }
 }
 

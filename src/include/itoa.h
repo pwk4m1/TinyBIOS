@@ -33,19 +33,19 @@
 #ifndef __itoa_h__
 #define __itoa_h__
 
-/* Convert unsigned 32-bit integer to ascii characters
+/* Convert unsigned 64-bit integer to ascii characters
  *
- * @param unsigned int d -- number to parse
+ * @param unsigned long d -- number to parse
  * @param char *dst -- where to write our ascii to
  */
-void itoa(unsigned int d, char *dst);
+void itoa(unsigned long d, char *dst);
 
-/* Convert unsigned 32-bit integer to ascii characters
+/* Convert unsigned 64-bit integer to ascii characters
  *
- * @param unsigned int d -- number to parse
+ * @param unsigned long d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
  *                     9-byte memory buffer that's initialised to 0
  */
-void itoah(unsigned int d, char *dst);
+void itoah(unsigned long d, char *dst);
 
 #endif

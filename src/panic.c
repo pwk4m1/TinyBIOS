@@ -30,16 +30,54 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <console/console.h>
-#include <cpu/common.h>
 
 #include <stdarg.h>
 #include <panic.h>
 
+static inline void dump_print_register(char *name, uint64_t val) {
+    int written = blogf("%s=%016x ", name, val);
+    if (written <= 25) blog(" ");
+}
+
+#define get_reg(name) asm volatile("mov   %0, " #name ";":"=r"(reg_for_dump))
+#define dump(name) get_reg(name); dump_print_register(#name, reg_for_dump)
+#define dump_line(a, b, c, d) blog("\t"); dump(a); dump(b); dump(c); dump(d); blog("\n")
+
+#define dump_seg(name) reg_for_dump=read_##name(); dump_print_register(#name, reg_for_dump);
+#define dump_seg_line(a, b, c, d) blog("\t"); dump_seg(a); dump_seg(b); dump_seg(c); dump_seg(d); blog("\n")
+
+static inline void __attribute__((always_inline)) dump_registers() {
+    blog("CPU State: \n");
+    uint64_t reg_for_dump;
+    dump_line(rax, rbx, rcx, rdx);
+    dump_line(rsi, rdi, rbp, rsp);
+    dump_line(r8, r9, r10, r11);
+    dump_line(r12, r13, r14, r15);
+    dump_seg_line(cs, es, ds, ss);
+    blog("\t");
+    dump(cr3);
+    dump(cr4);
+    blog("\n");
+}
+
+static inline void __attribute__((always_inline)) dump_stack() {
+    blog("STACK: \n");
+    uint64_t *rsp = (uint64_t *)get_gpr(rsp);
+    blogf("\t%016x %016x %016x %016x\n\t%016x %016x %016x %016x\n",
+            rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5], rsp[6], rsp[7]);
+
+    blogf("\t%016x %016x %016x %016x\n\t%016x %016x %016x %016x\n",
+            rsp[8], rsp[9], rsp[10], rsp[11], rsp[12], rsp[13], rsp[14], rsp[15]);
+}
+
 void __attribute__((noreturn)) panic(const char *restrict msg, ...) {
+    blog("\n*** PANIC ***\nReason: ");
     va_list args;
     va_start(args, msg);
     vfblogf(msg, args);
     va_end(args);
+    dump_registers();
+    dump_stack();
     hang();
 }
 

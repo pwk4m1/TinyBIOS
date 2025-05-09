@@ -33,6 +33,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <panic.h>
+
 #include <sys/io.h>
 
 #include <cpu/common.h>
@@ -89,8 +91,9 @@ device **pci_device_array;
     uint8_t devcnt = enumerate_pci_buses(pci_device_array);
     blogf("%d PCI Devices found\n", devcnt);
 
-    blog("Early chipset initialisation done, halt\n");
+    blogf("Early chipset initialisation done, halt\n");
     for (;;) { 
+        hang();
     }
 }
 
