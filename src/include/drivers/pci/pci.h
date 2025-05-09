@@ -259,6 +259,6 @@ typedef struct {
  * @param device *pci_device_array -- Pointer to pci device data
  * @return uint8_t amount of devices found or -1 on error
  */
-uint8_t enumerate_pci_buses(device *pci_device_array);
+uint8_t enumerate_pci_buses(device **pci_device_array);
 
 #endif // __PCI_H__
