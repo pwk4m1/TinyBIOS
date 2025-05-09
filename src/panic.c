@@ -29,12 +29,18 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include <cpu/common.h>
 #include <console/console.h>
+#include <cpu/common.h>
 
-void __attribute__((noreturn)) panic(char *msg) {
-    blogf("Panic, unable to boot: %s\n", msg);
+#include <stdarg.h>
+#include <panic.h>
+
+void __attribute__((noreturn)) panic(const char *restrict msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    vfblogf(msg, args);
+    va_end(args);
     hang();
-} 
+}
+
 

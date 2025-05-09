@@ -32,6 +32,11 @@
 #ifndef __PANIC_H__
 #define __PANIC_H__
 
-void __attribute__((noreturn)) panic(char *msg);
+#include <console/console.h>
+#include <cpu/common.h>
+
+#include <stdarg.h>
+
+void __attribute__((noreturn)) panic(const char *restrict msg, ...);
 
 #endif // __PANIC_H__
