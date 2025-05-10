@@ -109,13 +109,12 @@ static memory_header *walk_step(memory_header *start, bool forward) {
 }
 
 static void merge_blocks(memory_header *a, memory_header *b, bool forward) {
-    if (forward) {
-        a->next = b->next;
-        a->size += b->size;
-    } else {
-        b->size += a->size;
-        b->next  = a;
-    }
+    memory_header *back = (forward) ? a : b;
+    memory_header *front = (back == a) ? b : a;
+
+    back->size += front->size;
+    back->next  = front->next;
+
 }
 
 static void defragment_free(memory_header *block) {
