@@ -37,7 +37,6 @@
 
 #include <stdint.h>
 
-static const int PCI_MAX_DEVICES = 24;
 
 enum pci_class_code {
     pci_class_unclassified = 0,
@@ -247,12 +246,33 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct {
     pci_config_address address;
-    uint16_t vendor_id;
-    uint16_t device_id;
-    uint8_t class_code;
-    uint8_t subclass;
     bool bist_executed;
+    pci_header generic_header_fields;
+    union {
+        pci_general_device_data device_hdr;
+        pci2pci_bridge_data pci2pci_bridge_hdr;
+        pci2cbus_bridge_data pci2cbus_bridge_hdr;
+    };
 } pci_device_data;
+
+typedef struct __attribute__((packed)) {
+    bool mode         : 1;
+    unsigned type     : 2;
+    bool prefetchable : 1;
+    unsigned addr     : 28;
+} pci_memory_bar_fields;
+
+typedef struct __attribute__((packed)) {
+    bool mode     : 1;
+    bool reserved : 1;
+    unsigned addr : 30;
+} pci_io_bar_fields;
+
+typedef union {
+    uint32_t raw_bar;
+    pci_memory_bar_fields memory_bar;
+    pci_io_bar_fields io_bar;
+} pci_bar;
 
 /* Fetch headers for all pci devices we have plugged in
  *
@@ -260,5 +280,130 @@ typedef struct {
  * @return uint8_t amount of devices found or -1 on error
  */
 uint8_t enumerate_pci_buses(device **pci_device_array);
+
+/* Print pci device tree information
+ *
+ * @param device **pci_device_array -- Device array after enumerate_pci_buses() is done
+ * @param uint8_t device_count -- Amount of devices we have
+ */
+void pci_print_devtree(device **pci_device_array, uint8_t device_count);
+
+static const char *pci_unknown_str = "other";
+
+static const char *pci_class_code_str[] = {
+    "unclassified",
+    "mass storage",
+    "network",
+    "display",
+    "multimedia",
+    "memory",
+    "bridge",
+    "simple comms",
+    "base system peripheral",
+    "input device",
+    "docking station",
+    "processor",
+    "serial bus",
+    "wireless",
+    "intelligent",
+    "satcom",
+    "encryption",
+    "signal processing",
+    "processing accelerator",
+    "non essential",
+};
+
+static const char *pci_subclass_str[] = {
+
+    // Mass storage
+    "SCSI",
+    "IDE",
+    "Floppy",
+    "IPI",
+    "RAID",
+    "ATA",
+    "Serial ATA",
+    "Serial SCSI",
+    "NV memory",
+
+    // Net - 9
+    "ethernet",
+    "token ring",
+    "FDDI",
+    "ATM",
+    "ISDN",
+    "WorldFip",
+    "PICMG",
+    "infiniband",
+    "fabric",
+
+    // Display - 18
+    "VGA",
+    "XGA",
+    "3D",
+    
+    // Memory - 21
+    "RAM",
+    "flash",
+
+    // Simple comms - 24
+    "serial",
+    "parallel",
+    "multiport serial",
+    "modem",
+    "iee 488",
+    "smart card",
+
+    // base system - 31
+    "PIC",
+    "DMA",
+    "timer",
+    "RTC",
+    "PCI",
+    "SD",
+    "IOMMU",
+
+    // input - 37
+    "keyboard",
+    "digitizer pen",
+    "mouse",
+    "scanner",
+    "gameport",
+
+    // Serial bus - 41
+    "firewire",
+    "access bus",
+    "SSA",
+    "USB",
+    "Fibre channel",
+    "SMbus",
+    "InfiniBand",
+    "IPMI",
+    "SERCOS",
+    "CANbus",
+
+    // Wireless - 51
+    "iRDA",
+    "IR",
+    "RF",
+    "bluetooth",
+    "broadband",
+    "802.1a",
+    "802.1b",
+
+    // bridge - 58
+    "Host",
+    "ISA",
+    "EISA",
+    "MCA",
+    "PCI",
+    "PCMCIA",
+    "NuBus",
+    "CardBus",
+    "RACEway",
+    "PCI",
+    "InfiniBand to PCI",
+};
+
 
 #endif // __PCI_H__

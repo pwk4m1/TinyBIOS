@@ -45,8 +45,8 @@
 
 static void add_device_class(pci_device_data *dev, pci_config_address *addr) {
     uint32_t reg = pci_read_config(addr, 8);
-    dev->class_code = pci_class(reg);
-    dev->subclass = pci_subclass(reg);
+    dev->generic_header_fields.class_code = pci_class(reg);
+    dev->generic_header_fields.subclass = pci_subclass(reg);
 }
 
 /* Fetch device data for next device in our list
@@ -58,6 +58,18 @@ static void add_device_class(pci_device_data *dev, pci_config_address *addr) {
 static inline void pci_add_device_data(pci_device_data *dev, pci_config_address *addr) {
     add_device_class(dev, addr);
     dev->bist_executed = pci_start_selftest(dev);
+}
+
+static void pci_read_header(pci_device_data *dev) {
+    uint32_t *hdr = (uint32_t *)&dev->generic_header_fields;
+    for (int reg = 0; reg < 0x03; reg++) {
+        hdr[reg] = pci_read_config(&dev->address, (reg * 4));
+    }
+    enum pci_header_type type = dev->generic_header_fields.header_type;
+    int limit = (type == pci2cb_bridge_hdr) ? 0x11 : 0x0F;
+    for (int reg = 0x4; reg < limit; reg++) {
+        hdr[reg] = pci_read_config(&dev->address, (reg * 4));
+    }
 }
 
 /* populate device structures for all devices in a given PCI bus
@@ -81,13 +93,11 @@ static uint8_t pci_add_devices_from_bus(device **pci_device_array, uint8_t offse
         if (!dev || !pci_device_array[offset]) {
             panic("%s: pci_add_devices_from_bus: out of memory\n", __FILE__);
         }
-        pci_device_array[offset]->device_data = (void *)dev;
-        dev->vendor_id = pci_vid(reg);
-        dev->device_id = pci_did(reg);
-        add_device_class(dev, addr);
-        pci_add_device_data(dev, addr);
-        dev->bist_executed = pci_start_selftest(dev);
         dev->address = *addr;
+        pci_device_array[offset]->device_data = (void *)dev;
+        pci_read_header(dev);
+
+        dev->bist_executed = pci_start_selftest(dev);
         pci_device_array[offset]->status = status_present;
         if (pci_dev_is_bridge(addr)) {
             pci_device_array[offset]->type = device_bridge;
@@ -138,4 +148,79 @@ uint8_t enumerate_pci_buses(device **pci_device_array) {
 
     return dev_cnt;
 }
+
+static const char *pci_get_dev_type_class_str(pci_device_data *dev) {
+    if (dev->generic_header_fields.class_code < 0x14) {
+        return pci_class_code_str[dev->generic_header_fields.class_code];
+    }
+    if (dev->generic_header_fields.cache_line_size == 0x40) {
+        return "co-processor";
+    }
+    return pci_unknown_str;
+}
+
+static const char *pci_get_dev_type_subclass_str(pci_device_data *dev) {
+    if (dev->generic_header_fields.subclass == 0x80) {
+        return pci_unknown_str;
+    }
+
+    int off = 0;
+    switch (dev->generic_header_fields.class_code) {
+    case (pci_class_mass_storage_controller):
+        break;
+    case (pci_class_network_controller):
+        off = 9;
+        break;
+    case (pci_class_display_controller):
+        off = 18;
+        break;
+    case (pci_class_memory_controller):
+        off = 21;
+        break;
+    case (pci_class_simple_communication_controller):
+        off = 24;
+        break;
+    case (pci_class_base_system_peripheral):
+        off = 31;
+        break;
+    case (pci_class_input_device_controller):
+        off = 37;
+        break;
+    case (pci_class_serial_bus_controller):
+        off = 41;
+        break;
+    case (pci_class_wireless_controller):
+        off = 51;
+        break;
+    case (pci_class_bridge):
+        off = 58;
+        break;
+    default:
+        return pci_unknown_str;
+    }
+    off += dev->generic_header_fields.subclass;
+    return pci_subclass_str[off];
+}
+
+/* Print pci device tree information
+ *
+ * @param device **pci_device_array -- Device array after enumerate_pci_buses() is done
+ * @param uint8_t device_count -- Amount of devices we have
+ */
+void pci_print_devtree(device **pci_device_array, uint8_t count) {
+    for (uint8_t off = 0; off < count; off++) {
+        pci_device_data *dev = pci_device_array[off]->device_data;
+        blogf("PCI @ %04x:%04x:%04x: %s %s controller\n",
+            dev->address.bus, 
+            dev->address.device, dev->address.function,
+            pci_get_dev_type_subclass_str(dev),
+            pci_get_dev_type_class_str(dev)
+        );
+        if (dev->bist_executed) {
+            blog(" --> Self test started\n");
+        }
+    }
+}
+
+
 

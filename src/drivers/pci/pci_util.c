@@ -71,7 +71,8 @@ void pci_write_config(pci_config_address *addr, uint8_t offset, uint32_t data) {
  * @return bool started
  */
 bool pci_start_selftest(pci_device_data *dev) {
-    pci_bist_register reg = pci_read_bist(dev);
+    pci_bist_register reg;
+    reg.register_raw = dev->generic_header_fields.built_in_self_test;
     if (reg.fields.bist_capable) {
         reg.fields.start_bist = 1;
         pci_write_config(&dev->address, 0x0C, reg.register_raw);
