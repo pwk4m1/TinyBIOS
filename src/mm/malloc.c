@@ -98,14 +98,11 @@ void *malloc(uint64_t size) {
 }
 
 void *calloc(uint64_t nmemb, uint64_t size) {
-    return malloc(nmemb * size);
-}
-
-static memory_header *walk_step(memory_header *start, bool forward) {
-    if (forward) {
-        return start->next;
+    void *ptr = malloc(nmemb * size);
+    if (ptr) {
+        memset(ptr, 0, nmemb * size);
     }
-    return start->previous;
+    return ptr;
 }
 
 static void merge_blocks(memory_header *a, memory_header *b, bool forward) {
