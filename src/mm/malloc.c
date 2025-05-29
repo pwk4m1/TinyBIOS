@@ -42,6 +42,17 @@ static inline memory_header *block_address(memory_header *block, uint64_t bytes_
     return (memory_header *)((uint64_t)block + bytes_to_next);
 }
 
+static inline memory_header *block_from_ptr(void *ptr) {
+    return (memory_header *)((uint64_t)ptr - sizeof(memory_header));
+}
+
+static inline bool enough_space_for_extra_block(memory_header *block, uint64_t size) {
+    if ((block->size - size) > (3 * sizeof(memory_header))) {
+        return true;
+    }
+    return false;
+}
+
 void heap_init(uint64_t start, uint64_t size) {
     heap = (heap_start *)start;
     heap->size = size - sizeof(heap_start);
@@ -81,7 +92,7 @@ static void allocate_block(memory_header *block, uint64_t size) {
     if (block->size == size) {
         return;
     }
-    if ((block->size - size) > (3 * sizeof(memory_header))) {
+    if (enough_space_for_extra_block(block, size)) {
         create_new_block(block, size);        
         block->size = size;
     }
@@ -125,9 +136,38 @@ static void defragment_free(memory_header *block) {
 }
 
 void free(void *ptr) {
-    memory_header *block = (memory_header *)((uint64_t)ptr - sizeof(memory_header));
+    memory_header *block = block_from_ptr(ptr); 
     block->free = true;
     defragment_free(block);
+}
+
+void *realloc(void *ptr, uint64_t size) {
+    void *ret = ptr;
+    memory_header *block = block_from_ptr(ptr);
+    
+    if (block->size > size) {
+        if (enough_space_for_extra_block(block, size)) {
+            create_new_block(block, size);
+        }
+        block->size = size;
+        return ret;
+    }
+    uint64_t size_diff = size - block->size;
+
+    if (block->next->free && (block->next->size >= size_diff)) {
+        if (enough_space_for_extra_block(block->next, size_diff)) {
+            create_new_block(block->next, size_diff);
+        }
+        block->next = block->next->next;
+        block->size += size_diff;
+        return ret;
+    }
+    ret = calloc(1, size);
+    if (ret) {
+        memcpy(ptr, ret, (block->size - sizeof(memory_header)));
+        free(ptr);
+    }
+    return ret;
 }
 
 #endif // __TINYMALLOC_H__

@@ -73,3 +73,18 @@ void *memset(void *s, int c, size_t n) {
     return dst;
 }
 
+/* Copy len bytes of memory from region A to B
+ *
+ * @param const void *src -- where to copy from
+ * @param const void *dst -- where to copy to
+ * @param size_t len -- how many bytes to copy
+ */
+void *memcpy(const void *src, void *dst, size_t len) {
+    unsigned char *d = (unsigned char *)dst;
+    unsigned char *s = (unsigned char *)src;
+    for (size_t i = 0; i < len; i++) {
+        d[i] = s[i];
+    }
+    return d;
+}
+
