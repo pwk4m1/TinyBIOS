@@ -27,6 +27,9 @@ add_executable(tinybios
     src/drivers/pci/pci.c
     src/drivers/pci/pci_util.c
 
+    src/drivers/ata/ata.c
+    src/drivers/ata/ata_util.c
+
     src/mm/slab.c
     src/mm/malloc.c
 
@@ -51,7 +54,7 @@ add_custom_command(
 )
 
 add_custom_target(run
-    COMMAND qemu-system-x86_64 -bios tinybios.bin -serial stdio -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
     DEPENDS tinybios.bin
     USES_TERMINAL
 )

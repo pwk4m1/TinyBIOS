@@ -217,10 +217,9 @@ void pci_print_devtree(device **pci_device_array, uint8_t count) {
             pci_get_dev_type_class_str(dev)
         );
         if (dev->bist_executed) {
-            blog(" --> Self test started\n");
+            blog(" --> Self test executed\n");
         }
     }
 }
-
 
 
