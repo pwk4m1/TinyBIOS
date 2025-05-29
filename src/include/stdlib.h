@@ -35,6 +35,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <panic.h>
+
 typedef struct memory_header { 
     bool free;
     uint64_t size;
@@ -50,6 +52,7 @@ typedef struct {
 void heap_init(uint64_t start, uint64_t size);
 void *malloc(uint64_t size);
 void *calloc(uint64_t nmemb, uint64_t size);
+void *realloc(void *ptr, uint64_t size);
 void free(void *ptr);
 
 #endif

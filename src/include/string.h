@@ -63,7 +63,8 @@ void memset(const void *dst, unsigned char c, size_t len);
  * @param const void *src -- where to copy from
  * @param const void *dst -- where to copy to
  * @param size_t len -- how many bytes to copy
+ * @return pointer to dst
  */
-void memcpy(const void *src, void *dst, size_t len);
+void *memcpy(const void *src, void *dst, size_t len);
 
 #endif
