@@ -47,6 +47,8 @@
 #include <drivers/pit/pit.h>
 #include <drivers/pci/pci.h>
 
+#include <drivers/ata/ata.h>
+
 #include <console/console.h>
 #include <interrupts/interrupts.h>
 
@@ -62,6 +64,7 @@ device keyboard_controller_device;
 device programmable_interrupt_controller;
 device programmable_interrupt_timer;
 device **pci_device_array;
+ata_ide **ata_ide_array;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -90,6 +93,9 @@ device **pci_device_array;
     pci_device_array = malloc(sizeof(device *) * 32);
     uint8_t devcnt = enumerate_pci_buses(pci_device_array);
     pci_print_devtree(pci_device_array, devcnt);
+    ata_ide_array = calloc(1, sizeof(ata_ide **));
+    uint8_t ide_cnt = init_ata_controllers(pci_device_array, ata_ide_array, devcnt);
+    blogf("Found and initialized %d IDE controllers\n", ide_cnt);
 
     blogf("Early chipset initialisation done, halt\n");
     for (;;) { 
