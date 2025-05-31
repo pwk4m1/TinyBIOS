@@ -142,9 +142,14 @@ void free(void *ptr) {
 }
 
 void *realloc(void *ptr, uint64_t size) {
+    size += sizeof(memory_header);
     void *ret = ptr;
     memory_header *block = block_from_ptr(ptr);
-    
+   
+    if (size == block->size) {
+        return ret;
+    }
+
     if (block->size > size) {
         if (enough_space_for_extra_block(block, size)) {
             create_new_block(block, size);
@@ -152,9 +157,14 @@ void *realloc(void *ptr, uint64_t size) {
         block->size = size;
         return ret;
     }
-    uint64_t size_diff = size - block->size;
+    uint64_t size_diff = block->size - size;
 
     if (block->next->free && (block->next->size >= size_diff)) {
+        if (block->next->next == 0) {
+            panic("Last block!\n");
+            create_new_block(block, size);
+            return ret;
+        }
         if (enough_space_for_extra_block(block->next, size_diff)) {
             create_new_block(block->next, size_diff);
         }
