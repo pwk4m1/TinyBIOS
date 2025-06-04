@@ -30,10 +30,29 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <panic.h>
 #include <drivers/device.h>
 #include <console/console.h>
+
+
+/* Helper for allocating new device structures
+ *
+ * @param size_t size of device_data structure to allocate
+ * @return pointer to our calloc'ed dev struct
+ */
+device *new_device(size_t dev_size) {
+    device *ret = calloc(1, sizeof(device));
+    if (!ret) {
+        panic_oom("creating new device");
+    }
+    ret->device_data = calloc(1, dev_size);
+    if (!ret->device_data) {
+        panic_oom("Allocating space for device data");
+    }
+    return ret;
+}
 
 /* Print why initilaisation failed, if possible.
  *

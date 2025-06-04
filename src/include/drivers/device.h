@@ -62,6 +62,13 @@ typedef struct __attribute__((packed)) {
     void *device_data;
 } device;
 
+/* Helper for allocating new device structures
+ *
+ * @param size_t size of device structure to allocate
+ * @return pointer to our calloc'ed dev struct
+ */
+device *new_device(size_t size);
+
 /* Typedef for all processor IO device initialization functions */
 typedef enum DEVICE_STATUS (*device_init_function)(device *dev);
 

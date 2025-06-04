@@ -40,6 +40,7 @@
 #include <sys/io.h>
 
 #include <drivers/device.h>
+#include <console/console.h>
 
 #define SERIAL_DATA(x)      (x)
 #define SERIAL_IE(x)        (x + 1)
@@ -213,5 +214,10 @@ size_t serial_rx(unsigned short port, char *dst, const size_t size);
  * @return amount of bytes transmitted
  */
 int serprintf(const char *restrict format, ...);
+
+static inline void uart_print_info(device *dev) {
+    serial_uart_device *sdev = dev->device_data;
+    blogf("%s: %04x / %04x baud\n", dev->device_name, sdev->base_port, (115200 / sdev->baudrate_divisor));
+}
 
 #endif // __SERIAL_H__

@@ -34,6 +34,7 @@
 #include <stdlib.h>
 
 #include <panic.h>
+#include <post.h>
 
 #include <sys/io.h>
 
@@ -56,15 +57,13 @@ extern void interrupt_handler_init_runtime(void);
 
 heap_start *heap = (heap_start *)0x8000;
 
-device primary_com_device;
-serial_uart_device sdev;
-console_device default_console_device;
-
-device keyboard_controller_device;
-device programmable_interrupt_controller;
-device programmable_interrupt_timer;
-device **pci_device_array;
-ata_ide **ata_ide_array;
+device *uart_dev = 0;
+console_device default_console_device = {0};
+device *keyboard_controller_device = 0;
+device *programmable_interrupt_controller = 0;
+device *programmable_interrupt_timer = 0;
+device **pci_device_array = 0;
+ata_ide **ata_ide_array = 0;
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -72,30 +71,15 @@ ata_ide **ata_ide_array;
  */
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
+
+    heap_start *start = (heap_start *)heap;
+    if (start->start == (memory_header *)((uint64_t)start + sizeof(heap_start))) {
+        hang();
+    }
+
     heap_init((uint64_t)heap, (0x70000 - 0x8000));
 
-    primary_com_device.device_data = &sdev;
-    initialize_device(serial_init_device, &primary_com_device, "UART 1", false);
-    default_console_device.enabled = (primary_com_device.status == status_initialised);
-    default_console_device.dev = &primary_com_device;
-    default_console_device.tx_func = serial_tx;
-
-    blog("TinyBIOS 0.4\n");
-    blog("SuperIO initialised\n");
-    blogf("Default output device: %s at %xh with %d baudrate\n", 
-            primary_com_device.device_name,
-            sdev.base_port, (115200 / sdev.baudrate_divisor)); 
-
-    initialize_device(pic_initialize, &programmable_interrupt_controller, "8259/PIC", false);
-    initialize_device(kbdctl_set_default_init, &keyboard_controller_device, "8042/PS2", false);
-    initialize_device(pit_init, &programmable_interrupt_timer, "825X/PIT", false);
-
-    pci_device_array = malloc(sizeof(device *) * 32);
-    uint8_t devcnt = enumerate_pci_buses(pci_device_array);
-    pci_print_devtree(pci_device_array, devcnt);
-    ata_ide_array = calloc(1, sizeof(ata_ide **));
-    uint8_t ide_cnt = init_ata_controllers(pci_device_array, ata_ide_array, devcnt);
-    blogf("Found and initialized %d IDE controllers\n", ide_cnt);
+    post_and_init();
 
     blogf("Early chipset initialisation done, halt\n");
     for (;;) { 

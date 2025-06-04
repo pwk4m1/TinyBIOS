@@ -47,8 +47,6 @@ pic_icw3_primary pic_picw3 = {0};
 pic_icw3_secondary pic_sicw3 = {0};
 pic_icw4 pic_current_icw4 = {0};
 
-pic_full_configuration *pic_config;
-
 /* Helper to send control words to interrupt controller(s)
  *
  * @param uint16_t port -- which pic we're talking to
@@ -95,6 +93,7 @@ void pic_send_eoi(uint8_t irq) {
  * @return bool true on success, false on error.
  */
 enum DEVICE_STATUS pic_initialize(device *dev) {
+    pic_full_configuration *pic_config = (pic_full_configuration *)dev->device_data;
 
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
@@ -142,7 +141,6 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
     pic_config->ocw2 = &pic_current_ocw2;
     pic_config->ocw3 = &pic_current_ocw3;
 
-    dev->device_data = &pic_config;
     
     return status_initialised;
 }

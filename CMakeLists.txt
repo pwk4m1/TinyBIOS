@@ -35,6 +35,7 @@ add_executable(tinybios
 
     src/c_entry.c
     src/panic.c
+    src/post.c
     src/console.c
     src/reset.S
 )

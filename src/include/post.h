@@ -1,7 +1,7 @@
 /*
  BSD 3-Clause License
  
- Copyright (c) 2025, k4m1
+ Copyright (c) 2025, k4m1 <me@k4m1.net>
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,30 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __PANIC_H__
-#define __PANIC_H__
+#ifndef __TINYPOST_H__
+#define __TINYPOST_H__
 
+#include <stdbool.h>
+
+#include <drivers/device.h>
 #include <console/console.h>
-#include <cpu/common.h>
 
-#include <stdarg.h>
+/* Initialize a output device, and make it our default
+ * output device for blogf, panic, etc.
+ *
+ * @param device *dev                    -- Target device structure
+ * @param device_init_function init_func -- Init function to use for the device
+ * @param tx_func write_func             -- Function to use for writing output to this device
+ * @param char *name                     -- Name of our output device
+ * @return bool true if switch succeeded
+ */
+bool switch_output_device(device *dev, device_init_function init_func, char *name);
 
-void __attribute__((noreturn)) panic(const char *restrict msg, ...);
-#define panic_oom(...) panic("Out of memory while %s\n", __VA_ARGS__);
+/* Perform power-on-self-test and bring up
+ * systems we need early on, such as disk controllers etc.
+ */
+void post_and_init(void);
 
-#endif // __PANIC_H__
+
+
+#endif // __TINYPOST_H__

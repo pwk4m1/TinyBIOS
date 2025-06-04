@@ -37,6 +37,8 @@
 #include <stdbool.h>
 #include <drivers/device.h>
 
+typedef size_t (*tx_func)(unsigned short addr, const char *msg, size_t len);
+
 typedef struct {
     device *dev;
     size_t (*tx_func)(unsigned short port, const char *msg, size_t len);
