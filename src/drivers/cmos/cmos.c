@@ -37,7 +37,15 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
+static inline bool rtc_in_bcd_mode(uint8_t status) {
+    return ((status & 4) == 0);
+}
+
+static inline bool rtc_in_12hr_mode(uint8_t status) {
+    return ((status & 2) == 0);
+}
 
 /* Find an appropriate iodelay to use between
  * selecting CMOS register and reading from it
@@ -46,7 +54,9 @@
  * @return enum DEVICE_STATUS
  */
 enum DEVICE_STATUS cmos_init(device *dev) {
-    for (dev->config_word = 0; dev->config_word < 0x500; dev->config_word++) {
+    cmos_data *cdata = dev->device_data;
+
+    for (cdata->iodelay = 0; cdata->iodelay < 0x500; cdata->iodelay++) {
         // TODO: Fix -- SLOW, Get multitasking going so we aren't stuck in poll-loops
         //
         do {} while (cmos_rtc_update_ongoing(dev));
@@ -56,6 +66,13 @@ enum DEVICE_STATUS cmos_init(device *dev) {
             continue;
         }
         if (cmos_read(dev, rtc_month) == v) {
+            uint8_t stat = cmos_read(dev, rtc_status_format);
+            if (rtc_in_bcd_mode(stat)) {
+                cdata->rtc_bcd_enabled = true;
+            }
+            if (rtc_in_12hr_mode(stat)) {
+                cdata->rtc_12hr_enabled = true;
+            }
             return status_initialised;
         }
     }
@@ -73,5 +90,28 @@ bool cmos_rtc_update_ongoing(device *dev) {
         return true;
     }
     return false;
+}
+
+/* Get current time and date
+ *
+ * @param device *dev -- Pointer to cmos device structure
+ * @return timedate structure on success or NULL on error
+ */
+timedate *cmos_read_timedate(device *dev) {
+    timedate *ret = calloc(1, sizeof(timedate));
+    uint8_t *dst = (uint8_t *)ret;
+
+    for (uint8_t rtc_off = 0; rtc_off < 9; rtc_off++, dst++) {
+        if (rtc_off && (rtc_off < 6)) {
+            rtc_off++;
+        }
+        *dst = rtc_read(dev, rtc_off);
+    }
+    return ret;    
+}
+
+static uint8_t bcd_convert(uint8_t bcd) {
+    uint8_t v = bcd & 0x0F;
+    return v + ( (bcd / 16) * 10 );
 }
 

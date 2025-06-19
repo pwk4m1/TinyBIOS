@@ -39,6 +39,12 @@ static const uint8_t CMOS_CLI_FLAG       = 0x80;
 static const uint16_t cmos_register_addr = 0x0070;
 static const uint16_t cmos_data_addr     = 0x0071;
 
+typedef struct {
+    uint16_t iodelay;
+    bool rtc_bcd_enabled;
+    bool rtc_12hr_enabled;
+} cmos_data;
+
 enum CMOS_RTC_ADDR {
     rtc_second       = 0,
     rtc_minute       = 2,
@@ -47,8 +53,25 @@ enum CMOS_RTC_ADDR {
     rtc_day_of_month = 7,
     rtc_month        = 8,
     rtc_year         = 9,
-    rtc_status_update = 0x0A
+    rtc_status_update = 0x0A,
+    rtc_status_format = 0x0B
 };
+
+typedef struct {
+    uint8_t second;
+    uint8_t minute;
+    uint8_t hour;
+    uint8_t day_of_week;
+    uint8_t day_of_month;
+    uint8_t year;
+} timedate;
+
+/* Get current time and date
+ *
+ * @param device *dev -- Pointer to cmos device structure
+ * @return timedate structure 
+ */
+timedate *cmos_read_timedate(device *dev);
 
 /* Find an appropriate iodelay to use between
  * selecting CMOS register and reading from it
@@ -71,8 +94,9 @@ bool cmos_rtc_update_ongoing(device *dev);
  * @param uint8_t reg -- which cmos register to select
  */
 static inline void cmos_select_register(device *dev, uint8_t reg) {
+    cmos_data *cd = dev->device_data;
     outb(reg, cmos_register_addr);
-    iodelay(dev->config_byte);
+    iodelay(cd->iodelay);
 }
 
 /* Read a byte of data from CMOS register 
@@ -96,5 +120,24 @@ static inline void cmos_write(device *dev, uint8_t v, uint8_t reg) {
     cmos_select_register(dev, reg);
     outb(v, cmos_data_addr);
 }
+
+/* Helper to read CMOS/RTC data
+ *
+ * @param device *dev -- CMOS device structure
+ * @param enum CMOS_RTC_ADDR field -- Which time-field are we reading
+ * @return uint8_t RTC value
+ */
+static inline uint8_t rtc_read(device *dev, enum CMOS_RTC_ADDR field) {
+    // TODO: Fix -- SLOW, Get multitasking going so we aren't stuck in poll-loops
+    //
+    do {} while (cmos_rtc_update_ongoing(dev));
+    return cmos_read(dev, field);
+}
+
+/* Print current date stored in CMOS
+ *
+ * @param device *dev -- CMOS device structure
+ */
+static void cmos_print_date(device *dev);
 
 #endif // __TINY_CMOS_H__
