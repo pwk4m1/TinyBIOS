@@ -151,7 +151,7 @@ static ata_bus *init_ata_bus(uint16_t base, uint16_t dcr) {
     }
     ata_bus *ret = calloc(1, sizeof(ata_bus));
     if (!ret) {
-        return ret;
+        return NULL;
     }
     ret->base_addr      = base;
     ret->dcr_addr       = dcr;
@@ -172,7 +172,7 @@ static void ata_init_all_buses(ata_ide *ide) {
         for (int i = 0; i < 4; i++) {
             uint16_t base = ata_ide_compability_base_addrs[i];
             uint16_t dcr  = ata_comp_base_to_dcr(base);
-            ata_bus *bus = init_ata_bus(base, dcr);
+            ata_bus *bus  = init_ata_bus(base, dcr);
             if (bus) {
                 ide->bus_array[ide->bus_count] = bus;
                 ide->bus_count++;

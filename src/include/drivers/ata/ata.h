@@ -237,7 +237,7 @@ typedef struct {
 } ata_drive;
 
 typedef struct {
-    ata_drive **drive_array;
+    ata_drive *drive_array[2];
     ata_drive_selection active_drive;
     uint8_t drive_count;
     uint16_t base_addr;
@@ -246,7 +246,7 @@ typedef struct {
 
 typedef struct {
     ata_pci_iface iface;
-    ata_bus **bus_array;
+    ata_bus *bus_array[4];
     uint8_t bus_count;
     device *ide_device_data;
 } ata_ide;
