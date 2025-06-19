@@ -62,7 +62,16 @@ void heap_init(uint64_t start, uint64_t size) {
     heap->start->size = heap->size - sizeof(memory_header);
 }
 
-static memory_header *get_block(uint64_t size) {
+static void create_new_block(memory_header *current, uint64_t size) {
+    memory_header *next = block_address(current, size);
+    next->size = current->size - size;
+    next->free = true;
+    next->previous = current;
+    next->next = current->next;
+    current->next = next;
+}
+
+static memory_header *get_block(uint64_t size, uint64_t align) {
     memory_header *current = heap->start;
     while (
             (current->free == false) ||
@@ -72,19 +81,20 @@ static memory_header *get_block(uint64_t size) {
         current = current->next;
     }
     if (current->size >= size) {
-        return current;
+        if (!align) {
+            return current;
+        }
+        uint64_t mem = (uint64_t)current;
+        uint64_t diff = (mem % align);
+        if (!diff) {
+            return current;
+        }
+        if (enough_space_for_extra_block(current, (size + diff))) {
+            create_new_block(current, diff);
+            return current->next;
+        }
     }
     return 0;
-}
-
-
-static void create_new_block(memory_header *current, uint64_t size) {
-    memory_header *next = block_address(current, size);
-    next->size = current->size - size;
-    next->free = true;
-    next->previous = current;
-    next->next = current->next;
-    current->next = next;
 }
 
 static void allocate_block(memory_header *block, uint64_t size) {
@@ -100,7 +110,7 @@ static void allocate_block(memory_header *block, uint64_t size) {
 
 void *malloc(uint64_t size) {
     size += sizeof(memory_header);
-    memory_header *block = get_block(size);
+    memory_header *block = get_block(size, 0);
     if (block) {
         allocate_block(block, size);
         return (void *)((uint64_t)block + sizeof(memory_header));
@@ -178,6 +188,15 @@ void *realloc(void *ptr, uint64_t size) {
         free(ptr);
     }
     return ret;
+}
+
+void *malloc_align(uint64_t size, uint64_t align) {
+    memory_header *hdr = get_block(size, align);
+    if (!hdr) {
+        return NULL;
+    }
+    allocate_block(hdr, size);
+    return (void *)((uint64_t)hdr + sizeof(memory_header));
 }
 
 #endif // __TINYMALLOC_H__
