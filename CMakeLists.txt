@@ -26,12 +26,14 @@ add_executable(tinybios
     src/drivers/pit/pit_handler.S
     src/drivers/pci/pci.c
     src/drivers/pci/pci_util.c
-
+    src/drivers/cmos/cmos.c
     src/drivers/ata/ata.c
     src/drivers/ata/ata_util.c
 
     src/mm/slab.c
     src/mm/malloc.c
+
+    src/romcall/romcall.c
 
     src/c_entry.c
     src/panic.c
@@ -67,7 +69,8 @@ add_custom_target(log-int
 )
 
 add_custom_target(log-asm
-    COMMAND qemu-system-x86_64 -bios tinybios.bin -d in_asm
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -d in_asm -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
+
     DEPENDS tinybios.bin
     USES_TERMINAL
 )
