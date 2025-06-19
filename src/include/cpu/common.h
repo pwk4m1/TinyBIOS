@@ -222,12 +222,28 @@ static inline void __attribute__((always_inline)) get_gdtr(void *dst) {
     asm volatile("sgdt %0" : "=m"(dst));
 }
 
-/* Write gdtr fro mgiven 6-byte location
+/* Write gdtr from given 6-byte location
  *
  * @param void *src -- where to read gdtr from
  */
 static inline void __attribute((always_inline)) write_gdtr(void *src) {
     asm volatile("lgdt %0" :: "m"(src));
+}
+
+/* Read idtr to given 6-byte location
+ *
+ * @param void *dst -- where to read idtr to
+ */
+static inline void __attribute__((always_inline)) get_idtr(void *dst) {
+    asm volatile("sidt %0" : "=m"(dst));
+}
+
+/* Write idtr from given 6-byte location
+ *
+ * @param void *src -- where to read idtr from
+ */
+static inline void __attribute((always_inline)) write_idtr(void *src) {
+    asm volatile("lidt %0" :: "m"(src));
 }
 
 /* Read code segment register
