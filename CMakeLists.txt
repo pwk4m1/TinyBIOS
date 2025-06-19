@@ -18,18 +18,6 @@ add_executable(tinybios
     src/interrupts/interrupts.c
     src/interrupts/ivt.c
 
-    src/drivers/device.c
-    src/drivers/serial/serial.c
-    src/drivers/kbdctl/8042.c
-    src/drivers/pic_8259/pic.c
-    src/drivers/pit/pit.c
-    src/drivers/pit/pit_handler.S
-    src/drivers/pci/pci.c
-    src/drivers/pci/pci_util.c
-    src/drivers/cmos/cmos.c
-    src/drivers/ata/ata.c
-    src/drivers/ata/ata_util.c
-
     src/mm/slab.c
     src/mm/malloc.c
 
@@ -41,6 +29,9 @@ add_executable(tinybios
     src/console.c
     src/reset.S
 )
+
+# Device drivers
+add_subdirectory(src/drivers)
 
 # Helper stuff
 add_subdirectory(src/stdlib)
