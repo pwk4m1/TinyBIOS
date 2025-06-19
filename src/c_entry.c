@@ -47,16 +47,19 @@
 #include <drivers/pic_8259/pic.h>
 #include <drivers/pit/pit.h>
 #include <drivers/pci/pci.h>
-
+#include <drivers/cmos/cmos.h>
 #include <drivers/ata/ata.h>
 
 #include <console/console.h>
 #include <interrupts/interrupts.h>
 
+#include <romcall/romcall.h>
+
 extern void interrupt_handler_init_runtime(void);
 
 heap_start *heap = (heap_start *)0x8000;
 
+device *cmos_dev = 0;
 device *uart_dev = 0;
 console_device default_console_device = {0};
 device *keyboard_controller_device = 0;
@@ -76,13 +79,13 @@ ata_ide **ata_ide_array = 0;
     if (start->start == (memory_header *)((uint64_t)start + sizeof(heap_start))) {
         hang();
     }
-
     heap_init((uint64_t)heap, (0x70000 - 0x8000));
 
     post_and_init();
+    blog("Early chipset initialisation done\n");
 
-    blogf("Early chipset initialisation done, halt\n");
     for (;;) { 
+        blog("Hang\n");
         hang();
     }
 }
