@@ -113,7 +113,11 @@ void *malloc(uint64_t size) {
     memory_header *block = get_block(size, 0);
     if (block) {
         allocate_block(block, size);
-        return (void *)((uint64_t)block + sizeof(memory_header));
+        uint64_t mem = (uint64_t)((uint64_t)block + sizeof(memory_header));
+        if (mem < 0x8000) {
+            panic("Alloc out of bounds\n");
+        }
+        return (void *)mem;
     }
     return 0;
 }
