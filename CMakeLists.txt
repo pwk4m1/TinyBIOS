@@ -14,12 +14,11 @@ add_executable(tinybios
     src/cpu/gdt.S
     src/cpu/init.S
 
-    src/interrupts/interrupts.S
-    src/interrupts/interrupts.c
-    src/interrupts/ivt.c
-
     src/mm/slab.c
     src/mm/malloc.c
+
+    src/interrupts/idt.c
+    src/interrupts/default_int_handler.c
 
     src/romcall/romcall.c
 
@@ -61,14 +60,13 @@ add_custom_target(log-int
 
 add_custom_target(log-asm
     COMMAND qemu-system-x86_64 -bios tinybios.bin -d in_asm -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
-
     DEPENDS tinybios.bin
     USES_TERMINAL
 )
 
 
 add_custom_target(debug
-    COMMAND qemu-system-x86_64 -S --daemonize -s -bios tinybios.bin
+    COMMAND qemu-system-x86_64 -S --daemonize -s -bios tinybios.bin -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
     COMMAND gdb -ix ${CMAKE_CURRENT_SOURCE_DIR}/gdbinit
     DEPENDS tinybios.bin
     USES_TERMINAL
