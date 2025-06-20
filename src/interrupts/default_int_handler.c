@@ -30,57 +30,9 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <interrupts/idt.h>
-#include <drivers/pic_8259/pic.h>
-#include <console/console.h>
-#include <cpu/common.h>
-
-#include <stdint.h>
-#include <string.h>
-
 #include <panic.h>
 
-int_desc_table *idt;
-
-/* Setup interrupt descriptor table to use
- *
- */
-void init_idt(void) { 
-    idt = new_idt();
-    if (!idt) {
-        panic_oom("No enough memory to setup interrupt handling\n");
-    }
-    idt->ptr = (uint64_t)(&idt->entry[0]); 
-    idt->size = (255 * 16);
-    write_idtr((void *)idt);
-    blogf("IDT: 0x%08x\n", idt);
+void __attribute__((section(".rom_int_handler"))) default_int_handler() {
+    panic("Unhandled interrupt\n");
 }
-
-/* Add a new interrupt handler to idt
- *
- * @param uint64_t entry   -- Which interrupt entry is this 
- * @param uint64_t handler -- Address to interrupt handler to register
- */
-void add_interrupt_handler(uint64_t entry, uint64_t handler) {
-
-    memset((void *)&idt->entry[entry], 0, sizeof(idt_entry));
-
-    uint16_t lo = (uint16_t)handler;
-    uint16_t mi = (uint16_t)(handler >> 16);
-    uint32_t hi = (uint32_t)(handler >> 32);
-
-    idt->entry[entry].offset_low = lo;
-    idt->entry[entry].offset_mid = mi;
-    idt->entry[entry].offset_high = hi;
-    idt->entry[entry].present = 1;
-    idt->entry[entry].segment.privilege = 0;
-    idt->entry[entry].segment.use_ldt = 0;
-    idt->entry[entry].segment.index = 0x10;
-    idt->entry[entry].int_gate_type = 0x0E; 
-    //pic_unmask_irq(entry);
-
-    blogf("Added interrupt handler from 0x%016x to entry at 0x%08x (%x)\n", handler, &idt->entry[entry], entry);
-    blogf("Setup: 0x%04x : 0x%04x : 0x%08x\n", lo, mi, hi);
-}
-
 

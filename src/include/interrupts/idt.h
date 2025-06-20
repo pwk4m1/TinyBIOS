@@ -47,17 +47,17 @@ typedef struct __attribute__ ((packed)) {
 } segment_selector;
 
 typedef struct __attribute__ ((packed)) {
-    uint32_t reserved;
-    uint32_t offset_high;
-    uint16_t offset_mid;
-    unsigned present                : 1;
-    unsigned dpl                    : 2;
-    unsigned zero                   : 1;
-    enum int_gate_type              : 4;
-    unsigned reserved_low           : 5;
-    unsigned interrupt_stack_table  : 3;
-    segment_selector segment;
     uint16_t offset_low;
+    segment_selector segment;
+    unsigned ist                : 3;
+    unsigned res                : 5;
+    unsigned int_gate_type      : 4;
+    unsigned zero               : 1;
+    unsigned dpl                : 2;
+    unsigned present            : 1;
+    uint16_t offset_mid;
+    uint32_t offset_high;
+    uint32_t reserved;
 } idt_entry;
 
 typedef struct __attribute__((packed)) {
