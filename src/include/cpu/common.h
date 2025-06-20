@@ -243,7 +243,7 @@ static inline void __attribute__((always_inline)) get_idtr(void *dst) {
  * @param void *src -- where to read idtr from
  */
 static inline void __attribute((always_inline)) write_idtr(void *src) {
-    asm volatile("lidt %0" :: "m"(src));
+    asm volatile("lidt [%0]" :: "r"(src));
 }
 
 /* Read code segment register
