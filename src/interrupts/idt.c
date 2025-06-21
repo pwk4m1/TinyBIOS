@@ -32,7 +32,6 @@
 
 #include <interrupts/idt.h>
 #include <drivers/pic_8259/pic.h>
-#include <console/console.h>
 #include <cpu/common.h>
 
 #include <stdint.h>
@@ -41,6 +40,7 @@
 #include <panic.h>
 
 int_desc_table *idt;
+extern void default_int_handler(void); 
 
 /* Setup interrupt descriptor table to use
  *
@@ -51,9 +51,11 @@ void init_idt(void) {
         panic_oom("No enough memory to setup interrupt handling\n");
     }
     idt->ptr = (uint64_t)(&idt->entry[0]); 
-    idt->size = (255 * 16);
+    idt->size = (256 * 16) - 1;
+    for (int i = 0; i < 256; i++) {
+        add_interrupt_handler(i, (uint64_t)default_int_handler);
+    }
     write_idtr((void *)idt);
-    blogf("IDT: 0x%08x\n", idt);
 }
 
 /* Add a new interrupt handler to idt
@@ -77,10 +79,10 @@ void add_interrupt_handler(uint64_t entry, uint64_t handler) {
     idt->entry[entry].segment.use_ldt = 0;
     idt->entry[entry].segment.index = 0x10;
     idt->entry[entry].int_gate_type = 0x0E; 
-    //pic_unmask_irq(entry);
 
+    /*
     blogf("Added interrupt handler from 0x%016x to entry at 0x%08x (%x)\n", handler, &idt->entry[entry], entry);
     blogf("Setup: 0x%04x : 0x%04x : 0x%08x\n", lo, mi, hi);
+    */
 }
-
 

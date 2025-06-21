@@ -81,10 +81,10 @@ static inline uint8_t pic_get_mask(uint16_t port) {
  * @param uint8_t irq -- number of interrupt we're dealing with
  */
 void pic_send_eoi(uint8_t irq) {
-    if (irq >= 7) {
-        outb(0x20, PIC_PRIMARY_PORT); 
+    if (irq >= 8) {
+        outb(0x20, PIC_SECONDARY_PORT); 
     }
-    outb(0x20, PIC_SECONDARY_PORT);
+    outb(0x20, PIC_PRIMARY_PORT);
 }
 
 /* Initialise the programmable interrupt controller.
@@ -97,6 +97,7 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
 
     pic_current_icw1.icw4_needed = 1;
     pic_current_icw1.icw_1 = 1;
+    pic_current_icw1.trigger_mode = 0;
 
     // Start pic_initialisation sequence with command words 1 to 4
     pic_send_cmd(PIC_PRIMARY_PORT, (uint8_t*)&pic_current_icw1);
@@ -115,23 +116,23 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
     //
     pic_picw3.device_map = 4;
     pic_sicw3.primary_int = 2;
-
     pic_send_data(PIC_PRIMARY_PORT, (uint8_t *)&pic_picw3);
     pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_sicw3);
-
-    // Set both PICs to 8086 mode
-    pic_current_icw4.mode = 1;
     
+    pic_current_icw4.mode = 1;
     pic_send_data(PIC_PRIMARY_PORT, (uint8_t *)&pic_current_icw4);
     pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_icw4);
+
 
     // Mask away all ISA interrupts for now, each handler should unmask
     // corresponding line.
     //
-    //uint8_t data = 0x0F & ~(1 << 2);
-    uint8_t data = 0x00;
-    pic_send_data(PIC_PRIMARY_PORT, &data);
+    // Have cascading support still in there
+    //
+    uint8_t data = 0xff;
     pic_send_data(PIC_SECONDARY_PORT, &data);
+    data = 0xff & ~(1 << 2);
+    pic_send_data(PIC_PRIMARY_PORT, &data);
 
     pic_config->icw1 = &pic_current_icw1;
     pic_config->icw2 = &pic_current_icw2;
@@ -141,7 +142,11 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
     pic_config->ocw2 = &pic_current_ocw2;
     pic_config->ocw3 = &pic_current_ocw3;
 
-    
+    uint16_t tbit = (inb(0x4d0) | (((uint16_t)inb(0x4d1)) << 8));
+    tbit |= (1 << 9);
+    outb((uint8_t)tbit, 0x4d0);
+    outb(((uint8_t)(tbit >> 8)), 0x4d1);
+
     return status_initialised;
 }
 
@@ -192,7 +197,7 @@ uint16_t pic_read_irq(pic_ocw3 *ocw) {
 uint16_t pic_read_isr(void) {
     pic_ocw3 ocw = {0}; 
     ocw.nop_b0 = 1;
-    ocw.ident = 2;
+    ocw.ident = 1;
     return pic_read_irq(&ocw);
 }
 
@@ -204,7 +209,7 @@ uint16_t pic_read_irr(void) {
     pic_ocw3 ocw = {0};
     ocw.next = 1;
     ocw.nop_b0 = 1;
-    ocw.ident = 2;
+    ocw.ident = 1;
     return pic_read_irq(&ocw);
 }
 

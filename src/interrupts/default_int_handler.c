@@ -30,9 +30,12 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <drivers/pic_8259/pic.h>
 #include <panic.h>
 
 void __attribute__((section(".rom_int_handler"))) default_int_handler() {
-    panic("Unhandled interrupt\n");
+    uint16_t isr = pic_read_isr();
+    uint16_t irr = pic_read_irr();
+    panic("Unhandled interrupt, irs: %04x, irr: %04x\n", isr, irr);
 }
 
