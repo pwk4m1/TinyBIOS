@@ -36,8 +36,8 @@
 
 .code16
 entry:
-    cld
     cli
+    cld
 
     // Bist result to ebp
     mov     ebp, eax

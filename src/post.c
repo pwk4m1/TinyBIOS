@@ -98,8 +98,8 @@ void post_and_init(void) {
     programmable_interrupt_timer      = new_device(0);
 
     initialize_device(pic_initialize, programmable_interrupt_controller, "8259/PIC", false);
-    initialize_device(cmos_init, cmos_dev, "CMOS/RTC", false);
     initialize_device(kbdctl_set_default_init, keyboard_controller_device, "8042/PS2", false);
+    initialize_device(cmos_init, cmos_dev, "CMOS/RTC", false);
     initialize_device(pit_init, programmable_interrupt_timer, "825X/PIT", false);
 
     pci_device_array = calloc(32, sizeof(device **));

@@ -56,8 +56,6 @@
 
 #include <romcall/romcall.h>
 
-extern void default_int_handler(void); 
-
 heap_start *heap = (heap_start *)0x8000;
 
 device *cmos_dev = 0;
@@ -68,10 +66,6 @@ device *programmable_interrupt_controller = 0;
 device *programmable_interrupt_timer = 0;
 device **pci_device_array = 0;
 ata_ide **ata_ide_array = 0;
-
-void test() {
-    asm volatile("int 0x01");
-}
 
 /* The C entrypoint for early initialisation for {hard,soft}ware
  *
@@ -85,21 +79,19 @@ void test() {
         hang();
     }
     heap_init((uint64_t)heap, (0x70000 - 0x8000));
-
+    init_idt();
+    sti();
     post_and_init();
     blog("Early chipset initialisation done\n");
-    init_idt();
-    for (int i = 0; i < 10; i++) {
-        add_interrupt_handler(i, (uint64_t)default_int_handler);
-    }
-    test();
+    pic_unmask_irq(0);
+    pic_unmask_irq(1);
+    pic_unmask_irq(8);
+    kbdctl_enable_devices(keyboard_controller_device);
+    rtc_enable_nmi(cmos_dev);
 
-    blog("Searching option roms\n");
-    find_and_exec_roms();
-    blog("Done\n");
+    blog("No payloads to execute, hang\n");
     for (;;) { 
-        blog("No payload to execute, hang\n");
-        hang();
+        halt();
     }
 }
 

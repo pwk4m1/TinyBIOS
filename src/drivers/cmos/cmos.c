@@ -34,6 +34,7 @@
 
 #include <drivers/device.h>
 #include <drivers/cmos/cmos.h>
+#include <drivers/pic_8259/pic.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -77,6 +78,19 @@ enum DEVICE_STATUS cmos_init(device *dev) {
         }
     }
     return status_faulty;
+}
+
+/* Enable RTC interrupts
+ *
+ * @param device *dev -- Pointer to the cmos device structure
+ */
+void rtc_enable_nmi(device *dev) {
+    cli();
+    uint8_t conf = cmos_read(dev, 0x8B);
+    conf |= 0x40;
+    cmos_write(dev, conf, 0x8B);
+    pic_unmask_irq(8);
+    sti();
 }
 
 /* Check if RTC is updating currently

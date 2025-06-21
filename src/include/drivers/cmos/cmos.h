@@ -140,4 +140,10 @@ static inline uint8_t rtc_read(device *dev, enum CMOS_RTC_ADDR field) {
  */
 static void cmos_print_date(device *dev);
 
+/* Enable RTC interrupts
+ *
+ * @param device *dev -- Pointer to the cmos device structure
+ */
+void rtc_enable_nmi(device *dev);
+
 #endif // __TINY_CMOS_H__

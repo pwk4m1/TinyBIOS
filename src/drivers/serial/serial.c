@@ -70,7 +70,7 @@ enum DEVICE_STATUS serial_init_device(device *dev) {
     unsigned short port = SERIAL_COM_PRIMARY;
 
     serial_uart_device *sdev = (serial_uart_device *)dev->device_data;
-    serial_interrupts_disable(port);
+    serial_interrupts_enable(port);
     serial_set_baudrate(port, COM_DEFAULT_BRD);
     serial_set_linecontrol(port, COM_DEFAULT_LINE_CTL);
     if (serial_device_is_faulty(port)) {

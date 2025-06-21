@@ -53,7 +53,7 @@ enum DEVICE_STATUS pit_init(device *dev __attribute__((unused))) {
 
     cmd.access_mode      = lo_and_hi_byte;
     cmd.binary_mode      = binary;
-    cmd.operating_mode   = rate_generator;
+    cmd.operating_mode   = square_wave_generator; 
     cmd.selected_channel = channel_0;
 
     pit_write_command(&cmd);
@@ -61,15 +61,5 @@ enum DEVICE_STATUS pit_init(device *dev __attribute__((unused))) {
     outb(0x10, 0x40);
 
     return status_initialised;
-}
-
-/* PIT Interrupt handler 
- *
- */
-void __attribute__((section(".rom_int_handler"))) pit_int_handler(void) {
-    asm volatile("mov eax, 0x12345678");
-    asm volatile("cli");
-    asm volatile("hlt");
-    do {} while (1);
 }
 

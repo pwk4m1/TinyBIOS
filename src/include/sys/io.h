@@ -63,33 +63,33 @@ static inline uint32_t to_uint32_t(void *data) {
 }
 
 // Basic cpu port i/o
-static inline unsigned char inb(unsigned short port) {
+static inline unsigned char __attribute__((always_inline)) inb(unsigned short port) {
     unsigned char ret;
     asm volatile("in %0, %1":"=a"(ret):"dN"(port));
     return ret;
 }
 
-static inline unsigned short inw(unsigned short port) {
+static inline unsigned short __attribute__((always_inline)) inw(unsigned short port) {
     unsigned short ret;
     asm volatile("in %0, %1":"=a"(ret):"dN"(port));
     return ret;
 }
 
-static inline unsigned int inl(unsigned short port) {
+static inline unsigned int __attribute__((always_inline)) inl(unsigned short port) {
     unsigned int ret;
     asm volatile("in %0, %1":"=a"(ret):"dN"(port));
     return ret;
 }
 
-static inline void outb(unsigned char v, unsigned short port) {
+static inline void __attribute__((always_inline)) outb(unsigned char v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 
-static inline void outw(unsigned short v, unsigned short port) {
+static inline void __attribute__((always_inline)) outw(unsigned short v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 
-static inline void outl(unsigned int v, unsigned short port) {
+static inline void __attribute__((always_inline)) outl(unsigned int v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 

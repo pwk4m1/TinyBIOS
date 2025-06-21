@@ -53,7 +53,7 @@ add_custom_target(run
 )
 
 add_custom_target(log-int
-    COMMAND qemu-system-x86_64 -bios tinybios.bin -d int
+    COMMAND qemu-system-x86_64 -bios tinybios.bin -d int -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
     DEPENDS tinybios.bin
     USES_TERMINAL
 )

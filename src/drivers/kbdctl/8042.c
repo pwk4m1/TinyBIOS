@@ -201,6 +201,8 @@ enum DEVICE_STATUS kbdctl_set_default_init(device *dev __attribute__((unused))) 
         return status_unknown;
     }
     unsigned char new_config = initial_config & KBDCTL_DEFAULT_CONFIG_MASK;
+    new_config &= ~(KBDCTL_CTL_P1_IE | KBDCTL_CTL_P2_IE);
+    new_config |= (1 << 2);
     if (kbdctl_write_config(new_config) == false) {
         // Writing new configuration failed
         return status_faulty;
@@ -209,12 +211,11 @@ enum DEVICE_STATUS kbdctl_set_default_init(device *dev __attribute__((unused))) 
         // Device failed self-test after our new configuration, fallback to old
         if (kbdctl_write_config(initial_config) == false) {
             // Can't write old configuration back anymore... 
-            blog("8042 keyboard controller became unresponsive, hard reboot required.\n");
+            blog("8042 keyboard controller became unresponsive, bad.\n");
             do {} while (1);
         }
         return status_faulty;
     }
-    return status_initialised;
     if (initial_config & KBDCTL_CTL_PS2_CLKE) {
         status->dual_channel = true;
     }
@@ -247,7 +248,11 @@ unsigned char kbdctl_test_device(unsigned char dev_cmd) {
     if (kbdctl_send_cmd(dev_cmd) == false) {
         return 0xff; 
     }
-    return kbdctl_recv_data_poll();
+    uint8_t stat = kbdctl_recv_data_poll();
+    if (stat) {
+        blogf("PS/2 Device test failed: %x\n", stat);
+    }
+    return stat;
 }
 
 // Enable all ps/2 devices
@@ -259,10 +264,22 @@ unsigned char kbdctl_enable_devices(device *dev) {
     if (kbdctl_send_cmd(KBDCTL_CMD_ENABLE_P1) == false) {
         return 0;
     }
+    uint8_t test_result = kbdctl_test_device(KBDCTL_CMD_TEST_P1);
+    if (test_result) {
+        return 0;
+    }
+    uint8_t conf = kbdctl_read_config();
+    conf |= KBDCTL_CTL_P1_IE;
+    kbdctl_write_config(conf);
     stat->devices_initialised++;
     if (stat->dual_channel) {
         if (kbdctl_send_cmd(KBDCTL_CMD_ENABLE_P2)) {
-            return 2;
+            conf = kbdctl_read_config();
+            conf |= KBDCTL_CTL_P2_IE;
+            kbdctl_write_config(conf);
+            test_result = kbdctl_test_device(KBDCTL_CMD_TEST_P2);
+            if (test_result == 0)
+                return 2;
         }
     }
     return 1;

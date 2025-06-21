@@ -64,6 +64,18 @@ enum CR0_SETTING {
     CR0_PG = ( 1 << 31 )
 };
 
+/* CPU Segment structure
+ *
+ */
+typedef struct {
+    uint16_t cs;
+    uint16_t ds;
+    uint16_t es;
+    uint16_t ss;
+    uint16_t gs;
+    uint16_t fs;
+} cpu_segments;
+
 /* Helper structure for tracking cpu state in 16-bit mode. 
  * The register order matches pusha/popa when we have downwards growing stack.
  *
@@ -77,7 +89,18 @@ typedef struct {
     uint16_t dx;
     uint16_t cx;
     uint16_t ax;
+    cpu_segments segments;
 } cpu_state_16b;
+
+/* Helper structure for control registers
+ *
+ */
+typedef struct {
+    uint32_t cr0;
+    uint32_t cr2;
+    uint32_t cr3;
+    uint32_t cr4;
+} ctl_registers;
 
 /* Helper structure for tracking cpu state in 32-bit mode. 
  * The register order matches pusha/popa when we have downwards growing stack.
@@ -111,7 +134,57 @@ typedef struct {
     uint64_t rcx;
     uint64_t rbx;
     uint64_t rax;
+    cpu_segments segments;
+    ctl_registers cr;
 } cpu_state_64b;
+
+static inline uint64_t __attribute__((always_inline)) get_r8(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r8":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r9(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r9":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r10(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r10":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r11(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r11":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r12(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r12":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r13(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r13":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r14(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r14":"=r"(r));
+    return r;
+}
+
+static inline uint64_t __attribute__((always_inline)) get_r15(void) {
+    uint64_t r;
+    asm volatile("mov   %0, r15":"=r"(r));
+    return r;
+}
 
 static inline uint64_t __attribute__((always_inline)) get_rdi(void) {
     uint64_t r;
@@ -344,6 +417,18 @@ static inline void __attribute__((always_inline)) write_fs(uint32_t fs) {
 */
 static inline void __attribute__((always_inline)) write_gs(uint32_t gs) {
    asm volatile("mov gs, %0" :: "r"(gs));
+}
+
+static inline void __attribute__((always_inline)) cli(void) {
+    asm volatile("cli");
+}
+
+static inline void __attribute__((always_inline)) sti(void) {
+    asm volatile("sti");
+}
+
+static inline void __attribute__((always_inline)) halt(void) {
+    asm volatile("hlt");
 }
 
 /* Hang the cpu */
