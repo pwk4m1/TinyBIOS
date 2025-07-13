@@ -52,8 +52,10 @@ void __attribute__((section(".rom_int_handler"))) serial_int_handler(void) {
  * @return 0 when line is empty, or non-zero if timed out.
  */
 unsigned char serial_wait_for_tx_empty(unsigned short port) {
-    for (int i = 0; i < 5000; i++) {
-        if ((serial_get_line_status(port) & 0x01) == 0) {
+    for (int i = 0; i < 50000; i++) {
+        serial_line_status stat = {0};
+        stat.raw = serial_get_line_status(port);
+        if (stat.tx_ready) {
             return 0;
         }
         asm volatile("nop":::"memory");
@@ -70,20 +72,17 @@ enum DEVICE_STATUS serial_init_device(device *dev) {
     unsigned short port = SERIAL_COM_PRIMARY;
 
     serial_uart_device *sdev = (serial_uart_device *)dev->device_data;
-    serial_interrupts_enable(port);
+    serial_interrupts_disable(port);
     serial_set_baudrate(port, COM_DEFAULT_BRD);
     serial_set_linecontrol(port, COM_DEFAULT_LINE_CTL);
-    if (serial_device_is_faulty(port)) {
-        return status_faulty;
-    }
-    outb(0x0F, SERIAL_MCR(port));
 
-    // Enable FIFO, clear with 14 byte treshold 
-    outb(0xC7, SERIAL_FIFO_CTRL(port));
+    // Enable FIFO
+    outb(0x01, SERIAL_FIFO_CTRL(port));
+    outb(0x03, SERIAL_MCR(port));
 
     sdev->base_port = port;
     sdev->baudrate_divisor = COM_DEFAULT_BRD;
-    sdev->fifo_control = 0xC7;
+    sdev->fifo_control = 0x01;
     return status_initialised;
 }
 

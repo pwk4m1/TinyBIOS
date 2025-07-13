@@ -39,6 +39,8 @@
 
 #include <console/console.h>
 
+#include <panic.h>
+
 #define WAITFOR_READ KBDCTL_STAT_OUT_BUF
 #define WAITFOR_WRITE 0
 
@@ -211,8 +213,7 @@ enum DEVICE_STATUS kbdctl_set_default_init(device *dev __attribute__((unused))) 
         // Device failed self-test after our new configuration, fallback to old
         if (kbdctl_write_config(initial_config) == false) {
             // Can't write old configuration back anymore... 
-            blog("8042 keyboard controller became unresponsive, bad.\n");
-            do {} while (1);
+            panic("8042/keyboard-controller became unresponsive, can't rollback to known-good configuration!\n");
         }
         return status_faulty;
     }

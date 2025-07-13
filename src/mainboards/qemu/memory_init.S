@@ -35,6 +35,7 @@
 .code16
 .global main_memory_init
 .section .rom_text
+
 main_memory_init:
     ret
 

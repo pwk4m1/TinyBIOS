@@ -31,8 +31,9 @@
  */
 
 #include <itoa.h>
+#include <stdint.h>
 
-/* Convert unsigned 32-bit longeger to ascii characters
+/* Convert unsigned 64-bit longeger to ascii characters
  *
  * @param unsigned long d -- number to parse
  * @param char *dst -- where to write our ascii to
@@ -56,16 +57,16 @@ void itoa(unsigned long d, char *dst) {
     }
 }
 
-/* Convert unsigned 32-bit longeger to ascii hex characters
+/* Convert unsigned 64-bit longeger to ascii hex characters
  *
- * @param unsigned long d -- number to parse
+ * @param uint64_t d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
- *                     at least 9-byte memory buffer that's initialised to 0
+ *                     at least 17-byte memory buffer that's initialised to 0
  */
-void itoah(unsigned long d, char *dst) {
+void itoah(uint64_t d, char *dst) {
     char nibble;
 
-    for (unsigned long i = 0; i < (2 * sizeof(unsigned long)); i++) {
+    for (uint64_t i = 0; i < (2 * sizeof(uint64_t)); i++) {
         nibble = (d & 0x0000000F);
         d >>= 4;
         if (nibble < 10) {
@@ -74,7 +75,7 @@ void itoah(unsigned long d, char *dst) {
             nibble -= 0x0A;
             nibble += 0x41;
         }
-        dst[(2*sizeof(long)) - i - 1] = nibble;
+        dst[(2*sizeof(uint64_t)) - i - 1] = nibble;
     }
 }
 

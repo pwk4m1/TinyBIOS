@@ -44,10 +44,14 @@
  */
 switch_to_protected:
 .code16
-    mov     eax, offset gdt
+    push    cs
+    pop     ds
+    xor     ax, ax
     lgdt    [eax]
     xor     eax, eax
     lidt    [eax]
+    xor     ax, ax
+    mov     ds, ax
     mov     eax, cr0
     or      al, 1
     mov     cr0, eax
@@ -164,7 +168,6 @@ init_cpu:
     .code32
     pop     eax
     mov     esp, 0x00007c00
-    // call    switch_to_unreal
     call    setup_paging
 
 .code64

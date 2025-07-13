@@ -50,10 +50,13 @@
 #include <drivers/cmos/cmos.h>
 #include <drivers/ata/ata.h>
 
+#include <mainboards/memory_init.h>
+
 #include <console/console.h>
 #include <interrupts/interrupts.h>
 
 
+extern device *memory_device;
 extern device *cmos_dev;
 extern device *uart_dev;
 extern console_device default_console_device;
@@ -62,6 +65,40 @@ extern device *programmable_interrupt_controller;
 extern device *programmable_interrupt_timer;
 extern device **pci_device_array;
 extern ata_ide **ata_ide_array;
+
+static inline char *ram_type_to_str(uint32_t type) {
+    switch (type) {
+    case (1):
+        return "FREE";
+    case (2):
+        return "RESERVED";
+    case (3):
+        return "MMIO";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+/* Initialize memory map stuff for us, first call mainboard-specific
+ * function to handle init, if that fails, fallback to cmos.
+ *
+ */
+enum DEVICE_STATUS init_memory_map(device *dev) {
+    enum DEVICE_STATUS ret = status_initialised;
+    memory_map *map = (memory_map *)dev->device_data; 
+
+    bool stat = mainboard_specific_memory_init(dev);
+    if (!stat) {
+        blog("Mainboard-specific memory init failed, fallback to CMOS\n");
+        cmos_read_memory_info(map);
+        ret = status_faulty;
+    }
+    blog("Memory map:\n");
+    for (int i = 0; i < map->count; i++) {
+        blogf(" + 0x%08x - 0x%08x: %s\n", map->entry[i]->addr, map->entry[i]->size, ram_type_to_str(map->entry[i]->type));
+    }
+    return ret;
+}
 
 /* Initialize a output device, and make it our default
  * output device for blogf, panic, etc.
@@ -92,15 +129,22 @@ void post_and_init(void) {
     uart_dev = new_device(sizeof(serial_uart_device));
     switch_output_device(uart_dev, serial_init_device, serial_tx, "UART 1");
 
-    cmos_dev                          = new_device(sizeof(cmos_data));
+    memory_device                     = new_device(sizeof(memory_map));
     programmable_interrupt_controller = new_device(sizeof(pic_full_configuration));
+    cmos_dev                          = new_device(sizeof(cmos_data));
     keyboard_controller_device        = new_device(sizeof(ps2_8042_status));
     programmable_interrupt_timer      = new_device(0);
 
+    memory_device->status = init_memory_map(memory_device); 
     initialize_device(pic_initialize, programmable_interrupt_controller, "8259/PIC", false);
+    pic_unmask_irq(0);
+    pic_unmask_irq(1);
+    pic_unmask_irq(8);
     initialize_device(kbdctl_set_default_init, keyboard_controller_device, "8042/PS2", false);
     initialize_device(cmos_init, cmos_dev, "CMOS/RTC", false);
     initialize_device(pit_init, programmable_interrupt_timer, "825X/PIT", false);
+    rtc_enable_nmi(cmos_dev);
+    sti();
 
     pci_device_array = calloc(32, sizeof(device **));
     uint8_t devcnt = enumerate_pci_buses(pci_device_array);

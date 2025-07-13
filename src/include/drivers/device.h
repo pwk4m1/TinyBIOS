@@ -33,6 +33,7 @@
 #ifndef __DRIVER_DEVICE_GENERIC__
 #define __DRIVER_DEVICE_GENERIC__
 
+#include <stdbool.h>
 #include <stddef.h>
 
 // Generic status for all devices we have.

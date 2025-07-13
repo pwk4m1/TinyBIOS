@@ -76,6 +76,7 @@ void execute_option_rom(uint16_t segment, uint16_t offset) {
  *
  */
 void find_and_exec_roms(void) {
+    blog("Scanning for executable option roms...\n");
     for (uint64_t entry = 0xC0000; entry < 0xF0000; entry += 0x02000) {
         if (rom_header_present(entry) == false) {
             continue;

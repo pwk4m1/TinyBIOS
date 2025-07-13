@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 project(tinybios LANGUAGES C ASM VERSION 0.5)
 
 find_program(dd NAMES dd HINTS /usr/bin /usr/local/bin /bin)
-find_program(clang NAMES clang clang16 HINTS /usr/bin /usr/local/bin /bin)
+find_program(clang-19 NAMES clang clang-19 HINTS /usr/bin /usr/local/bin /bin)
 
 set(target_mainboard "qemu" CACHE STRING "Currently we only support qemu for now")
 set(target_cpu "x86-64" CACHE STRING "We only support x86-64 cpus for now")
-set(CC clang)
+set(CC distcc clang)
 
 # These source files are used by _all_ versions of x86 bios of ours
 #
@@ -21,6 +21,9 @@ add_executable(tinybios
     src/interrupts/default_int_handler.c
 
     src/romcall/romcall.c
+
+    src/stacks/ctx.c
+    src/stacks/ctx.S
 
     src/c_entry.c
     src/panic.c

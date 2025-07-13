@@ -80,9 +80,5 @@ void add_interrupt_handler(uint64_t entry, uint64_t handler) {
     idt->entry[entry].segment.index = 0x10;
     idt->entry[entry].int_gate_type = 0x0E; 
 
-    /*
-    blogf("Added interrupt handler from 0x%016x to entry at 0x%08x (%x)\n", handler, &idt->entry[entry], entry);
-    blogf("Setup: 0x%04x : 0x%04x : 0x%08x\n", lo, mi, hi);
-    */
 }
 

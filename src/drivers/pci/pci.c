@@ -88,6 +88,11 @@ static uint8_t pci_add_devices_from_bus(device **pci_device_array, uint8_t offse
         if (reg == 0xFFFFFFFF) {
             continue;
         }
+        reg = pci_read_config(addr, 0);
+        if (reg == 0xFFFFFFFF) {
+            continue;
+        }
+
         pci_device_array[offset] = calloc(1, sizeof(device));
         pci_device_data *dev     = calloc(1, sizeof(pci_device_data));
         if (!dev || !pci_device_array[offset]) {

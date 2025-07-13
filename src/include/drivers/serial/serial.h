@@ -53,10 +53,26 @@
 
 // Primary serial console port
 #define SERIAL_COM_PRIMARY  0x03F8
-// default baud rate divisor for 38400 brate
-#define COM_DEFAULT_BRD     0x0003
+// default baud rate divisor for 9600 brate
+#define COM_DEFAULT_BRD     0x000C
 // default line control value
 #define COM_DEFAULT_LINE_CTL 0x03 
+
+/* structure for line status register
+ */
+typedef union {
+    struct __attribute__((packed)) {
+        unsigned int data_ready    : 1;
+        unsigned int overrun_err   : 1;
+        unsigned int parity_err    : 1;
+        unsigned int framing_err   : 1;
+        unsigned int break_ind     : 1;
+        unsigned int tx_ready      : 1;
+        unsigned int tx_empty      : 1;
+        unsigned int impending_err : 1;
+    };
+    uint8_t raw;
+} serial_line_status;
 
 /* Structure for interrupt identification values
  *
@@ -148,7 +164,7 @@ static inline void serial_dlab_clear(unsigned short port) {
 static inline void serial_set_baudrate(unsigned short port, unsigned short brd) {
     serial_dlab_set(port);
     outb(SERIAL_DATA(port), (unsigned char)(brd & 0x00FF));
-    outb(SERIAL_IE(port), (unsigned char)(brd >> 8));
+    outb(SERIAL_IE(port), (unsigned char)((brd >> 8) & 0x00FF));
     serial_dlab_clear(port);
 }
 
@@ -158,7 +174,7 @@ static inline void serial_set_baudrate(unsigned short port, unsigned short brd) 
  * @param unsigned char lcr   -- line control value
  */
 static inline void serial_set_linecontrol(unsigned short port, unsigned char lcr) {
-    outb(SERIAL_LCR(port), lcr);
+    outb(lcr, SERIAL_LCR(port));
 }
 
 /* Check if we have faulty device. We'll do this by writing value 

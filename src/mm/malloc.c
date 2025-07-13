@@ -29,8 +29,6 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __TINYMALLOC_H__
-#define __TINYMALLOC_H__
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -202,5 +200,3 @@ void *malloc_align(uint64_t size, uint64_t align) {
     allocate_block(hdr, size);
     return (void *)((uint64_t)hdr + sizeof(memory_header));
 }
-
-#endif // __TINYMALLOC_H__

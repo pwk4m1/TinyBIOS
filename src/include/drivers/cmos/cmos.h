@@ -34,10 +34,16 @@
 
 #include <sys/io.h>
 #include <drivers/device.h>
+#include <mainboards/memory_init.h>
+
+#include <stdlib.h>
 
 static const uint8_t CMOS_CLI_FLAG       = 0x80;
 static const uint16_t cmos_register_addr = 0x0070;
 static const uint16_t cmos_data_addr     = 0x0071;
+
+static const uint16_t cmos_addr_low_mem = 0x30;
+static const uint16_t cmos_addr_high_mem = 0x31;
 
 typedef struct {
     uint16_t iodelay;
@@ -132,6 +138,29 @@ static inline uint8_t rtc_read(device *dev, enum CMOS_RTC_ADDR field) {
     //
     do {} while (cmos_rtc_update_ongoing(dev));
     return cmos_read(dev, field);
+}
+
+/* Get memory information from CMOS
+ *
+ * @param memory_map *map -- Pointer to already allocated memory_map structure
+ */
+static inline void cmos_read_memory_info(memory_map *map) {
+    outb(cmos_addr_low_mem, cmos_register_addr);
+    uint8_t low_kb = inb(cmos_data_addr);
+    outb(cmos_addr_high_mem, cmos_register_addr);
+    uint8_t high_kb = inb(cmos_data_addr);
+    
+    map->entry[0] = calloc(1, sizeof(e820_e));
+    map->entry[0]->type = 1;
+    map->entry[0]->size = low_kb * 1024;
+    map->entry[0]->addr= 0;
+    
+    map->entry[1] = calloc(1, sizeof(e820_e));
+    map->entry[1]->type = 1;
+    map->entry[1]->size = (high_kb * 1024) << 8;
+    map->entry[1]->addr = memory_addr_past_isa_hole;
+ 
+
 }
 
 /* Print current date stored in CMOS

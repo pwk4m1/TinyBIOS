@@ -47,6 +47,7 @@
  *
  * @param device *dev -- Device info structure
  * @return bool true on success, false on error. 
+ *
  */
 enum DEVICE_STATUS pit_init(device *dev __attribute__((unused))) { 
     pit_command cmd;

@@ -30,7 +30,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.section .rom_text
+.section .rom_text_gdt
 .global gdt
 .code32
 gdt:

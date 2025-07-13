@@ -33,6 +33,8 @@
 #ifndef __itoa_h__
 #define __itoa_h__
 
+#include <stdint.h>
+
 /* Convert unsigned 64-bit integer to ascii characters
  *
  * @param unsigned long d -- number to parse
@@ -42,10 +44,10 @@ void itoa(unsigned long d, char *dst);
 
 /* Convert unsigned 64-bit integer to ascii characters
  *
- * @param unsigned long d -- number to parse
+ * @param uint64_t d -- number to parse
  * @param char *dst -- where to write our ascii to, We assume this to be
- *                     9-byte memory buffer that's initialised to 0
+ *                     17-byte memory buffer that's initialised to 0
  */
-void itoah(unsigned long d, char *dst);
+void itoah(uint64_t d, char *dst);
 
 #endif

@@ -55,9 +55,11 @@
 #include <interrupts/idt.h>
 
 #include <romcall/romcall.h>
+#include <stacks/ctx.h>
 
 heap_start *heap = (heap_start *)0x8000;
 
+device *memory_device = 0;
 device *cmos_dev = 0;
 device *uart_dev = 0;
 console_device default_console_device = {0};
@@ -74,20 +76,12 @@ ata_ide **ata_ide_array = 0;
  __attribute__ ((noreturn)) void c_main(void) {
     superio_init();
 
-    heap_start *start = (heap_start *)heap;
-    if (start->start == (memory_header *)((uint64_t)start + sizeof(heap_start))) {
-        hang();
-    }
     heap_init((uint64_t)heap, (0x70000 - 0x8000));
     init_idt();
-    sti();
     post_and_init();
+
     blog("Early chipset initialisation done\n");
-    pic_unmask_irq(0);
-    pic_unmask_irq(1);
-    pic_unmask_irq(8);
-    kbdctl_enable_devices(keyboard_controller_device);
-    rtc_enable_nmi(cmos_dev);
+    sti();
 
     blog("No payloads to execute, hang\n");
     for (;;) { 

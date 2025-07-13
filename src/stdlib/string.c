@@ -55,11 +55,11 @@ size_t strlen(const char *str) {
 size_t strncmp(unsigned char *s1, unsigned char *s2, unsigned int n) {
     size_t ret = 0;
     for (unsigned int i = 0; i < n; i++) {
-        if ((s1[i] == 0) || (s2[i] == 0)) {
-            break;
-        }
         if (s1[i] != s2[i]) {
             ret++;
+        }
+        if ((s1[i] == 0) || (s2[i] == 0)) {
+            break;
         }
     }
     return ret;

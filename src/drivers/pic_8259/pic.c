@@ -100,14 +100,14 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
     pic_current_icw1.trigger_mode = 0;
 
     // Start pic_initialisation sequence with command words 1 to 4
+    //
     pic_send_cmd(PIC_PRIMARY_PORT, (uint8_t*)&pic_current_icw1);
     pic_send_cmd(PIC_SECONDARY_PORT, (uint8_t*)&pic_current_icw1);
 
-    // Send interrupt vector offsets (0, 8)
+    // Send interrupt vector offsets 20, 28 
     //
     uint8_t v = 0x20;
     pic_send_data(PIC_PRIMARY_PORT, &v);
-    //pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_ocw2);
     v = 0x28;
     pic_send_data(PIC_SECONDARY_PORT, &v);
 
@@ -123,16 +123,15 @@ enum DEVICE_STATUS pic_initialize(device *dev) {
     pic_send_data(PIC_PRIMARY_PORT, (uint8_t *)&pic_current_icw4);
     pic_send_data(PIC_SECONDARY_PORT, (uint8_t *)&pic_current_icw4);
 
-
     // Mask away all ISA interrupts for now, each handler should unmask
     // corresponding line.
     //
     // Have cascading support still in there
     //
-    uint8_t data = 0xff;
-    pic_send_data(PIC_SECONDARY_PORT, &data);
-    data = 0xff & ~(1 << 2);
+    uint8_t data = 0xff & ~(1 << 2);
     pic_send_data(PIC_PRIMARY_PORT, &data);
+    data = 0xff;
+    pic_send_data(PIC_SECONDARY_PORT, &data);
 
     pic_config->icw1 = &pic_current_icw1;
     pic_config->icw2 = &pic_current_icw2;
@@ -175,7 +174,6 @@ void pic_unmask_irq(uint8_t line) {
     v &= ~(1 << line);
     pic_send_data(port, &v);
 }
-
 
 /* Read irq register from the programmable interrupt controller.
  *

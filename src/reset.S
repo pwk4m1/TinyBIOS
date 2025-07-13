@@ -36,7 +36,6 @@
 
 .code16
 entry:
-    cli
     cld
 
     // Bist result to ebp
