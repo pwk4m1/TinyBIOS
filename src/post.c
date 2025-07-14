@@ -143,8 +143,6 @@ void post_and_init(void) {
     initialize_device(kbdctl_set_default_init, keyboard_controller_device, "8042/PS2", false);
     initialize_device(cmos_init, cmos_dev, "CMOS/RTC", false);
     initialize_device(pit_init, programmable_interrupt_timer, "825X/PIT", false);
-    rtc_enable_nmi(cmos_dev);
-    sti();
 
     pci_device_array = calloc(32, sizeof(device **));
     uint8_t devcnt = enumerate_pci_buses(pci_device_array);

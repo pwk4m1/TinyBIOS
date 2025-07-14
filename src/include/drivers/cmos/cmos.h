@@ -140,6 +140,14 @@ static inline uint8_t rtc_read(device *dev, enum CMOS_RTC_ADDR field) {
     return cmos_read(dev, field);
 }
 
+static void add_entry(memory_map *map, uint64_t entry, uint64_t size, int type) {
+    map->entry[map->count] = calloc(1, sizeof(e820_e));
+    map->entry[map->count]->addr = entry;
+    map->entry[map->count]->size = size;
+    map->entry[map->count]->type = type;
+    map->count++;
+}
+
 /* Get memory information from CMOS
  *
  * @param memory_map *map -- Pointer to already allocated memory_map structure
@@ -150,17 +158,23 @@ static inline void cmos_read_memory_info(memory_map *map) {
     outb(cmos_addr_high_mem, cmos_register_addr);
     uint8_t high_kb = inb(cmos_data_addr);
     
-    map->entry[0] = calloc(1, sizeof(e820_e));
-    map->entry[0]->type = 1;
-    map->entry[0]->size = low_kb * 1024;
-    map->entry[0]->addr= 0;
-    
-    map->entry[1] = calloc(1, sizeof(e820_e));
-    map->entry[1]->type = 1;
-    map->entry[1]->size = (high_kb * 1024) << 8;
-    map->entry[1]->addr = memory_addr_past_isa_hole;
- 
+    uint32_t total = (high_kb << 14) | (low_kb << 6);
+    total += 16 * 1024;
 
+    if (total < 0xA0000) {
+        add_entry(map, 0, total, 1);
+        return;
+    }
+    total -= 0xA0000;
+    add_entry(map, 0, 0x0FFFF, 1);
+    add_entry(map, 0xA0000, 0xFFFFF, 3);
+    if (total < memory_addr_past_isa_hole) {
+        add_entry(map, 0x100000, total, 1);
+        return;
+    } 
+    add_entry(map, 0x10000, 0x00EFFFFF, 1);
+    add_entry(map, 0x00F00000, 0x00FFFFFF, 2);
+    add_entry(map, 0x01000000, (total - 0x01000000), 1);
 }
 
 /* Print current date stored in CMOS
