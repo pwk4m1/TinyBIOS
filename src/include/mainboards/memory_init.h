@@ -50,6 +50,13 @@ typedef struct {
     uint8_t count;
 } memory_map;
 
+static inline void mmap_add_entry(memory_map *map, uint64_t addr, uint64_t size, uint32_t type) {
+    map->entry[map->count]->addr = addr;
+    map->entry[map->count]->size = size;
+    map->entry[map->count]->type = type;
+    map->count++;
+}
+
 /* Mainboard-specific helper to resolve memory map for us.
  *
  * @param device *dev -- Device structure for memory
