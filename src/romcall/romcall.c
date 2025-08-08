@@ -53,7 +53,7 @@ static void *copy_rom_to_ram(uint64_t mem) {
         blogf("Incorrect rom size (0x%x), refusing to execute\n", size);
         return NULL;
     }
-    void *p = malloc_align(size, 0x2000);
+    void *p = malloc(size);
     if (!p) {
         blog("Unable to allocate memory for rom\n");
         return NULL;
