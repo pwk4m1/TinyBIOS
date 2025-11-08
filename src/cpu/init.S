@@ -105,7 +105,7 @@ setup_paging:
         xchg    ebx, eax
         add     eax, 0x1000
         loop    .loop_pt
-
+    
     // pd 
     mov     ecx, 1024
     mov     eax, 3
@@ -119,6 +119,7 @@ setup_paging:
 
     // pml4 
     pop     eax
+    push    eax
     and     eax, 0xFFFFF000
     or      eax, 3
     stosd
