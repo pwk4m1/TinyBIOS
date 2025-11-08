@@ -67,6 +67,11 @@ add_custom_target(log-asm
     USES_TERMINAL
 )
 
+add_custom_target(bochs
+    COMMAND bochs -f ../bochsrc.txt
+    DEPENDS tinybios.bin
+    USES_TERMINAL
+)
 
 add_custom_target(debug
     COMMAND qemu-system-x86_64 -S --daemonize -s -bios tinybios.bin -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
