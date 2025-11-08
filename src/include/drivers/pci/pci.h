@@ -240,11 +240,10 @@ typedef struct __attribute__((packed)) {
     unsigned enable     : 1;
 } pci_config_address;
 
-
 /* Structure for holding information about our pci subsystem
  *
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     pci_config_address address;
     bool bist_executed;
     pci_header generic_header_fields;

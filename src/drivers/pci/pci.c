@@ -62,7 +62,7 @@ static inline void pci_add_device_data(pci_device_data *dev, pci_config_address 
 
 static void pci_read_header(pci_device_data *dev) {
     uint32_t *hdr = (uint32_t *)&dev->generic_header_fields;
-    for (int reg = 0; reg < 0x03; reg++) {
+    for (int reg = 0; reg < 0x04; reg++) {
         hdr[reg] = pci_read_config(&dev->address, (reg * 4));
     }
     enum pci_header_type type = dev->generic_header_fields.header_type;
@@ -226,5 +226,4 @@ void pci_print_devtree(device **pci_device_array, uint8_t count) {
         }
     }
 }
-
 
