@@ -36,6 +36,8 @@
 #include <drivers/cmos/cmos.h>
 #include <drivers/pic_8259/pic.h>
 
+#include <console/console.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -63,9 +65,10 @@ enum DEVICE_STATUS cmos_init(device *dev) {
         do {} while (cmos_rtc_update_ongoing(dev));
 
         uint8_t v = cmos_read(dev, rtc_month);
-        if (!v || (v > 13)) {
+        if (!v || (v > 0x12)) {
             continue;
         }
+
         if (cmos_read(dev, rtc_month) == v) {
             uint8_t stat = cmos_read(dev, rtc_status_format);
             if (rtc_in_bcd_mode(stat)) {
