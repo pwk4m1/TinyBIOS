@@ -115,6 +115,7 @@ setup_paging:
         xchg    ebx, eax
         stosd
         xchg    ebx, eax
+        add     eax, 0x1000
         loop    .loop_pd
 
     // pml4 
