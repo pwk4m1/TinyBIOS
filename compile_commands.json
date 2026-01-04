@@ -1,0 +1,110 @@
+[
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/cpu/gdt.S.o -c /home/k4m1/foss/tinybios/src/cpu/gdt.S",
+  "file": "/home/k4m1/foss/tinybios/src/cpu/gdt.S",
+  "output": "CMakeFiles/tinybios.dir/src/cpu/gdt.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/cpu/init.S.o -c /home/k4m1/foss/tinybios/src/cpu/init.S",
+  "file": "/home/k4m1/foss/tinybios/src/cpu/init.S",
+  "output": "CMakeFiles/tinybios.dir/src/cpu/init.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/interrupts/interrupts.S.o -c /home/k4m1/foss/tinybios/src/interrupts/interrupts.S",
+  "file": "/home/k4m1/foss/tinybios/src/interrupts/interrupts.S",
+  "output": "CMakeFiles/tinybios.dir/src/interrupts/interrupts.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/interrupts/interrupts.c.o -c /home/k4m1/foss/tinybios/src/interrupts/interrupts.c",
+  "file": "/home/k4m1/foss/tinybios/src/interrupts/interrupts.c",
+  "output": "CMakeFiles/tinybios.dir/src/interrupts/interrupts.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/interrupts/ivt.c.o -c /home/k4m1/foss/tinybios/src/interrupts/ivt.c",
+  "file": "/home/k4m1/foss/tinybios/src/interrupts/ivt.c",
+  "output": "CMakeFiles/tinybios.dir/src/interrupts/ivt.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/drivers/serial/serial.c.o -c /home/k4m1/foss/tinybios/src/drivers/serial/serial.c",
+  "file": "/home/k4m1/foss/tinybios/src/drivers/serial/serial.c",
+  "output": "CMakeFiles/tinybios.dir/src/drivers/serial/serial.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/drivers/kbdctl/8042.c.o -c /home/k4m1/foss/tinybios/src/drivers/kbdctl/8042.c",
+  "file": "/home/k4m1/foss/tinybios/src/drivers/kbdctl/8042.c",
+  "output": "CMakeFiles/tinybios.dir/src/drivers/kbdctl/8042.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/drivers/pic_8259/pic.c.o -c /home/k4m1/foss/tinybios/src/drivers/pic_8259/pic.c",
+  "file": "/home/k4m1/foss/tinybios/src/drivers/pic_8259/pic.c",
+  "output": "CMakeFiles/tinybios.dir/src/drivers/pic_8259/pic.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/drivers/pit/pit.c.o -c /home/k4m1/foss/tinybios/src/drivers/pit/pit.c",
+  "file": "/home/k4m1/foss/tinybios/src/drivers/pit/pit.c",
+  "output": "CMakeFiles/tinybios.dir/src/drivers/pit/pit.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/drivers/pit/pit_handler.S.o -c /home/k4m1/foss/tinybios/src/drivers/pit/pit_handler.S",
+  "file": "/home/k4m1/foss/tinybios/src/drivers/pit/pit_handler.S",
+  "output": "CMakeFiles/tinybios.dir/src/drivers/pit/pit_handler.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/mm/slab.c.o -c /home/k4m1/foss/tinybios/src/mm/slab.c",
+  "file": "/home/k4m1/foss/tinybios/src/mm/slab.c",
+  "output": "CMakeFiles/tinybios.dir/src/mm/slab.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/c_entry.c.o -c /home/k4m1/foss/tinybios/src/c_entry.c",
+  "file": "/home/k4m1/foss/tinybios/src/c_entry.c",
+  "output": "CMakeFiles/tinybios.dir/src/c_entry.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/console.c.o -c /home/k4m1/foss/tinybios/src/console.c",
+  "file": "/home/k4m1/foss/tinybios/src/console.c",
+  "output": "CMakeFiles/tinybios.dir/src/console.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/reset.S.o -c /home/k4m1/foss/tinybios/src/reset.S",
+  "file": "/home/k4m1/foss/tinybios/src/reset.S",
+  "output": "CMakeFiles/tinybios.dir/src/reset.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/stdlib/string.c.o -c /home/k4m1/foss/tinybios/src/stdlib/string.c",
+  "file": "/home/k4m1/foss/tinybios/src/stdlib/string.c",
+  "output": "CMakeFiles/tinybios.dir/src/stdlib/string.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/stdlib/itoa.c.o -c /home/k4m1/foss/tinybios/src/stdlib/itoa.c",
+  "file": "/home/k4m1/foss/tinybios/src/stdlib/itoa.c",
+  "output": "CMakeFiles/tinybios.dir/src/stdlib/itoa.c.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/mainboards/qemu/memory_init.S.o -c /home/k4m1/foss/tinybios/src/mainboards/qemu/memory_init.S",
+  "file": "/home/k4m1/foss/tinybios/src/mainboards/qemu/memory_init.S",
+  "output": "CMakeFiles/tinybios.dir/src/mainboards/qemu/memory_init.S.o"
+},
+{
+  "directory": "/home/k4m1/foss/tinybios",
+  "command": "/usr/bin/clang  -isystem /home/k4m1/foss/tinybios/src/include -Wall -Wextra -nostdlib -ibuiltininc -ffreestanding -masm=intel -m32 -fno-pic -std=gnu2x -D TARGET_MAINBOARD=qemu -march=x86-64 -o CMakeFiles/tinybios.dir/src/mainboards/qemu/superio/superio.c.o -c /home/k4m1/foss/tinybios/src/mainboards/qemu/superio/superio.c",
+  "file": "/home/k4m1/foss/tinybios/src/mainboards/qemu/superio/superio.c",
+  "output": "CMakeFiles/tinybios.dir/src/mainboards/qemu/superio/superio.c.o"
+}
+]

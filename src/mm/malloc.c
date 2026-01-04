@@ -64,7 +64,7 @@ static bool hdr_addr_is_valid(memory_header *hdr) {
     uint64_t check = (uint64_t)hdr;
     uint64_t start = (uint64_t)heap->start;
     uint64_t end   = start + heap->size - sizeof(memory_header);
-    return (start <= check < end);
+    return (check < end);
 }
 
 /**
