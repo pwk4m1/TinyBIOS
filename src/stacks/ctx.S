@@ -32,16 +32,18 @@
 
 .section .text
 .global realmode_callback
-.code32
+.code64
 
 #include <asm/cpu/longjmp.h>
 
 realmode_callback:
+    cli
     mov     ecx, 0xC0000080
     rdmsr
     and     eax, 0xfeff
     wrmsr
 
+.code32
     mov     eax, cr0
     and     eax, 0x7ffffff
     mov     cr0, eax
@@ -56,18 +58,16 @@ pm32:
     mov     eax, 0
     mov     cr3, eax
 
+    xor     ax, ax
     mov     es, ax
     mov     ds, ax
     mov     gs, ax
     mov     fs, ax
-    mov     ss, ax
     mov     eax, cr0
     and     al, 0xfe
     mov     cr0, eax
-    LONGJMP32(0, rm16)
+    LONGJMP32(0, 0x8000)
 
 .code16
 rm16:
-    cli
-    hlt
 

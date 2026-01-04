@@ -32,6 +32,7 @@
 
 #include <cpu/common.h>
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <panic.h>
@@ -89,17 +90,16 @@ static inline cpu_state_64b __attribute__((always_inline)) *save_cpu_state() {
  *
  * jmp tgt_ctx->segments.cs:tgt_offset
  *
- * @param cpu_state_16b *tgt_cxt -- CPU context to use
- * @param uint16_t tgt_offset    -- Target offset for executing our code
+ * @param uint64_t tgt_offset    -- Target offset for executing our code
  */
-void exec_in_ctx16(cpu_state_16b *tgt_ctx, uint16_t tgt_offset) {
+void exec_in_ctx16(uint64_t target_address) {
     cli();
     cpu_state_64b *current_state = save_cpu_state();
+    memset((void *)0x8000, 0xf4, 30);
 
     // TODO: Call to asm 16-bit entry with the saved current_state
     //
     realmode_callback();
-    
     
 }
 

@@ -80,9 +80,12 @@ ata_ide **ata_ide_array = 0;
     init_idt();
     post_and_init();
 
-    blog("Early chipset initialisation done\n");
+    blog("Call context switch\n");
+    exec_in_ctx16(0);
 
+    blog("Early chipset initialisation done\n");
     blog("No payloads to execute, hang\n");
+
     for (;;) { 
         halt();
     }

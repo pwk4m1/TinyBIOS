@@ -42,12 +42,10 @@
  *
  * Exec happens just by dropping back to 16-bit real-mode,
  * loading registers and segments from given tgt_ctx, and finally doing
+ * jmp to 0000:tgt_offset
  *
- * jmp tgt_ctx->segments.cs:tgt_offset
- *
- * @param cpu_state_16b *tgt_cxt -- CPU context to use
- * @param uint16_t tgt_offset    -- Target offset for executing our code
+ * @param uint64_t tgt_offset    -- Target offset for executing our code
  */
-void exec_in_ctx16(cpu_state_16b *tgt_ctx, uint16_t tgt_offset);
+void exec_in_ctx16(uint64_t tgt_offset);
 
 #endif
