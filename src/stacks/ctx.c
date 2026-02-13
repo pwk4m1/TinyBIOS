@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <panic.h>
 
-extern void realmode_callback(void);
+extern void realmode_callback(cpu_state_64b *cpu_state);
 
 /* Helper to get cpu-state into memory
  *
@@ -95,12 +95,12 @@ static inline cpu_state_64b __attribute__((always_inline)) *save_cpu_state() {
 void exec_in_ctx16(uint64_t target_address) {
     cli();
     cpu_state_64b *current_state = save_cpu_state();
-    memset((void *)0x8000, 0xf4, 30);
 
     // TODO: Call to asm 16-bit entry with the saved current_state
     //
-    realmode_callback();
-    
+    realmode_callback(current_state);
+
+
 }
 
 

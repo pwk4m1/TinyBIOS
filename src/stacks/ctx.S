@@ -36,7 +36,19 @@
 
 #include <asm/cpu/longjmp.h>
 
+current_cpu_state_ptr:
+    .skip   16
+
+current_entry_rsp_ptr:
+    .skip   16
+
 realmode_callback:
+    // Upon entry, rax contains the address to 
+    // saved cpu state.
+    //
+    mov     qword ptr [current_cpu_state_ptr], rax
+    mov     qword ptr [current_entry_rsp_ptr], rsp
+
     cli
     mov     ecx, 0xC0000080
     rdmsr
@@ -66,8 +78,13 @@ pm32:
     mov     eax, cr0
     and     al, 0xfe
     mov     cr0, eax
-    LONGJMP32(0, 0x8000)
+    LONGJMP32(0x7000, rm16)
 
 .code16
 rm16:
+    hlt
+    hlt
+
+
+
 
