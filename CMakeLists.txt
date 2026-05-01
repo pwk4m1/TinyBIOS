@@ -50,7 +50,7 @@ add_custom_command(
     COMMAND objcopy -j .rom_text -j .data -j .text -j .reset -O binary tinybios.elf tinybios.bin
 )
 
-add_custom_target(run-qemu
+add_custom_target(run
     COMMAND qemu-system-x86_64 -bios tinybios.bin -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
     DEPENDS tinybios.bin
     USES_TERMINAL

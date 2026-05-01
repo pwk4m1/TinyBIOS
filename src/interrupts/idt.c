@@ -58,6 +58,7 @@ void init_idt(void) {
     write_idtr((void *)idt);
 }
 
+
 /* Add a new interrupt handler to idt
  *
  * @param uint64_t entry   -- Which interrupt entry is this 
@@ -71,13 +72,14 @@ void add_interrupt_handler(uint64_t entry, uint64_t handler) {
     uint16_t mi = (uint16_t)(handler >> 16);
     uint32_t hi = (uint32_t)(handler >> 32);
 
+    idt->entry[entry].segment.privilege = 0;
+    idt->entry[entry].segment.use_ldt = 0;
+    idt->entry[entry].segment.index = 0x10;
+
     idt->entry[entry].offset_low = lo;
     idt->entry[entry].offset_mid = mi;
     idt->entry[entry].offset_high = hi;
     idt->entry[entry].present = 1;
-    idt->entry[entry].segment.privilege = 0;
-    idt->entry[entry].segment.use_ldt = 0;
-    idt->entry[entry].segment.index = 0x10;
     idt->entry[entry].int_gate_type = 0x0E; 
 
 }

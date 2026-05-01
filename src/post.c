@@ -130,6 +130,7 @@ void post_and_init(void) {
     uart_dev = new_device(sizeof(serial_uart_device));
     switch_output_device(uart_dev, serial_init_device, serial_tx, "UART 1");
 
+
     memory_device                     = new_device(sizeof(memory_map));
     programmable_interrupt_controller = new_device(sizeof(pic_full_configuration));
     cmos_dev                          = new_device(sizeof(cmos_data));
@@ -137,10 +138,9 @@ void post_and_init(void) {
     programmable_interrupt_timer      = new_device(0);
 
     memory_device->status = init_memory_map(memory_device); 
+    init_paging((memory_map *)memory_device->device_data);
+
     initialize_device(pic_initialize, programmable_interrupt_controller, "8259/PIC", false);
-    pic_unmask_irq(0);
-    pic_unmask_irq(1);
-    pic_unmask_irq(8);
     initialize_device(kbdctl_set_default_init, keyboard_controller_device, "8042/PS2", false);
     initialize_device(cmos_init, cmos_dev, "CMOS/RTC", false);
     initialize_device(pit_init, programmable_interrupt_timer, "825X/PIT", false);
@@ -150,7 +150,6 @@ void post_and_init(void) {
     pci_print_devtree(pci_device_array, devcnt);
     ata_ide_array = calloc(1, sizeof(ata_ide **));
     uint8_t ide_cnt = init_ata_controllers(pci_device_array, ata_ide_array, devcnt);
-    init_paging((memory_map *)memory_device->device_data);
-    blogf("Page tables built\n");
+
 } 
 

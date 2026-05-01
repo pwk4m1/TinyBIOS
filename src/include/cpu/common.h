@@ -245,7 +245,7 @@ static inline void __attribute__((always_inline)) set_cr0(uint32_t v) {
 }
 
 static inline uint32_t __attribute__((always_inline)) get_cr3(void) {
-    uint32_t r;
+    uint32_t r = 0;
     asm volatile("mov   %0, cr3":"=r"(r));
     return r;
 }

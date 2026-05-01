@@ -83,6 +83,9 @@ ata_ide **ata_ide_array = 0;
     blog("Early chipset initialisation done\n");
     blog("No payloads to execute, hang\n");
 
+    pic_unmask_irq(0);
+    asm volatile("sti");
+
     for (;;) { 
         halt();
     }
