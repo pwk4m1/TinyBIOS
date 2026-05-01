@@ -81,8 +81,8 @@ ata_ide **ata_ide_array = 0;
     post_and_init();
 
     blog("Early chipset initialisation done\n");
-
     blog("No payloads to execute, hang\n");
+
     for (;;) { 
         halt();
     }

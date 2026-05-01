@@ -36,6 +36,8 @@
 
 #include <panic.h>
 
+#include <stdint.h>
+
 static page_table_entry *pml4;
 static page_table_entry *pdpt;
 static page_table_entry *pte_array;
@@ -92,7 +94,7 @@ void init_paging(memory_map *mem_map) {
             pml4_off++;
         }
     }
-    set_pml4(&pml4[0]);
+    set_pml4(pml4);
 
     return;
 }

@@ -52,9 +52,10 @@
 
 #include <mainboards/memory_init.h>
 
+#include <mm/paging.h>
+
 #include <console/console.h>
 #include <interrupts/interrupts.h>
-
 
 extern device *memory_device;
 extern device *cmos_dev;
@@ -149,6 +150,7 @@ void post_and_init(void) {
     pci_print_devtree(pci_device_array, devcnt);
     ata_ide_array = calloc(1, sizeof(ata_ide **));
     uint8_t ide_cnt = init_ata_controllers(pci_device_array, ata_ide_array, devcnt);
-
+    init_paging((memory_map *)memory_device->device_data);
+    blogf("Page tables built\n");
 } 
 

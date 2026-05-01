@@ -64,7 +64,7 @@ static inline page_table_entry * __attribute__((always_inline)) get_pml4(void) {
 }
 
 static inline void __attribute__((always_inline)) set_pml4(page_table_entry *pml4) {
-    asm volatile("mov    cr3, %0"::"r"(pml4));
+    asm volatile("mov   cr3, %0"::"r"(pml4));
 }
 
 static inline page_table_entry *alloc_map(uint64_t entry_count) {
