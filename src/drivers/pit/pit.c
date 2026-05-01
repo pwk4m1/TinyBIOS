@@ -37,11 +37,14 @@
 #include <drivers/device.h>
 #include <drivers/pit/pit.h>
 
-/* Read pit status for a given channel
- *
- * @param uint8_t channel -- channel to read
- * @return uint8_t status of the channel
- */
+#include <interrupts/idt.h>
+
+void __attribute__((section(".rom_int_handler"))) pit_int_handler() {
+    asm volatile("cli");
+    blogf("Timer interrupt triggered\n");
+    do {} while (1);
+}
+
 
 /* Setup PIT with default init.
  *
@@ -61,6 +64,8 @@ enum DEVICE_STATUS pit_init(device *dev __attribute__((unused))) {
     outb(0x00, 0x40);
     outb(0x10, 0x40);
 
+    add_interrupt_handler(0x20, (uint64_t)pit_int_handler);
+    
     return status_initialised;
 }
 
