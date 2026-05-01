@@ -191,7 +191,7 @@ void pic_unmask_irq(uint8_t line);
  *
  * @param uint8_t irq -- number of interrupt we're dealing with
  */
-void pic_send_eoi(uint8_t irq);
+void __attribute__((no_caller_saved_registers)) pic_send_eoi(uint8_t irq);
 
 /* Initialise the programmable interrupt controller.
  *

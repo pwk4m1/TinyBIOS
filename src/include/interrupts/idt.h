@@ -35,6 +35,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+typedef struct __attribute__ ((packed)) {
+    uint64_t rip;
+    uint16_t cs;
+    uint64_t rflags;
+    uint64_t rsp;
+    uint16_t ss;
+} int_stack_frame;
+
 enum int_gate_type {
     interrupt_gate = 0xE,
     trap_gate      = 0xF

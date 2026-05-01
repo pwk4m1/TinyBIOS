@@ -80,7 +80,7 @@ static inline uint8_t pic_get_mask(uint16_t port) {
  *
  * @param uint8_t irq -- number of interrupt we're dealing with
  */
-void pic_send_eoi(uint8_t irq) {
+void __attribute__((no_caller_saved_registers)) pic_send_eoi(uint8_t irq) {
     if (irq >= 8) {
         outb(0x20, PIC_SECONDARY_PORT); 
     }

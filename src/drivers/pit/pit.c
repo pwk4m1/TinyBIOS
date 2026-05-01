@@ -37,12 +37,13 @@
 #include <drivers/device.h>
 #include <drivers/pit/pit.h>
 
+#include <drivers/pic_8259/pic.h>
+
 #include <interrupts/idt.h>
 
-void __attribute__((section(".rom_int_handler"))) pit_int_handler() {
-    asm volatile("cli");
-    blogf("Timer interrupt triggered\n");
-    do {} while (1);
+void __attribute__((section(".rom_int_handler"), interrupt)) pit_int_handler(int_stack_frame *frame) {
+    pic_send_eoi(0);
+
 }
 
 

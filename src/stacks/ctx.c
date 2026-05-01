@@ -100,7 +100,6 @@ void exec_in_ctx16(cpu_state_16b *tgt_ctx, uint16_t tgt_offset) {
     //
     realmode_callback();
     
-    
 }
 
 

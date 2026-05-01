@@ -81,15 +81,15 @@ static inline unsigned int __attribute__((always_inline)) inl(unsigned short por
     return ret;
 }
 
-static inline void __attribute__((always_inline)) outb(unsigned char v, unsigned short port) {
+static inline void __attribute__((always_inline, no_caller_saved_registers)) outb(unsigned char v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 
-static inline void __attribute__((always_inline)) outw(unsigned short v, unsigned short port) {
+static inline void __attribute__((always_inline, no_caller_saved_registers)) outw(unsigned short v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 
-static inline void __attribute__((always_inline)) outl(unsigned int v, unsigned short port) {
+static inline void __attribute__((always_inline, no_caller_saved_registers)) outl(unsigned int v, unsigned short port) {
     asm volatile("out %1, %0"::"a"(v),"dN"(port));
 }
 
