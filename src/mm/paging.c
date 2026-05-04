@@ -64,13 +64,29 @@ static void map_page(page_table_entry *entry, void *addr) {
     entry->unprivileged = 1;
 }
 
+bool map_address(void *addr, uint64_t size) {
+    if (size & 0x00000FFF) {
+        blogf("refusing to map unaligned memory: 0x%x bytes\n", size);
+        return false;
+    }
+    uint64_t vaddr = (uint64_t)addr;
+
+    return true;
+}
+
 void init_paging(memory_map *mem_map) {
     // 1 page = 4 KB -> mbytes / 0x1000
     //
     uint64_t mbytes_to_map = memory_size_in_megabytes(mem_map);
+    mbytes_to_map *= 1024; // megabytes -> kilobytes 
     uint64_t pages_to_map = mbytes_to_map / 0x1000;
     uint64_t pdpt_cnt = pages_to_map / 1024;
     uint64_t pml4_cnt = pdpt_cnt / 1024;
+
+    if (!pdpt_cnt) 
+        pdpt_cnt = 1;
+    if (!pml4_cnt) 
+        pml4_cnt = 1;
 
     pte_array = alloc_map(pages_to_map);
     pdpt = alloc_map(pdpt_cnt);
@@ -80,18 +96,21 @@ void init_paging(memory_map *mem_map) {
         panic_oom("Failed to allocate memory for paging structures");
     }
 
+    map_page(&pdpt[0], &pte_array[0]);
+    map_page(&pml4[0], &pdpt[0]);
+
     uint64_t pdpt_off = 0;
     uint64_t pml4_off = 0;
 
     for (uint64_t page = 0; page < pages_to_map; page++) {
         map_page(&pte_array[page], (void *)(page * 0x1000));
         if (page && ((page % 1024) == 0)) {
-            map_page(&pdpt[pdpt_off], &pte_array[page]);
             pdpt_off++;
+            map_page(&pdpt[pdpt_off], &pte_array[page]);
         }
         if (pdpt_off && ((pdpt_off % 1024) == 0)) {
-            map_page(&pml4[pml4_off], &pdpt[pdpt_off]);
             pml4_off++;
+            map_page(&pml4[pml4_off], &pdpt[pdpt_off]);
         }
     }
     set_pml4(pml4);
