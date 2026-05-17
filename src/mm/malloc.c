@@ -269,7 +269,7 @@ static memory_header *resize_block(memory_header *hdr, uint64_t size) {
         if (ret) {
             void *s = ptr_for_header(hdr);
             void *d = ptr_for_header(ret);
-            memcpy(s, d, (size - sizeof(memory_header)));
+            memcpy(d, s, (size - sizeof(memory_header)));
             delete_block(hdr);
         }
     }
@@ -302,9 +302,13 @@ void *malloc(uint64_t size) {
  * @return Pointer to allocated memory on success or NULL on error.
  */
 void *calloc(uint64_t nmemb, uint64_t size) {
-    void *p = malloc(nmemb * size);
+    uint64_t total;
+    if (__builtin_mul_overflow(nmemb, size, &total)) {
+        return NULL;
+    }
+    void *p = malloc(total);
     if (p) {
-        memset(p, 0, (nmemb * size));
+        memset(p, 0, total);
     }
     return p;
 }
@@ -328,7 +332,7 @@ void *realloc(void *ptr, uint64_t size) {
         return ptr;
     }
     void *dst = ptr_for_header(got);
-    memcpy(ptr, dst, size);
+    memcpy(dst, ptr, size);
     delete_block(hdr);
     return dst;
 }
