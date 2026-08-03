@@ -47,6 +47,8 @@ typedef struct memory_header {
 typedef struct {
     uint64_t size;
     struct memory_header *start;
+    uint64_t end_addr;
+    uint64_t total_used;
 } heap_start;
 
 void heap_init(uint64_t start, uint64_t size);

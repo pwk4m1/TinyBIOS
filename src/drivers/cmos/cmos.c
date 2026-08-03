@@ -142,9 +142,7 @@ void cmos_print_current_time(device *dev) {
             min = bcd_convert(min);
             hr  = bcd_convert(hr);
         }
-        blogf("Current time: %d:%d\n", hr, min);
+        blogf("Current time: %02d:%02d\n", hr, min);
     }
 }
-
-
 

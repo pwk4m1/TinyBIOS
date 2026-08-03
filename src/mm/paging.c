@@ -141,7 +141,7 @@ void init_paging(memory_map *mem_map) {
         } while (page_cnt--);
     }
 
-    page_table_entry *pml4e = (page_table_entry *)((*(uint64_t *)pml4) & 0xFFFFF000);
+    page_table_entry *pml4e = (page_table_entry *)(((uint64_t)pml4) & 0xFFFFF000);
     page_table_entry *pde = (page_table_entry *)pd_addr;
     populate_entry(pml4e, pde, 1, 1);
 

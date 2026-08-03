@@ -154,5 +154,12 @@ void post_and_init(void) {
     ide_array->ide = calloc(1, sizeof(ata_ide **));
     init_ata_controllers(pci_device_array, ide_array->ide, devcnt);
 
+    for (size_t i = 0; i < devcnt; i++) {
+        pci_device_data *pci = (pci_device_data *)pci_device_array[i]->device_data;
+        if (pci->generic_header_fields.class_code == pci_class_display_controller) {
+            enum DEVICE_STATUS vga_stat = init_vga_controller(pci_device_array[i]);
+            if (vga_stat == status_initialised) { }
+        }
+    }
 } 
 
