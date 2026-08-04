@@ -159,7 +159,9 @@ void post_and_init(void) {
     for (size_t i = 0; i < devcnt; i++) {
         pci_device_data *pci = (pci_device_data *)pci_device_array[i]->device_data;
         if (pci->generic_header_fields.class_code == pci_class_display_controller) { enum DEVICE_STATUS vga_stat = init_vga_controller(pci_device_array[i]);
-            if (vga_stat == status_initialised) { }
+            if (vga_stat == status_initialised) { 
+                blogf("Vga init done, range: %x\n", pci_read_bar(&pci->address, 0));
+            }
         }
     }
 } 
