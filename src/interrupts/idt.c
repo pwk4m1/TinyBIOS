@@ -70,7 +70,6 @@ void init_idt(void) {
  * @param uint64_t handler -- Address to interrupt handler to register
  */
 void add_interrupt_handler(uint64_t entry, uint64_t handler) {
-
     memset((void *)&idt->entry[entry], 0, sizeof(idt_entry));
 
     uint16_t lo = (uint16_t)handler;

@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <console/console.h>
+#include <panic.h>
 
 extern heap_start *heap;
 
@@ -50,6 +50,7 @@ void heap_init(uint64_t start, uint64_t size) {
     memset((void *)start, 0, size);
     heap->start = (memory_header *)(start + sizeof(heap_start));
     heap->size  = size;
+    heap->total_used = 0;
     heap->end_addr = (start + size);
     heap->start->free = true;
     heap->start->size = size - sizeof(memory_header);
@@ -132,7 +133,10 @@ void split_block(memory_header *blk, uint64_t size) {
     new->free = true;
     new->size = (blk->size - size);
     new->previous = blk;
-    new->next->previous = new;
+
+    if (blk_in_bounds(new->next)) {
+        new->next->previous = new;
+    }
 
     blk->next = new;
     blk->size = size;
@@ -159,7 +163,9 @@ void *malloc(uint64_t size) {
             ret = blk_to_ptr(blk);
         }
     }
-
+    if (ret) {
+        heap->total_used += size;
+    }
     return ret;
 }
 
@@ -205,9 +211,25 @@ void merge_blocks_backward(memory_header *hdr) {
 
 void *realloc(void *ptr, uint64_t size) {
     memory_header *blk = ptr_to_block(ptr);
+    bool needs_free = false;
+    void *ret = ptr;
 
-    panic("realloc()\n");
-    return NULL;
+    if (blk->size < size) {
+        void *p = calloc(1, size);
+        if (p) {
+            memcpy(ptr, p, (blk->size - sizeof(memory_header)));
+            needs_free = true;
+        }
+    } else {
+        if ((blk->size - size) > (3 * sizeof(memory_header))) {
+            split_block(blk, size);
+            merge_blocks_forward(blk);
+        }
+    }
+    if (needs_free) {
+        free(ptr);
+    }
+    return ret;
 }
 
 void free(void *ptr) {
@@ -216,6 +238,7 @@ void free(void *ptr) {
         panic("Double free for %x\n", ptr);
         return;
     }
+    heap->total_used -= blk->size;
     blk->free = true;
     merge_blocks_forward(blk);
     merge_blocks_backward(blk);

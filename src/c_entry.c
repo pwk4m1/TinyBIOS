@@ -57,7 +57,7 @@
 #include <romcall/romcall.h>
 #include <stacks/ctx.h>
 
-heap_start *heap = (heap_start *)0x50000;
+heap_start *heap = (heap_start *)(1024 * 1024);
 
 device *memory_device = 0;
 device *cmos_dev = 0;
@@ -76,8 +76,9 @@ ata_ide_array *ide_array = 0;
  __attribute__ ((noreturn)) void main(void) {
     superio_init();
 
-    heap_init((uint64_t)heap, (0x7FFFF - 0x50000));
+    heap_init((uint64_t)heap, 0x10000);
     init_idt();
+
     post_and_init();
 
     blog("Early chipset initialisation done\n");

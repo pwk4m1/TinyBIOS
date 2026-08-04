@@ -186,6 +186,7 @@ continue_entry_prep:
 
     xor     rdi, rdi
     xor     rsi, rsi
+
     call    main
 
     // Never reached but better be overly careful 

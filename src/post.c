@@ -130,6 +130,7 @@ bool switch_output_device(device *dev, device_init_function init_func, tx_func w
 }
 
 void post_and_init(void) {
+
     uart_dev = new_device(sizeof(serial_uart_device));
     switch_output_device(uart_dev, serial_init_device, serial_console_tx, "UART 1");
 
@@ -140,6 +141,7 @@ void post_and_init(void) {
     programmable_interrupt_timer      = new_device(0);
 
     memory_device->status = init_memory_map(memory_device); 
+
     init_paging((memory_map *)memory_device->device_data);
 
     initialize_device(pic_initialize, programmable_interrupt_controller, "8259/PIC", false);
@@ -156,8 +158,7 @@ void post_and_init(void) {
 
     for (size_t i = 0; i < devcnt; i++) {
         pci_device_data *pci = (pci_device_data *)pci_device_array[i]->device_data;
-        if (pci->generic_header_fields.class_code == pci_class_display_controller) {
-            enum DEVICE_STATUS vga_stat = init_vga_controller(pci_device_array[i]);
+        if (pci->generic_header_fields.class_code == pci_class_display_controller) { enum DEVICE_STATUS vga_stat = init_vga_controller(pci_device_array[i]);
             if (vga_stat == status_initialised) { }
         }
     }
