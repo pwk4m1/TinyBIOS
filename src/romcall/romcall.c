@@ -48,8 +48,8 @@ static void *copy_rom_to_ram(uint64_t mem) {
     if (rom_header_present(mem) == false) {
         return NULL;
     }
-    uint32_t size = (rom_get_size(mem) * 1024);
-    if (size % 0x2000) {
+    uint32_t size = (rom_get_size(mem) * 512);
+    if (size % 0x200) {
         blogf("Incorrect rom size (0x%x), refusing to execute\n", size);
         return NULL;
     }
