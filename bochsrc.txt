@@ -26,7 +26,7 @@ optramimage2: file=none
 optramimage3: file=none
 optramimage4: file=none
 pci: enabled=1, chipset=i440fx, slot1=none, slot2=none, slot3=none, slot4=none, slot5=none
-vga: extension=none, update_freq=5, realtime=1, ddc=builtin
+vga: extension=vbe, update_freq=5, realtime=1, ddc=builtin
 cpu: count=1:1:1, ips=4000000, quantum=16, model=bx_generic, reset_on_triple_fault=1, cpuid_limit_winnt=0, ignore_bad_msrs=1, mwait_is_nop=0
 cpuid: level=6, stepping=3, model=3, family=6, vendor_string="AuthenticAMD", brand_string="AMD Athlon(tm) processor"
 cpuid: mmx=true, apic=xapic, simd=sse2, sse4a=false, misaligned_sse=false, sep=true
