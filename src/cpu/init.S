@@ -1,23 +1,23 @@
 /*
  BSD 3-Clause License
- 
+
  Copyright (c) 2024, k4m1
  All rights reserved.
- 
+
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
- 
+
  1. Redistributions of source code must retain the above copyright notice, this
     list of conditions and the following disclaimer.
- 
+
  2. Redistributions in binary form must reproduce the above copyright notice,
     this list of conditions and the following disclaimer in the documentation
     and/or other materials provided with the distribution.
- 
+
  3. Neither the name of the copyright holder nor the names of its
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -61,7 +61,7 @@ next:
     pop     eax
     or      eax, 0xf0000
     jmp     eax
-.code16    
+.code16
 
 /* Helper function for switching to unreal mode, this is used during early boot
  * as well as by interrupt handlers.
@@ -105,8 +105,8 @@ setup_paging:
         xchg    ebx, eax
         add     eax, 0x1000
         loop    .loop_pt
-    
-    // pd 
+
+    // pd
     mov     ecx, 1024
     mov     eax, 3
     push    edi
@@ -118,7 +118,7 @@ setup_paging:
         add     eax, 0x1000
         loop    .loop_pd
 
-    // pml4 
+    // pml4
     pop     eax
     push    eax
     and     eax, 0xFFFFF000
@@ -157,7 +157,7 @@ setup_paging:
     jmp     continue_entry_prep
 .code16
 
-// We'll land here from reset.S, things we'll want to do next are 
+// We'll land here from reset.S, things we'll want to do next are
 // to move to some more appropriate runmode which doesn't do segments and
 // 20-bit addressing, etc.
 //
@@ -178,7 +178,7 @@ continue_entry_prep:
     // Relocate our C code into ram
     //
     mov     rsi, 0xE0000
-    mov     rdi, 0x70000 
+    mov     rdi, 0x70000
     mov     rcx, 0x0FFFF
     rep     movsb
     mov     rsp, 0x00007c00
@@ -189,9 +189,9 @@ continue_entry_prep:
 
     call    main
 
-    // Never reached but better be overly careful 
+    // Never reached but better be overly careful
 .hang:
-    mov     rax, 0xdeadc0de 
+    mov     rax, 0xdeadc0de
     cli
     hlt
     jmp     .hang

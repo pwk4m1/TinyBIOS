@@ -10,7 +10,7 @@ set(CC distcc clang)
 
 # These source files are used by _all_ versions of x86 bios of ours
 #
-add_executable(tinybios 
+add_executable(tinybios
     src/cpu/gdt.S
     src/cpu/init.S
 
@@ -47,7 +47,7 @@ add_subdirectory(src/mainboards/${target_mainboard})
 add_custom_command(
     TARGET tinybios
     POST_BUILD
-    COMMENT "Building BIOS Image from ELF file" 
+    COMMENT "Building BIOS Image from ELF files"
     COMMAND objcopy -j .rom_text -j .data -j .text -j .reset -O binary tinybios.elf tinybios.bin
 )
 
@@ -82,11 +82,11 @@ add_custom_target(debug
     USES_TERMINAL
 )
 
-target_include_directories(tinybios SYSTEM PUBLIC 
+target_include_directories(tinybios SYSTEM PUBLIC
     "src/include"
 )
 
-target_compile_options(tinybios PUBLIC 
+target_compile_options(tinybios PUBLIC
     -Wall -Wextra
     -nostdlib
     -ibuiltininc
@@ -98,10 +98,9 @@ target_compile_options(tinybios PUBLIC
     -march=${target_cpu}
 )
 
-target_link_options(tinybios PUBLIC 
+target_link_options(tinybios PUBLIC
     -nostdlib -no-pie -Wl,--script=${CMAKE_CURRENT_SOURCE_DIR}/linker.conf
 )
 
 set_target_properties(tinybios PROPERTIES OUTPUT_NAME tinybios.elf)
-
 
