@@ -1,23 +1,23 @@
 /*
  BSD 3-Clause License
- 
+
  Copyright (c) 2025, k4m1 <me@k4m1.net>
  All rights reserved.
- 
+
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
- 
+
  1. Redistributions of source code must retain the above copyright notice, this
     list of conditions and the following disclaimer.
- 
+
  2. Redistributions in binary form must reproduce the above copyright notice,
     this list of conditions and the following disclaimer in the documentation
     and/or other materials provided with the distribution.
- 
+
  3. Neither the name of the copyright holder nor the names of its
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -36,25 +36,39 @@
 
 #include <asm/cpu/longjmp.h>
 
+.code64
 realmode_callback:
-    mov     ecx, 0xC0000080
-    rdmsr
-    and     eax, 0xfeff
-    wrmsr
+    cli
 
-    mov     eax, cr0
-    and     eax, 0x7ffffff
-    mov     cr0, eax
+    xor     rcx, rcx
+    xor     rax, rax
+    push    rax
 
-    LONGJMP32(0x08, pm32)
+    mov     rax, 0x10
+    push    rax
+
+    push    set_64
+    iretq
+
+set_64:
+    hlt
+    mov     cr3, rcx
+
+    mov     rax, cr0
+    and     eax, ~( 1 << 31 )
+    mov     cr0, rax
+
+.code32
 
 pm32:
-    mov     eax, cr4
-    and     al, 0xdf
-    mov     cr4, eax
+    mov     ecx, 0xC0000080
+    rdmsr
+    and      eax, ~(1 << 8)
+    wrmsr
 
-    mov     eax, 0
-    mov     cr3, eax
+    mov     eax, cr4
+    and     eax, ~(1 << 5)
+    mov     cr4, eax
 
     mov     es, ax
     mov     ds, ax

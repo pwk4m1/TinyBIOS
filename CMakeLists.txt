@@ -52,7 +52,7 @@ add_custom_command(
 )
 
 add_custom_target(run
-    COMMAND qemu-system-x86_64 -bios tinybios.bin -m 1G #-device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
+    COMMAND qemu-system-x86_64 -serial stdio -bios tinybios.bin -m 1G -device piix3-ide,id=ide -drive id=disk,file=${CMAKE_CURRENT_SOURCE_DIR}/test_disk,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0
     DEPENDS tinybios.bin
     USES_TERMINAL
 )

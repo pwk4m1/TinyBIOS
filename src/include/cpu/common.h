@@ -1,23 +1,23 @@
 /*
  BSD 3-Clause License
- 
+
  Copyright (c) 2024, k4m1
  All rights reserved.
- 
+
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
- 
+
  1. Redistributions of source code must retain the above copyright notice, this
     list of conditions and the following disclaimer.
- 
+
  2. Redistributions in binary form must reproduce the above copyright notice,
     this list of conditions and the following disclaimer in the documentation
     and/or other materials provided with the distribution.
- 
+
  3. Neither the name of the copyright holder nor the names of its
     contributors may be used to endorse or promote products derived from
     this software without specific prior written permission.
- 
+
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -37,7 +37,7 @@
 
 #define get_gpr(reg) get_##reg()
 
-/* Command register 0 settings 
+/* Command register 0 settings
  *
  * @member CR0_PE -- Paging enabled
  * @member CR0_MP -- Monitor co-process
@@ -64,6 +64,13 @@ enum CR0_SETTING {
     CR0_PG = ( 1 << 31 )
 };
 
+typedef struct {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+} cpuid_result;
+
 /* CPU Segment structure
  *
  */
@@ -76,7 +83,7 @@ typedef struct {
     uint16_t fs;
 } cpu_segments;
 
-/* Helper structure for tracking cpu state in 16-bit mode. 
+/* Helper structure for tracking cpu state in 16-bit mode.
  * The register order matches pusha/popa when we have downwards growing stack.
  *
  */
@@ -102,7 +109,7 @@ typedef struct {
     uint32_t cr4;
 } ctl_registers;
 
-/* Helper structure for tracking cpu state in 32-bit mode. 
+/* Helper structure for tracking cpu state in 32-bit mode.
  * The register order matches pusha/popa when we have downwards growing stack.
  *
  */
@@ -275,6 +282,24 @@ static inline uint32_t __attribute__((always_inline)) rdmsr(uint32_t msr) {
             :"eax","ecx"
     );
     return ret;
+}
+
+/* Read cpuid information with given eax(a) and ecx(c) parameters */
+static inline void __attribute__((always_inline)) get_cpuid(uint32_t a, uint32_t c, cpuid_result *dst_struct) {
+    uint32_t *dst = (uint32_t *)dst_struct;
+    asm volatile(
+            "mov    eax, %0;"
+            "mov    ecx, %1;"
+            "cpuid;"
+            :
+            "=a"(dst[0]),
+            "=b"(dst[1]),
+            "=c"(dst[2]),
+            "=d"(dst[3])
+            :
+            "a"(a),
+            "c"(c)
+    );
 }
 
 static inline void __attribute__((always_inline)) wrmsr(uint32_t msr, uint32_t val) {
