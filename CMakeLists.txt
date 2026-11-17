@@ -6,21 +6,14 @@ find_program(clang-19 NAMES clang clang-19 HINTS /usr/bin /usr/local/bin /bin)
 
 set(target_mainboard "qemu" CACHE STRING "Currently we only support qemu for now")
 set(target_cpu "x86-64" CACHE STRING "We only support x86-64 cpus for now")
-set(CC distcc clang)
+set(CC clang)
 
 # These source files are used by _all_ versions of x86 bios of ours
 #
 add_executable(tinybios
-    src/cpu/gdt.S
-    src/cpu/init.S
-
     src/mm/slab.c
     src/mm/malloc.c
     src/mm/paging.c
-
-    src/interrupts/idt.c
-    src/interrupts/default_int_handler.S
-    src/interrupts/default_int_handler.c
 
     src/romcall/romcall.c
 
@@ -29,18 +22,28 @@ add_executable(tinybios
 
     src/c_entry.c
     src/panic.c
-    src/post.c
     src/console.c
-    src/reset.S
 )
+
+# Reset vector(s)
+add_subdirectory(src/reset)
+
+# CPU specific early assembly
+add_subdirectory(src/cpu)
+
+# platform init code
+add_subdirectory(src/platform_init)
+
+# Interrupt management
+add_subdirectory(src/interrupts)
 
 # Device drivers
 add_subdirectory(src/drivers)
 
-# Helper stuff
+# C Standard library stuff
 add_subdirectory(src/stdlib)
 
-# These sources are mainboard dependant
+# These sources are mainboard dependant, rather than CPU bound
 #
 add_subdirectory(src/mainboards/${target_mainboard})
 

@@ -163,14 +163,14 @@ setup_paging:
 //
 init_cpu:
     .code16
-
-    // Start by moving to 32 bit protected mode
+    // move to 32 bit protected mode
     push    eax
     call    switch_to_protected
 
     .code32
     pop     eax
     mov     esp, 0x00007c00
+
     call    setup_paging
 
 .code64
