@@ -33,12 +33,6 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include <sys/io.h>
-#include <superio/superio.h>
-
-#include <drivers/device.h>
-#include <drivers/serial/serial.h>
-
 #include <console/console.h>
 
 #include <string.h>
